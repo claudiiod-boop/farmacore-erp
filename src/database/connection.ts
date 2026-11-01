@@ -82,18 +82,13 @@ export class FarmaDatabase implements Database {
     }
 
     const stmt = this.raw.prepare(`PRAGMA ${pragmaStr};`);
-    const row = stmt.get() as Record<string, any> | undefined;
-
-    if (!row) {
-      return undefined;
-    }
+    const rows = stmt.all() as Record<string, any>[];
 
     if (options?.simple) {
-      const values = Object.values(row);
-      return values.length > 0 ? values[0] : undefined;
+      return rows.length > 0 ? Object.values(rows[0])[0] : undefined;
     }
 
-    return [row];
+    return rows;
   }
 
   close(): void {
