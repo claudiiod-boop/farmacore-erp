@@ -202,13 +202,22 @@ export default function PosPage() {
   // Load Pre-Sale
   const handleLoadPreSale = useCallback((details: PreSaleDetails) => {
     setLoadedPreSale(details.preSale);
+    const hasPrescription = Boolean(details.prescription);
+    const pType = details.prescription?.prescriptionType || 'ISENTO';
+    const isPreta = pType.startsWith('A') || pType.startsWith('B');
+    const defaultStripe: Stripe = hasPrescription
+      ? isPreta
+        ? 'PRETA'
+        : 'VERMELHA'
+      : 'SEM_TARJA';
+
     const newItems: PosGridItem[] = details.items.map((it) => ({
       id: `pre-sale-${it.id}`,
       source: 'PRE_SALE',
       productId: it.productId,
       productName: it.productName,
-      stripe: 'SEM_TARJA',
-      controlType: 'ISENTO',
+      stripe: defaultStripe,
+      controlType: hasPrescription ? pType : 'ISENTO',
       batchId: it.batchId,
       batchNumber: it.batchNumber,
       quantity: it.quantity,

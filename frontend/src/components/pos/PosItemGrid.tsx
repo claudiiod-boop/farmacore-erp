@@ -91,7 +91,7 @@ export default function PosItemGrid({
           Nenhum item registrado no caixa
         </h3>
         <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-          Resgate uma pré-venda gerada no balcão com <kbd className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-mono text-xs font-bold">F1</kbd> ou bipe produtos de conveniência com <kbd className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-mono text-xs font-bold">F2</kbd>.
+          Resgate uma pré-venda gerada no balcão com <kbd className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-mono text-xs font-bold">F5</kbd> ou bipe produtos de conveniência com <kbd className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-mono text-xs font-bold">F2</kbd>.
         </p>
       </div>
     );
