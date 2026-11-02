@@ -1,5 +1,7 @@
 node_modules/
 dist/
+dist-electron/
+frontend/dist/
 .superpowers/
 *.db
 *.db-journal

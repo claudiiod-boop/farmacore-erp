@@ -7,17 +7,35 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:frontend": "vitest run --config frontend/vite.config.ts",
     "start": "node dist/index.js",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "dev:web": "vite --config frontend/vite.config.ts",
+    "build:web": "vite build --config frontend/vite.config.ts",
+    "dev:desktop": "electron ."
   },
   "dependencies": {
     "fastify": "^5.2.1",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@types/node": "^22.13.4",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.2.0",
+    "jsdom": "^25.0.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
+    "vite": "^6.0.0",
     "vitest": "^3.0.6"
   }
 }
