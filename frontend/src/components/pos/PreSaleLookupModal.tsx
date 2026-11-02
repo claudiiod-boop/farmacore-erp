@@ -29,15 +29,19 @@ export default function PreSaleLookupModal({
 
   // Focus input and reset errors on open
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (isOpen) {
       setCode('');
       setError(null);
       setWarning(null);
       setIsLoading(false);
-      setTimeout(() => {
+      timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 50);
     }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isOpen]);
 
   // Handle ESC key to close
@@ -91,6 +95,11 @@ export default function PreSaleLookupModal({
 
       if (details.preSale.status === 'CANCELLED') {
         setWarning('Esta pré-venda está cancelada e não pode ser resgatada.');
+        return;
+      }
+
+      if (details.preSale.status !== 'OPEN') {
+        setWarning(`Esta pré-venda não está aberta (Status: ${details.preSale.status}).`);
         return;
       }
 

@@ -42,7 +42,7 @@ export default function PosItemGrid({
   onRemoveDirectItem,
   className = '',
 }: PosItemGridProps) {
-  // Shortcut F7 to remove selected DIRECT item
+  // Shortcut F7 to remove selected DIRECT item & Arrow keys for grid navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F7') {
@@ -54,12 +54,30 @@ export default function PosItemGrid({
         ) {
           onRemoveDirectItem?.(items[selectedItemIndex]);
         }
+      } else if (e.key === 'ArrowDown') {
+        if (onSelectItemIndex && items.length > 0) {
+          e.preventDefault();
+          const nextIdx =
+            selectedItemIndex === undefined || selectedItemIndex >= items.length - 1
+              ? 0
+              : selectedItemIndex + 1;
+          onSelectItemIndex(nextIdx);
+        }
+      } else if (e.key === 'ArrowUp') {
+        if (onSelectItemIndex && items.length > 0) {
+          e.preventDefault();
+          const prevIdx =
+            selectedItemIndex === undefined || selectedItemIndex <= 0
+              ? items.length - 1
+              : selectedItemIndex - 1;
+          onSelectItemIndex(prevIdx);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [items, selectedItemIndex, onRemoveDirectItem]);
+  }, [items, selectedItemIndex, onRemoveDirectItem, onSelectItemIndex]);
 
   if (!items || items.length === 0) {
     return (
