@@ -346,6 +346,10 @@ export class PosService {
       throw new Error('INVALID_AMOUNT');
     }
 
+    if (type !== 'SANGRIA' && type !== 'SUPPLY') {
+      throw new Error('INVALID_MOVEMENT_TYPE');
+    }
+
     if (!reason || reason.trim() === '') {
       throw new Error('INVALID_REASON');
     }
@@ -600,9 +604,13 @@ export class PosService {
 
     const checkoutTx = this.db.transaction(() => {
       if (preSaleDetails) {
-        this.db
-          .prepare("UPDATE pre_sales SET status = 'CONVERTED_TO_SALE' WHERE id = ?")
+        const updateResult = this.db
+          .prepare("UPDATE pre_sales SET status = 'CONVERTED_TO_SALE' WHERE id = ? AND status = 'OPEN'")
           .run(preSaleDetails.preSale.id);
+
+        if (Number(updateResult.changes) === 0) {
+          throw new Error('PRE_SALE_ALREADY_CLOSED');
+        }
       }
 
       const insertSaleStmt = this.db.prepare(`

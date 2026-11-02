@@ -8,7 +8,7 @@ import { PreSaleService } from '../modules/counter/pre-sale.service';
 import { CreatePreSaleDTO } from '../modules/counter/types';
 import { PosService } from '../modules/pos/pos.service';
 import { formatReceipt } from '../modules/pos/receipt-formatter';
-import { CashMovementType, CheckoutParams, PaymentItem } from '../modules/pos/types';
+import { CashMovementType, CheckoutParams } from '../modules/pos/types';
 
 export async function registerRoutes(app: FastifyInstance, db: Database): Promise<void> {
   const catalogService = new CatalogService(db);
