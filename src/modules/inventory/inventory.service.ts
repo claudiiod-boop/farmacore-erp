@@ -101,6 +101,10 @@ export class InventoryService {
   }
 
   suggestFefoBatch(productId: number, quantity: number): Batch {
+    if (quantity <= 0) {
+      throw new Error('INVALID_QUANTITY');
+    }
+
     const batches = this.getAvailableBatches(productId);
     const suitable = batches.find((b) => b.availableQuantity >= quantity);
 
@@ -118,7 +122,15 @@ export class InventoryService {
 
     const tx = this.db.transaction(() => {
       const batch = this.getBatchById(batchId);
-      if (!batch || batch.availableQuantity < quantity) {
+      if (!batch) {
+        throw new Error('INSUFFICIENT_BATCH_STOCK');
+      }
+
+      if (batch.expirationDate <= this.getCurrentDate()) {
+        throw new Error('BATCH_EXPIRED');
+      }
+
+      if (batch.availableQuantity < quantity) {
         throw new Error('INSUFFICIENT_BATCH_STOCK');
       }
 
@@ -132,6 +144,10 @@ export class InventoryService {
   }
 
   releaseBatchStock(batchId: number, quantity: number): void {
+    if (quantity <= 0) {
+      throw new Error('INVALID_QUANTITY');
+    }
+
     const batch = this.getBatchById(batchId);
     if (!batch) {
       throw new Error('BATCH_NOT_FOUND');
@@ -150,7 +166,15 @@ export class InventoryService {
 
     const tx = this.db.transaction(() => {
       const batch = this.getBatchById(batchId);
-      if (!batch || batch.quantity < quantity) {
+      if (!batch) {
+        throw new Error('INSUFFICIENT_BATCH_STOCK');
+      }
+
+      if (batch.expirationDate <= this.getCurrentDate()) {
+        throw new Error('BATCH_EXPIRED');
+      }
+
+      if (batch.quantity < quantity) {
         throw new Error('INSUFFICIENT_BATCH_STOCK');
       }
 

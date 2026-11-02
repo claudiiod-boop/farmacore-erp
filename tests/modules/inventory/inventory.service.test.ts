@@ -300,9 +300,49 @@ describe('InventoryService (FEFO & Batches)', () => {
         inventory.suggestFefoBatch(productId, 1);
       }).toThrow('INSUFFICIENT_STOCK');
     });
+
+    it('should throw INVALID_QUANTITY if requested quantity is <= 0', () => {
+      expect(() => {
+        inventory.suggestFefoBatch(productId, 0);
+      }).toThrow('INVALID_QUANTITY');
+
+      expect(() => {
+        inventory.suggestFefoBatch(productId, -1);
+      }).toThrow('INVALID_QUANTITY');
+    });
   });
 
   describe('reserveBatchStock', () => {
+    it('should throw BATCH_EXPIRED when attempting to reserve an expired batch', () => {
+      const result = db.prepare(`
+        INSERT INTO batches (product_id, batch_number, manufacturing_date, expiration_date, quantity, reserved_quantity)
+        VALUES (?, 'LOTE-EXPIRED-RES', '2020-01-01', '2021-01-01', 50, 0)
+      `).run(productId);
+      const expiredBatchId = Number(result.lastInsertRowid);
+
+      expect(() => {
+        inventory.reserveBatchStock(expiredBatchId, 5);
+      }).toThrow('BATCH_EXPIRED');
+    });
+
+    it('should throw INVALID_QUANTITY when reserving quantity <= 0', () => {
+      const batch = inventory.addBatch({
+        productId,
+        batchNumber: 'LOTE-RES-QTY',
+        manufacturingDate: '2026-01-01',
+        expirationDate: '2028-12-31',
+        quantity: 10,
+      });
+
+      expect(() => {
+        inventory.reserveBatchStock(batch.id, 0);
+      }).toThrow('INVALID_QUANTITY');
+
+      expect(() => {
+        inventory.reserveBatchStock(batch.id, -2);
+      }).toThrow('INVALID_QUANTITY');
+    });
+
     it('should reserve batch stock atomically', () => {
       const batch = inventory.addBatch({
         productId,
@@ -349,6 +389,24 @@ describe('InventoryService (FEFO & Batches)', () => {
   });
 
   describe('releaseBatchStock', () => {
+    it('should throw INVALID_QUANTITY when release quantity <= 0', () => {
+      const batch = inventory.addBatch({
+        productId,
+        batchNumber: 'LOTE-REL-QTY',
+        manufacturingDate: '2026-01-01',
+        expirationDate: '2028-12-31',
+        quantity: 10,
+      });
+
+      expect(() => {
+        inventory.releaseBatchStock(batch.id, 0);
+      }).toThrow('INVALID_QUANTITY');
+
+      expect(() => {
+        inventory.releaseBatchStock(batch.id, -5);
+      }).toThrow('INVALID_QUANTITY');
+    });
+
     it('should decrease reserved quantity and restore available quantity', () => {
       const batch = inventory.addBatch({
         productId,
@@ -385,6 +443,36 @@ describe('InventoryService (FEFO & Batches)', () => {
   });
 
   describe('deductBatchStock', () => {
+    it('should throw BATCH_EXPIRED when attempting to deduct an expired batch', () => {
+      const result = db.prepare(`
+        INSERT INTO batches (product_id, batch_number, manufacturing_date, expiration_date, quantity, reserved_quantity)
+        VALUES (?, 'LOTE-EXPIRED-DED', '2020-01-01', '2021-01-01', 50, 0)
+      `).run(productId);
+      const expiredBatchId = Number(result.lastInsertRowid);
+
+      expect(() => {
+        inventory.deductBatchStock(expiredBatchId, 5);
+      }).toThrow('BATCH_EXPIRED');
+    });
+
+    it('should throw INVALID_QUANTITY when deducting quantity <= 0', () => {
+      const batch = inventory.addBatch({
+        productId,
+        batchNumber: 'LOTE-DED-QTY',
+        manufacturingDate: '2026-01-01',
+        expirationDate: '2028-12-31',
+        quantity: 10,
+      });
+
+      expect(() => {
+        inventory.deductBatchStock(batch.id, 0);
+      }).toThrow('INVALID_QUANTITY');
+
+      expect(() => {
+        inventory.deductBatchStock(batch.id, -3);
+      }).toThrow('INVALID_QUANTITY');
+    });
+
     it('should physically deduct batch quantity and decrement reserved quantity', () => {
       const batch = inventory.addBatch({
         productId,
