@@ -155,6 +155,7 @@ export interface SaleItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  controlType?: ControlType;
 }
 
 export interface SalePayment {
@@ -176,6 +177,10 @@ export interface Sale {
   createdAt: string;
   items?: SaleItem[];
   payments?: SalePayment[];
+  operatorName?: string;
+  cashierName?: string;
+  prescription?: PrescriptionDetails | null;
+  preSaleCode?: string;
 }
 
 export interface AdditionalCheckoutItem {
