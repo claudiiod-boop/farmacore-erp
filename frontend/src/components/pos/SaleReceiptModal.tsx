@@ -96,12 +96,12 @@ export default function SaleReceiptModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 print:p-0 print:bg-white"
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 print:static print:block print:overflow-visible print:p-0 print:bg-white"
       role="dialog"
       aria-modal="true"
       aria-labelledby="receipt-modal-title"
     >
-      <div className="flex flex-col items-center max-w-md w-full">
+      <div className="flex flex-col items-center max-w-md w-full print:max-w-none print:w-full print:m-0">
         {/* Banner de Sucesso (oculto na impressão) */}
         <div className="w-full bg-emerald-600 text-white p-3 rounded-t-xl flex items-center justify-between shadow-lg print:hidden">
           <div className="flex items-center space-x-2">
@@ -121,7 +121,7 @@ export default function SaleReceiptModal({
         {/* Cupom Térmico ESC/POS de 48 Colunas (80mm) */}
         <div
           id="printable-sale-receipt"
-          className="bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-300 w-full p-6 font-mono text-xs max-w-[380px] print:max-w-none print:shadow-none print:border-none print:p-2 print:rounded-none"
+          className="bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-300 w-full p-6 font-mono text-xs max-w-[380px] print:max-w-none print:w-full print:m-0 print:shadow-none print:border-none print:p-2 print:rounded-none"
         >
           {/* Cabeçalho Comercial */}
           <div className="text-center pb-3 border-b-2 border-dashed border-slate-300 space-y-1">

@@ -56,7 +56,7 @@ export default function PaymentModal({
 
   // Calculations
   const totalPaid = useMemo(() => {
-    return payments.reduce((acc, p) => acc + p.amount, 0);
+    return Number(payments.reduce((acc, p) => acc + p.amount, 0).toFixed(2));
   }, [payments]);
 
   const remaining = useMemo(() => {
@@ -68,9 +68,12 @@ export default function PaymentModal({
   }, [totalAmount, totalPaid]);
 
   const cashPaid = useMemo(() => {
-    return payments
-      .filter((p) => p.method === 'DINHEIRO')
-      .reduce((acc, p) => acc + p.amount, 0);
+    return Number(
+      payments
+        .filter((p) => p.method === 'DINHEIRO')
+        .reduce((acc, p) => acc + p.amount, 0)
+        .toFixed(2)
+    );
   }, [payments]);
 
   // EXCESS_NON_CASH_PAYMENT invariant:
@@ -177,7 +180,10 @@ export default function PaymentModal({
       }
 
       if (e.key === 'Enter') {
-        // If Enter is pressed and we can finalize and the active element is not an input that should just submit payment
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+          return;
+        }
         if (canFinalize) {
           e.preventDefault();
           onConfirmPayments(payments);
@@ -449,6 +455,7 @@ export default function PaymentModal({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
+                        e.stopPropagation();
                         if (amountInput && parseFloat(amountInput) > 0) {
                           handleAddPayment();
                         } else if (canFinalize) {
