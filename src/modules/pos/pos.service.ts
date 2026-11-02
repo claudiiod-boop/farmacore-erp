@@ -3,6 +3,8 @@ import { InventoryService } from '../inventory/inventory.service';
 import { PreSaleService } from '../counter/pre-sale.service';
 import { PrescriptionDetails } from '../counter/types';
 import {
+  CashMovement,
+  CashMovementType,
   CashSession,
   CashSessionSummary,
   PaymentItem,
@@ -12,6 +14,16 @@ import {
   SaleDetails,
   SaleItemDetails,
 } from './types';
+
+interface CashMovementRow {
+  id: number | bigint;
+  cash_session_id: number | bigint;
+  type: string;
+  amount: number;
+  reason: string;
+  operator_name: string;
+  created_at: string;
+}
 
 interface CashSessionRow {
   id: number | bigint;
@@ -81,6 +93,18 @@ function mapPrescriptionRow(row: PrescriptionRow): PrescriptionDetails {
     patientName: row.patient_name,
     buyerName: row.buyer_name,
     buyerCpf: row.buyer_cpf,
+    createdAt: row.created_at,
+  };
+}
+
+function mapCashMovementRow(row: CashMovementRow): CashMovement {
+  return {
+    id: Number(row.id),
+    cashSessionId: Number(row.cash_session_id),
+    type: row.type as CashMovementType,
+    amount: Number(row.amount),
+    reason: row.reason,
+    operatorName: row.operator_name,
     createdAt: row.created_at,
   };
 }
@@ -252,15 +276,135 @@ export class PosService {
         );
       }
 
+      const movementRows = this.db
+        .prepare<{ type: string; amount: number }>(
+          'SELECT type, amount FROM cash_movements WHERE cash_session_id = ?'
+        )
+        .all(sessionId);
+
+      let totalSupplies = 0;
+      let totalSangrias = 0;
+
+      for (const m of movementRows) {
+        if (m.type === 'SUPPLY') {
+          totalSupplies += Number(m.amount);
+        } else if (m.type === 'SANGRIA') {
+          totalSangrias += Number(m.amount);
+        }
+      }
+
+      totalSupplies = Number(totalSupplies.toFixed(2));
+      totalSangrias = Number(totalSangrias.toFixed(2));
+
+      const expectedCash = Number(
+        (session.initialCash + totalSupplies - totalSangrias + totalsByMethod.DINHEIRO).toFixed(2)
+      );
+
       return {
         session,
         totalSalesCount,
         totalSalesAmount,
         totalsByMethod,
+        totalSupplies,
+        totalSangrias,
+        expectedCash,
       };
     });
 
     return closeTx();
+  }
+
+  registerCashMovement(
+    sessionId: number,
+    type: CashMovementType,
+    amount: number,
+    reason: string,
+    operatorName: string
+  ): CashMovement {
+    if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+      throw new Error('INVALID_AMOUNT');
+    }
+
+    if (!reason || reason.trim() === '') {
+      throw new Error('INVALID_REASON');
+    }
+
+    if (!operatorName || operatorName.trim() === '') {
+      throw new Error('INVALID_OPERATOR');
+    }
+
+    const trimmedReason = reason.trim();
+    const trimmedOperator = operatorName.trim();
+    const cleanAmount = Number(amount.toFixed(2));
+
+    const registerTx = this.db.transaction(() => {
+      const sessionRow = this.db
+        .prepare<CashSessionRow>('SELECT * FROM cash_sessions WHERE id = ?')
+        .get(sessionId);
+
+      if (!sessionRow || sessionRow.status !== 'OPEN') {
+        throw new Error('SESSION_NOT_OPEN');
+      }
+
+      const currentCash = Number(sessionRow.current_cash);
+
+      if (type === 'SANGRIA') {
+        if (cleanAmount > currentCash) {
+          throw new Error('INSUFFICIENT_DRAWER_CASH');
+        }
+
+        const newBalance = Number((currentCash - cleanAmount).toFixed(2));
+        this.db
+          .prepare('UPDATE cash_sessions SET current_cash = ? WHERE id = ?')
+          .run(newBalance, sessionId);
+      } else if (type === 'SUPPLY') {
+        const newBalance = Number((currentCash + cleanAmount).toFixed(2));
+        this.db
+          .prepare('UPDATE cash_sessions SET current_cash = ? WHERE id = ?')
+          .run(newBalance, sessionId);
+      }
+
+      const insertStmt = this.db.prepare(`
+        INSERT INTO cash_movements (
+          cash_session_id,
+          type,
+          amount,
+          reason,
+          operator_name
+        ) VALUES (?, ?, ?, ?, ?)
+      `);
+
+      const result = insertStmt.run(
+        sessionId,
+        type,
+        cleanAmount,
+        trimmedReason,
+        trimmedOperator
+      );
+
+      const insertedId = Number(result.lastInsertRowid);
+      const movementRow = this.db
+        .prepare<CashMovementRow>('SELECT * FROM cash_movements WHERE id = ?')
+        .get(insertedId);
+
+      if (!movementRow) {
+        throw new Error('Failed to retrieve newly created cash movement');
+      }
+
+      return mapCashMovementRow(movementRow);
+    });
+
+    return registerTx();
+  }
+
+  getCashMovements(sessionId: number): CashMovement[] {
+    const rows = this.db
+      .prepare<CashMovementRow>(
+        'SELECT * FROM cash_movements WHERE cash_session_id = ? ORDER BY id ASC'
+      )
+      .all(sessionId);
+
+    return rows.map(mapCashMovementRow);
   }
 
   getCurrentSession(operatorName?: string): CashSession | null {

@@ -17,11 +17,26 @@ export interface CashSession {
   closedAt: string | null;
 }
 
+export type CashMovementType = 'SANGRIA' | 'SUPPLY';
+
+export interface CashMovement {
+  id: number;
+  cashSessionId: number;
+  type: CashMovementType;
+  amount: number;
+  reason: string;
+  operatorName: string;
+  createdAt: string;
+}
+
 export interface CashSessionSummary {
   session: CashSession;
   totalSalesCount: number;
   totalSalesAmount: number;
   totalsByMethod: Record<PaymentMethod, number>;
+  totalSupplies?: number;
+  totalSangrias?: number;
+  expectedCash?: number; // initialCash + supplies - sangrias + net cash sales
 }
 
 export interface Sale {
