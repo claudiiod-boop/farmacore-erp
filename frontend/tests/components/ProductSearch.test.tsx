@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import ProductSearch from '../../src/components/ProductSearch';
 import * as api from '../../src/services/api';
 import { Product } from '../../src/services/api';
@@ -172,5 +172,54 @@ describe('ProductSearch Component', () => {
     await waitFor(() => {
       expect(screen.queryByText(/Dipirona Monoidratada/i)).toBeNull();
     });
+  });
+
+  it('should ignore stale out-of-order responses (race condition prevention)', async () => {
+    let resolveFirst: (val: Product[]) => void = () => {};
+    let resolveSecond: (val: Product[]) => void = () => {};
+
+    const firstPromise = new Promise<Product[]>((res) => {
+      resolveFirst = res;
+    });
+    const secondPromise = new Promise<Product[]>((res) => {
+      resolveSecond = res;
+    });
+
+    vi.spyOn(api, 'searchProducts')
+      .mockImplementationOnce(() => firstPromise)
+      .mockImplementationOnce(() => secondPromise);
+
+    render(<ProductSearch onSelectProduct={vi.fn()} />);
+    const input = screen.getByPlaceholderText(/buscar medicamento/i);
+
+    // First search
+    fireEvent.change(input, { target: { value: 'Amox' } });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 260));
+    });
+
+    // Second search
+    fireEvent.change(input, { target: { value: 'Clon' } });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 260));
+    });
+
+    // Second request resolves first with Clonazepam
+    await act(async () => {
+      resolveSecond([mockProducts[2]]);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Clonazepam 2mg/i)).toBeDefined();
+    });
+
+    // First request resolves later with Amoxicilina (stale response)
+    await act(async () => {
+      resolveFirst([mockProducts[1]]);
+    });
+
+    // Amoxicilina should NOT overwrite Clonazepam
+    expect(screen.getByText(/Clonazepam 2mg/i)).toBeDefined();
+    expect(screen.queryByText(/Amoxicilina 500mg/i)).toBeNull();
   });
 });

@@ -29,13 +29,26 @@ describe('API Service', () => {
       expect(products).toEqual(mockResult);
     });
 
-    it('should throw an error when search request fails', async () => {
+    it('should throw an error with backend message when search request fails', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        statusText: 'Bad Request',
+        json: async () => ({ message: 'Query inválida' }),
+      } as Response);
+
+      await expect(searchProducts('error')).rejects.toThrow('Query inválida');
+    });
+
+    it('should fall back to statusText when search request fails without json body', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         statusText: 'Internal Server Error',
+        json: async () => {
+          throw new Error('Not JSON');
+        },
       } as Response);
 
-      await expect(searchProducts('error')).rejects.toThrow(/Falha ao buscar produtos/);
+      await expect(searchProducts('error')).rejects.toThrow(/Falha ao buscar produtos: Internal Server Error/);
     });
   });
 
@@ -61,6 +74,17 @@ describe('API Service', () => {
       const result = await getProductByEan('0000000000000');
       expect(result).toBeNull();
     });
+
+    it('should throw an error with backend message when EAN request fails with 500', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Error',
+        json: async () => ({ message: 'Erro no leitor de código de barras' }),
+      } as Response);
+
+      await expect(getProductByEan('123')).rejects.toThrow('Erro no leitor de código de barras');
+    });
   });
 
   describe('getAvailableBatches', () => {
@@ -79,6 +103,16 @@ describe('API Service', () => {
         'http://localhost:3000/api/inventory/1/batches'
       );
       expect(batches).toEqual(mockBatches);
+    });
+
+    it('should throw an error with backend message when batches query fails', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        statusText: 'Bad Request',
+        json: async () => ({ message: 'Produto inativo' }),
+      } as Response);
+
+      await expect(getAvailableBatches(99)).rejects.toThrow('Produto inativo');
     });
   });
 

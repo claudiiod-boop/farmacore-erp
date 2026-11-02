@@ -69,6 +69,16 @@ export default function ProductSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastReqIdRef = useRef<number>(0);
+
+  // Limpeza de timer pendente ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Foco global imediato com a tecla F2
   useKeyboardShortcuts({
@@ -96,29 +106,37 @@ export default function ProductSearch({
     [onSelectProduct]
   );
 
-  // Executa a busca no backend após debounce
+  // Executa a busca no backend após debounce com proteção contra race conditions
   const executeSearch = useCallback(async (searchTerm: string) => {
     const trimmed = searchTerm.trim();
     if (!trimmed) {
+      lastReqIdRef.current++;
       setResults([]);
       setIsOpen(false);
       setIsLoading(false);
       return;
     }
 
+    const currentReqId = ++lastReqIdRef.current;
     setIsLoading(true);
     setSearchError(null);
 
     try {
       const data = await searchProducts(trimmed);
-      setResults(data);
-      setIsOpen(data.length > 0);
-      setSelectedIndex(-1);
+      if (currentReqId === lastReqIdRef.current) {
+        setResults(data);
+        setIsOpen(data.length > 0);
+        setSelectedIndex(-1);
+      }
     } catch (err: any) {
-      setSearchError(err.message || 'Erro ao consultar catálogo');
-      setResults([]);
+      if (currentReqId === lastReqIdRef.current) {
+        setSearchError(err.message || 'Erro ao consultar catálogo');
+        setResults([]);
+      }
     } finally {
-      setIsLoading(false);
+      if (currentReqId === lastReqIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -131,6 +149,7 @@ export default function ProductSearch({
     }
 
     if (!value.trim()) {
+      lastReqIdRef.current++;
       setResults([]);
       setIsOpen(false);
       setIsLoading(false);

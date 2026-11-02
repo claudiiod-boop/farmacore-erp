@@ -92,7 +92,10 @@ export async function searchProducts(query: string): Promise<Product[]> {
   const url = `${base}/api/products/search?q=${encodeURIComponent(query)}`;
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Falha ao buscar produtos: ${response.statusText}`);
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao buscar produtos: ${response.statusText}`
+    );
   }
   return response.json();
 }
@@ -105,7 +108,10 @@ export async function getProductByEan(ean: string): Promise<Product | null> {
     return null;
   }
   if (!response.ok) {
-    throw new Error(`Falha ao buscar produto por EAN: ${response.statusText}`);
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao buscar produto por EAN: ${response.statusText}`
+    );
   }
   return response.json();
 }
@@ -115,7 +121,10 @@ export async function getAvailableBatches(productId: number): Promise<Batch[]> {
   const url = `${base}/api/inventory/${productId}/batches`;
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Falha ao buscar lotes: ${response.statusText}`);
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao buscar lotes: ${response.statusText}`
+    );
   }
   return response.json();
 }
@@ -132,9 +141,9 @@ export async function createPreSale(dto: CreatePreSaleDTO): Promise<PreSale> {
   });
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
+    const body = await response.json().catch(() => null);
     throw new Error(
-      errorBody.message || errorBody.error || `Falha ao gerar pré-venda: ${response.statusText}`
+      body?.message || body?.error || `Falha ao gerar pré-venda: ${response.statusText}`
     );
   }
   return response.json();
