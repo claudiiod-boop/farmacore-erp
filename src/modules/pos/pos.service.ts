@@ -625,7 +625,7 @@ export class PosService {
       `);
 
       const preSaleId = preSaleDetails ? preSaleDetails.preSale.id : null;
-      const discountAmount = preSaleDetails ? preSaleDetails.preSale.discountAmount || 0 : 0;
+      const discountAmount = 0;
 
       const saleResult = insertSaleStmt.run(
         preSaleId,
