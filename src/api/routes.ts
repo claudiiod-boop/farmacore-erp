@@ -8,7 +8,7 @@ import { PreSaleService } from '../modules/counter/pre-sale.service';
 import { CreatePreSaleDTO } from '../modules/counter/types';
 import { PosService } from '../modules/pos/pos.service';
 import { formatReceipt } from '../modules/pos/receipt-formatter';
-import { PaymentItem } from '../modules/pos/types';
+import { CashMovementType, CheckoutParams, PaymentItem } from '../modules/pos/types';
 
 export async function registerRoutes(app: FastifyInstance, db: Database): Promise<void> {
   const catalogService = new CatalogService(db);
@@ -319,19 +319,147 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
   );
 
   app.post<{
-    Body: { preSaleCode: string; payments: PaymentItem[]; cashSessionId?: number };
-  }>('/api/pos/checkout', async (req, reply) => {
-    const { preSaleCode, payments, cashSessionId } = req.body;
+    Params: { id: string };
+    Body: {
+      type: CashMovementType;
+      amount: number;
+      reason: string;
+      operatorName: string;
+    };
+  }>('/api/pos/sessions/:id/movements', async (req, reply) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return reply.status(400).send({
+        error: 'INVALID_SESSION_ID',
+        message: 'Id da sessão deve ser numérico',
+      });
+    }
 
     try {
-      const sale = posService.finalizeSaleFromPreSale(preSaleCode, payments, cashSessionId);
+      const { type, amount, reason, operatorName } = req.body || {};
+      const movement = posService.registerCashMovement(id, type, amount, reason, operatorName);
+      return reply.status(201).send(movement);
+    } catch (err: any) {
+      if (err.message === 'INSUFFICIENT_DRAWER_CASH') {
+        return reply.status(400).send({
+          error: 'INSUFFICIENT_DRAWER_CASH',
+          message: 'Saldo em dinheiro na gaveta insuficiente para realizar a sangria',
+        });
+      }
+      if (err.message === 'SESSION_NOT_OPEN') {
+        return reply.status(400).send({
+          error: 'SESSION_NOT_OPEN',
+          message: 'A sessão informada não está aberta',
+        });
+      }
+      if (err.message === 'INVALID_AMOUNT') {
+        return reply.status(400).send({
+          error: 'INVALID_AMOUNT',
+          message: 'Valor da movimentação inválido',
+        });
+      }
+      if (err.message === 'INVALID_REASON') {
+        return reply.status(400).send({
+          error: 'INVALID_REASON',
+          message: 'Motivo da movimentação é obrigatório',
+        });
+      }
+      if (err.message === 'INVALID_OPERATOR') {
+        return reply.status(400).send({
+          error: 'INVALID_OPERATOR',
+          message: 'Nome do operador é obrigatório',
+        });
+      }
+      return reply.status(400).send({
+        error: err.message || 'MOVEMENT_FAILED',
+        message: err.message,
+      });
+    }
+  });
+
+  app.get<{ Params: { id: string } }>('/api/pos/sessions/:id/movements', async (req, reply) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return reply.status(400).send({
+        error: 'INVALID_SESSION_ID',
+        message: 'Id da sessão deve ser numérico',
+      });
+    }
+
+    const movements = posService.getCashMovements(id);
+    return reply.status(200).send(movements);
+  });
+
+  app.get<{ Params: { id: string } }>('/api/pos/sessions/:id/summary', async (req, reply) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return reply.status(400).send({
+        error: 'INVALID_SESSION_ID',
+        message: 'Id da sessão deve ser numérico',
+      });
+    }
+
+    try {
+      const summary = posService.getSessionSummary(id);
+      return reply.status(200).send(summary);
+    } catch (err: any) {
+      if (err.message === 'SESSION_NOT_OPEN') {
+        return reply.status(400).send({
+          error: 'SESSION_NOT_OPEN',
+          message: 'A sessão informada não está aberta',
+        });
+      }
+      return reply.status(400).send({
+        error: err.message || 'SUMMARY_FAILED',
+        message: err.message,
+      });
+    }
+  });
+
+  app.post<{
+    Body: CheckoutParams;
+  }>('/api/pos/checkout', async (req, reply) => {
+    try {
+      const sale = posService.checkout(req.body);
       const receiptText = formatReceipt(sale);
       return reply.status(200).send({ sale, receiptText });
     } catch (err: any) {
+      if (err.message === 'CONTROLLED_DRUG_DIRECT_SALE_FORBIDDEN') {
+        return reply.status(400).send({
+          error: 'CONTROLLED_DRUG_DIRECT_SALE_FORBIDDEN',
+          message:
+            'Venda direta no caixa é permitida apenas para produtos isentos de retenção de receita.',
+        });
+      }
+      if (err.message === 'EMPTY_CHECKOUT') {
+        return reply.status(400).send({
+          error: 'EMPTY_CHECKOUT',
+          message:
+            'O checkout deve conter ao menos uma pré-venda ou itens adicionais de conveniência',
+        });
+      }
+      if (err.message === 'INSUFFICIENT_BATCH_STOCK') {
+        return reply.status(400).send({
+          error: 'INSUFFICIENT_BATCH_STOCK',
+          message: 'Estoque insuficiente para o lote selecionado',
+        });
+      }
+      if (err.message === 'BATCH_EXPIRED') {
+        return reply.status(400).send({
+          error: 'BATCH_EXPIRED',
+          message: 'Lote com data de validade vencida',
+        });
+      }
+      if (err.message === 'PRODUCT_NOT_FOUND') {
+        return reply.status(404).send({
+          error: 'PRODUCT_NOT_FOUND',
+          message: 'Produto não encontrado',
+        });
+      }
       if (err.message === 'PRE_SALE_NOT_FOUND') {
         return reply.status(404).send({
           error: 'PRE_SALE_NOT_FOUND',
-          message: `Pré-venda ${preSaleCode} não encontrada`,
+          message: `Pré-venda ${req.body?.preSaleCode ?? ''} não encontrada`,
         });
       }
       if (err.message === 'PRE_SALE_ALREADY_CLOSED') {
@@ -343,7 +471,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
       if (err.message === 'INSUFFICIENT_PAYMENT') {
         return reply.status(400).send({
           error: 'INSUFFICIENT_PAYMENT',
-          message: 'O valor total pago é inferior ao valor da pré-venda',
+          message: 'O valor total pago é inferior ao valor da venda',
         });
       }
       if (err.message === 'EXCESS_NON_CASH_PAYMENT') {
@@ -356,6 +484,18 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
         return reply.status(400).send({
           error: 'SESSION_NOT_OPEN',
           message: 'A sessão de caixa informada não está aberta',
+        });
+      }
+      if (err.message === 'NO_PAYMENT_PROVIDED') {
+        return reply.status(400).send({
+          error: 'NO_PAYMENT_PROVIDED',
+          message: 'Nenhum pagamento informado',
+        });
+      }
+      if (err.message === 'INVALID_PAYMENT_AMOUNT') {
+        return reply.status(400).send({
+          error: 'INVALID_PAYMENT_AMOUNT',
+          message: 'Valor ou método de pagamento inválido',
         });
       }
       return reply.status(400).send({

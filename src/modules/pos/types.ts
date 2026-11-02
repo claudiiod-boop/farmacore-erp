@@ -78,3 +78,17 @@ export interface SaleDetails {
   preSaleCode?: string;
   prescription?: PrescriptionDetails | null;
 }
+
+export interface AdditionalCheckoutItem {
+  productId: number;
+  batchId: number;
+  quantity: number;
+}
+
+export interface CheckoutParams {
+  cashSessionId?: number;
+  preSaleCode?: string;
+  additionalItems?: AdditionalCheckoutItem[];
+  payments: PaymentItem[];
+}
+

@@ -3,10 +3,12 @@ import { InventoryService } from '../inventory/inventory.service';
 import { PreSaleService } from '../counter/pre-sale.service';
 import { PrescriptionDetails } from '../counter/types';
 import {
+  AdditionalCheckoutItem,
   CashMovement,
   CashMovementType,
   CashSession,
   CashSessionSummary,
+  CheckoutParams,
   PaymentItem,
   PaymentItemDetails,
   PaymentMethod,
@@ -235,84 +237,103 @@ export class PosService {
       }
 
       const session = mapCashSessionRow(updatedSessionRow);
-
-      const salesRows = this.db
-        .prepare<SaleRow>("SELECT * FROM sales WHERE cash_session_id = ? AND status = 'COMPLETED'")
-        .all(sessionId);
-
-      const totalSalesCount = salesRows.length;
-      const totalSalesAmount = Number(
-        salesRows.reduce((acc, s) => acc + Number(s.total_amount), 0).toFixed(2)
-      );
-
-      const totalsByMethod: Record<PaymentMethod, number> = {
-        DINHEIRO: 0,
-        CARTAO_CREDITO: 0,
-        CARTAO_DEBITO: 0,
-        PIX: 0,
-      };
-
-      const paymentRows = this.db
-        .prepare<{ method: string; amount: number }>(`
-          SELECT sp.method, sp.amount
-          FROM sale_payments sp
-          JOIN sales s ON s.id = sp.sale_id
-          WHERE s.cash_session_id = ? AND s.status = 'COMPLETED'
-        `)
-        .all(sessionId);
-
-      for (const p of paymentRows) {
-        const method = p.method as PaymentMethod;
-        if (totalsByMethod[method] !== undefined) {
-          totalsByMethod[method] = Number((totalsByMethod[method] + Number(p.amount)).toFixed(2));
-        }
-      }
-
-      // Adjust DINHEIRO for total change given in this session
-      const totalChange = salesRows.reduce((acc, s) => acc + Number(s.change_amount), 0);
-      if (totalChange > 0) {
-        totalsByMethod.DINHEIRO = Number(
-          Math.max(0, totalsByMethod.DINHEIRO - totalChange).toFixed(2)
-        );
-      }
-
-      const movementRows = this.db
-        .prepare<{ type: string; amount: number }>(
-          'SELECT type, amount FROM cash_movements WHERE cash_session_id = ?'
-        )
-        .all(sessionId);
-
-      let totalSupplies = 0;
-      let totalSangrias = 0;
-
-      for (const m of movementRows) {
-        if (m.type === 'SUPPLY') {
-          totalSupplies += Number(m.amount);
-        } else if (m.type === 'SANGRIA') {
-          totalSangrias += Number(m.amount);
-        }
-      }
-
-      totalSupplies = Number(totalSupplies.toFixed(2));
-      totalSangrias = Number(totalSangrias.toFixed(2));
-
-      const expectedCash = Number(
-        (session.initialCash + totalSupplies - totalSangrias + totalsByMethod.DINHEIRO).toFixed(2)
-      );
-
-      return {
-        session,
-        totalSalesCount,
-        totalSalesAmount,
-        totalsByMethod,
-        totalSupplies,
-        totalSangrias,
-        expectedCash,
-      };
+      return this.calculateSessionSummary(session);
     });
 
     return closeTx();
   }
+
+  getSessionSummary(sessionId: number): CashSessionSummary {
+    const sessionRow = this.db
+      .prepare<CashSessionRow>('SELECT * FROM cash_sessions WHERE id = ?')
+      .get(sessionId);
+
+    if (!sessionRow || sessionRow.status !== 'OPEN') {
+      throw new Error('SESSION_NOT_OPEN');
+    }
+
+    const session = mapCashSessionRow(sessionRow);
+    return this.calculateSessionSummary(session);
+  }
+
+  private calculateSessionSummary(session: CashSession): CashSessionSummary {
+    const sessionId = session.id;
+
+    const salesRows = this.db
+      .prepare<SaleRow>("SELECT * FROM sales WHERE cash_session_id = ? AND status = 'COMPLETED'")
+      .all(sessionId);
+
+    const totalSalesCount = salesRows.length;
+    const totalSalesAmount = Number(
+      salesRows.reduce((acc, s) => acc + Number(s.total_amount), 0).toFixed(2)
+    );
+
+    const totalsByMethod: Record<PaymentMethod, number> = {
+      DINHEIRO: 0,
+      CARTAO_CREDITO: 0,
+      CARTAO_DEBITO: 0,
+      PIX: 0,
+    };
+
+    const paymentRows = this.db
+      .prepare<{ method: string; amount: number }>(`
+        SELECT sp.method, sp.amount
+        FROM sale_payments sp
+        JOIN sales s ON s.id = sp.sale_id
+        WHERE s.cash_session_id = ? AND s.status = 'COMPLETED'
+      `)
+      .all(sessionId);
+
+    for (const p of paymentRows) {
+      const method = p.method as PaymentMethod;
+      if (totalsByMethod[method] !== undefined) {
+        totalsByMethod[method] = Number((totalsByMethod[method] + Number(p.amount)).toFixed(2));
+      }
+    }
+
+    // Adjust DINHEIRO for total change given in this session
+    const totalChange = salesRows.reduce((acc, s) => acc + Number(s.change_amount), 0);
+    if (totalChange > 0) {
+      totalsByMethod.DINHEIRO = Number(
+        Math.max(0, totalsByMethod.DINHEIRO - totalChange).toFixed(2)
+      );
+    }
+
+    const movementRows = this.db
+      .prepare<{ type: string; amount: number }>(
+        'SELECT type, amount FROM cash_movements WHERE cash_session_id = ?'
+      )
+      .all(sessionId);
+
+    let totalSupplies = 0;
+    let totalSangrias = 0;
+
+    for (const m of movementRows) {
+      if (m.type === 'SUPPLY') {
+        totalSupplies += Number(m.amount);
+      } else if (m.type === 'SANGRIA') {
+        totalSangrias += Number(m.amount);
+      }
+    }
+
+    totalSupplies = Number(totalSupplies.toFixed(2));
+    totalSangrias = Number(totalSangrias.toFixed(2));
+
+    const expectedCash = Number(
+      (session.initialCash + totalSupplies - totalSangrias + totalsByMethod.DINHEIRO).toFixed(2)
+    );
+
+    return {
+      session,
+      totalSalesCount,
+      totalSalesAmount,
+      totalsByMethod,
+      totalSupplies,
+      totalSangrias,
+      expectedCash,
+    };
+  }
+
 
   registerCashMovement(
     sessionId: number,
@@ -427,31 +448,127 @@ export class PosService {
     return row ? mapCashSessionRow(row) : null;
   }
 
-  finalizeSaleFromPreSale(
-    preSaleCode: string,
-    payments: PaymentItem[],
-    cashSessionId?: number
-  ): SaleDetails {
-    if (!preSaleCode || typeof preSaleCode !== 'string') {
-      throw new Error('PRE_SALE_NOT_FOUND');
+  checkout(params: CheckoutParams): SaleDetails {
+    if (params.cashSessionId !== undefined && params.cashSessionId !== null) {
+      const sessionRow = this.db
+        .prepare<CashSessionRow>('SELECT * FROM cash_sessions WHERE id = ?')
+        .get(params.cashSessionId);
+
+      if (!sessionRow || sessionRow.status !== 'OPEN') {
+        throw new Error('SESSION_NOT_OPEN');
+      }
     }
 
-    const preSaleDetails = this.preSaleService.getPreSaleByCode(preSaleCode);
-    if (!preSaleDetails) {
-      throw new Error('PRE_SALE_NOT_FOUND');
+    let preSaleDetails: ReturnType<PreSaleService['getPreSaleByCode']> = null;
+    if (params.preSaleCode !== undefined && params.preSaleCode !== null) {
+      if (typeof params.preSaleCode !== 'string' || params.preSaleCode.trim() === '') {
+        throw new Error('PRE_SALE_NOT_FOUND');
+      }
+      const cleanCode = params.preSaleCode.trim();
+      preSaleDetails = this.preSaleService.getPreSaleByCode(cleanCode);
+      if (!preSaleDetails) {
+        throw new Error('PRE_SALE_NOT_FOUND');
+      }
+      if (preSaleDetails.preSale.status !== 'OPEN') {
+        throw new Error('PRE_SALE_ALREADY_CLOSED');
+      }
     }
 
-    if (preSaleDetails.preSale.status !== 'OPEN') {
-      throw new Error('PRE_SALE_ALREADY_CLOSED');
+    const hasPreSale = preSaleDetails !== null;
+    const hasAdditionalItems =
+      Array.isArray(params.additionalItems) && params.additionalItems.length > 0;
+
+    if (!hasPreSale && !hasAdditionalItems) {
+      throw new Error('EMPTY_CHECKOUT');
     }
 
-    if (!payments || !Array.isArray(payments) || payments.length === 0) {
+    interface PreparedAdditionalItem {
+      productId: number;
+      productName: string;
+      batchId: number;
+      batchNumber: string;
+      expirationDate?: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }
+    const preparedAdditionalItems: PreparedAdditionalItem[] = [];
+
+    if (hasAdditionalItems) {
+      const batchUsage = new Map<number, number>();
+
+      for (const item of params.additionalItems!) {
+        if (!item.productId || typeof item.productId !== 'number') {
+          throw new Error('PRODUCT_NOT_FOUND');
+        }
+        if (typeof item.quantity !== 'number' || isNaN(item.quantity) || item.quantity <= 0) {
+          throw new Error('INVALID_QUANTITY');
+        }
+
+        const productRow = this.db
+          .prepare<{
+            id: number | bigint;
+            name: string;
+            control_type: string;
+            price: number;
+          }>('SELECT id, name, control_type, price FROM products WHERE id = ?')
+          .get(item.productId);
+
+        if (!productRow) {
+          throw new Error('PRODUCT_NOT_FOUND');
+        }
+
+        if (productRow.control_type !== 'ISENTO') {
+          throw new Error('CONTROLLED_DRUG_DIRECT_SALE_FORBIDDEN');
+        }
+
+        const batch = this.inventoryService.getBatchById(item.batchId);
+        if (!batch || batch.productId !== Number(productRow.id)) {
+          throw new Error('INSUFFICIENT_BATCH_STOCK');
+        }
+
+        const currentDate = new Date().toISOString().slice(0, 10);
+        if (batch.expirationDate <= currentDate) {
+          throw new Error('BATCH_EXPIRED');
+        }
+
+        const currentUsed = batchUsage.get(item.batchId) || 0;
+        if (batch.availableQuantity < currentUsed + item.quantity) {
+          throw new Error('INSUFFICIENT_BATCH_STOCK');
+        }
+        batchUsage.set(item.batchId, currentUsed + item.quantity);
+
+        const unitPrice = Number(productRow.price);
+        const totalPrice = Number((unitPrice * item.quantity).toFixed(2));
+
+        preparedAdditionalItems.push({
+          productId: Number(productRow.id),
+          productName: productRow.name,
+          batchId: batch.id,
+          batchNumber: batch.batchNumber,
+          expirationDate: batch.expirationDate,
+          quantity: item.quantity,
+          unitPrice,
+          totalPrice,
+        });
+      }
+    }
+
+    const preSaleTotal = preSaleDetails
+      ? Number(preSaleDetails.preSale.totalAmount.toFixed(2))
+      : 0;
+    const additionalTotal = Number(
+      preparedAdditionalItems.reduce((acc, it) => acc + it.totalPrice, 0).toFixed(2)
+    );
+    const grandTotal = Number((preSaleTotal + additionalTotal).toFixed(2));
+
+    if (!params.payments || !Array.isArray(params.payments) || params.payments.length === 0) {
       throw new Error('NO_PAYMENT_PROVIDED');
     }
 
     const VALID_METHODS: PaymentMethod[] = ['DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'PIX'];
 
-    for (const p of payments) {
+    for (const p of params.payments) {
       if (!VALID_METHODS.includes(p.method)) {
         throw new Error('INVALID_PAYMENT_AMOUNT');
       }
@@ -460,18 +577,17 @@ export class PosService {
       }
     }
 
-    const preSaleTotal = Number(preSaleDetails.preSale.totalAmount.toFixed(2));
-    const totalPaid = Number(payments.reduce((acc, p) => acc + p.amount, 0).toFixed(2));
+    const totalPaid = Number(params.payments.reduce((acc, p) => acc + p.amount, 0).toFixed(2));
 
-    if (totalPaid < preSaleTotal) {
+    if (totalPaid < grandTotal) {
       throw new Error('INSUFFICIENT_PAYMENT');
     }
 
-    const changeAmount = Number((totalPaid - preSaleTotal).toFixed(2));
+    const changeAmount = Number((totalPaid - grandTotal).toFixed(2));
 
     if (changeAmount > 0) {
       const cashPaid = Number(
-        payments
+        params.payments
           .filter((p) => p.method === 'DINHEIRO')
           .reduce((acc, p) => acc + p.amount, 0)
           .toFixed(2)
@@ -482,23 +598,13 @@ export class PosService {
       }
     }
 
-    if (cashSessionId !== undefined && cashSessionId !== null) {
-      const sessionRow = this.db
-        .prepare<CashSessionRow>('SELECT * FROM cash_sessions WHERE id = ?')
-        .get(cashSessionId);
-
-      if (!sessionRow || sessionRow.status !== 'OPEN') {
-        throw new Error('SESSION_NOT_OPEN');
+    const checkoutTx = this.db.transaction(() => {
+      if (preSaleDetails) {
+        this.db
+          .prepare("UPDATE pre_sales SET status = 'CONVERTED_TO_SALE' WHERE id = ?")
+          .run(preSaleDetails.preSale.id);
       }
-    }
 
-    const finalizeTx = this.db.transaction(() => {
-      // 1. Mark pre-sale as CONVERTED_TO_SALE
-      this.db
-        .prepare("UPDATE pre_sales SET status = 'CONVERTED_TO_SALE' WHERE id = ?")
-        .run(preSaleDetails.preSale.id);
-
-      // 2. Insert into sales
       const insertSaleStmt = this.db.prepare(`
         INSERT INTO sales (
           pre_sale_id,
@@ -507,19 +613,22 @@ export class PosService {
           total_amount,
           discount_amount,
           change_amount
-        ) VALUES (?, ?, 'COMPLETED', ?, 0, ?)
+        ) VALUES (?, ?, 'COMPLETED', ?, ?, ?)
       `);
 
+      const preSaleId = preSaleDetails ? preSaleDetails.preSale.id : null;
+      const discountAmount = preSaleDetails ? preSaleDetails.preSale.discountAmount || 0 : 0;
+
       const saleResult = insertSaleStmt.run(
-        preSaleDetails.preSale.id,
-        cashSessionId ?? null,
-        preSaleTotal,
+        preSaleId,
+        params.cashSessionId ?? null,
+        grandTotal,
+        discountAmount,
         changeAmount
       );
 
       const saleId = Number(saleResult.lastInsertRowid);
 
-      // 3. Insert sale items and deduct physical inventory
       const insertSaleItemStmt = this.db.prepare(`
         INSERT INTO sale_items (
           sale_id,
@@ -531,7 +640,22 @@ export class PosService {
         ) VALUES (?, ?, ?, ?, ?, ?)
       `);
 
-      for (const item of preSaleDetails.items) {
+      if (preSaleDetails) {
+        for (const item of preSaleDetails.items) {
+          insertSaleItemStmt.run(
+            saleId,
+            item.productId,
+            item.batchId,
+            item.quantity,
+            item.unitPrice,
+            item.totalPrice
+          );
+
+          this.inventoryService.deductBatchStock(item.batchId, item.quantity);
+        }
+      }
+
+      for (const item of preparedAdditionalItems) {
         insertSaleItemStmt.run(
           saleId,
           item.productId,
@@ -544,20 +668,18 @@ export class PosService {
         this.inventoryService.deductBatchStock(item.batchId, item.quantity);
       }
 
-      // 4. Insert sale payments
       const insertPaymentStmt = this.db.prepare(`
         INSERT INTO sale_payments (sale_id, method, amount)
         VALUES (?, ?, ?)
       `);
 
-      for (const p of payments) {
+      for (const p of params.payments) {
         insertPaymentStmt.run(saleId, p.method, p.amount);
       }
 
-      // 5. Update cash session drawer if cash was paid
-      if (cashSessionId !== undefined && cashSessionId !== null) {
+      if (params.cashSessionId !== undefined && params.cashSessionId !== null) {
         const cashPaid = Number(
-          payments
+          params.payments
             .filter((p) => p.method === 'DINHEIRO')
             .reduce((acc, p) => acc + p.amount, 0)
             .toFixed(2)
@@ -567,11 +689,10 @@ export class PosService {
         if (netCash !== 0) {
           this.db
             .prepare('UPDATE cash_sessions SET current_cash = current_cash + ? WHERE id = ?')
-            .run(netCash, cashSessionId);
+            .run(netCash, params.cashSessionId);
         }
       }
 
-      // 6. Fetch created sale details
       const saleDetails = this.getSaleById(saleId);
       if (!saleDetails) {
         throw new Error('Failed to retrieve newly created sale');
@@ -580,7 +701,19 @@ export class PosService {
       return saleDetails;
     });
 
-    return finalizeTx();
+    return checkoutTx();
+  }
+
+  finalizeSaleFromPreSale(
+    preSaleCode: string,
+    payments: PaymentItem[],
+    cashSessionId?: number
+  ): SaleDetails {
+    return this.checkout({
+      preSaleCode,
+      payments,
+      cashSessionId,
+    });
   }
 
   getSaleById(saleId: number): SaleDetails | null {
