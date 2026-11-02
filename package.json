@@ -12,7 +12,7 @@
     "dev": "tsx watch src/index.ts",
     "dev:web": "vite --config frontend/vite.config.ts",
     "build:web": "vite build --config frontend/vite.config.ts",
-    "dev:desktop": "electron ."
+    "dev:desktop": "concurrently \"tsx src/index.ts\" \"electron -r tsx desktop/main.ts\""
   },
   "dependencies": {
     "fastify": "^5.2.1",
@@ -29,6 +29,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
     "electron": "^33.2.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
