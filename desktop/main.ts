@@ -33,6 +33,21 @@ export function createWindow(): BrowserWindow {
     event.preventDefault();
   });
 
+  // Bloquear atalhos do browser (F5, Ctrl+R, Ctrl+W) para impedir perda de dados de atendimento
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+
+    const isReload =
+      input.key === 'F5' ||
+      ((input.control || input.meta) && input.key.toLowerCase() === 'r');
+    const isCloseWindow =
+      (input.control || input.meta) && input.key.toLowerCase() === 'w';
+
+    if (isReload || isCloseWindow) {
+      event.preventDefault();
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });

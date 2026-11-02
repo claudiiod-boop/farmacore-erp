@@ -19,7 +19,7 @@ describe('API Service', () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => mockResult,
-      } as Response);
+      } as unknown as Response);
 
       const products = await searchProducts('paracetamol');
 
@@ -34,7 +34,7 @@ describe('API Service', () => {
         ok: false,
         statusText: 'Bad Request',
         json: async () => ({ message: 'Query inválida' }),
-      } as Response);
+      } as unknown as Response);
 
       await expect(searchProducts('error')).rejects.toThrow('Query inválida');
     });
@@ -46,7 +46,7 @@ describe('API Service', () => {
         json: async () => {
           throw new Error('Not JSON');
         },
-      } as Response);
+      } as unknown as Response);
 
       await expect(searchProducts('error')).rejects.toThrow(/Falha ao buscar produtos: Internal Server Error/);
     });
@@ -59,7 +59,7 @@ describe('API Service', () => {
         ok: true,
         status: 200,
         json: async () => mockProduct,
-      } as Response);
+      } as unknown as Response);
 
       const result = await getProductByEan('7890000000000');
       expect(result).toEqual(mockProduct);
@@ -69,7 +69,7 @@ describe('API Service', () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 404,
-      } as Response);
+      } as unknown as Response);
 
       const result = await getProductByEan('0000000000000');
       expect(result).toBeNull();
@@ -81,7 +81,7 @@ describe('API Service', () => {
         status: 500,
         statusText: 'Internal Error',
         json: async () => ({ message: 'Erro no leitor de código de barras' }),
-      } as Response);
+      } as unknown as Response);
 
       await expect(getProductByEan('123')).rejects.toThrow('Erro no leitor de código de barras');
     });
@@ -95,7 +95,7 @@ describe('API Service', () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => mockBatches,
-      } as Response);
+      } as unknown as Response);
 
       const batches = await getAvailableBatches(1);
 
@@ -110,7 +110,7 @@ describe('API Service', () => {
         ok: false,
         statusText: 'Bad Request',
         json: async () => ({ message: 'Produto inativo' }),
-      } as Response);
+      } as unknown as Response);
 
       await expect(getAvailableBatches(99)).rejects.toThrow('Produto inativo');
     });
@@ -126,7 +126,7 @@ describe('API Service', () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => mockPreSale,
-      } as Response);
+      } as unknown as Response);
 
       const result = await createPreSale(dto);
 
@@ -143,7 +143,7 @@ describe('API Service', () => {
         ok: false,
         statusText: 'Bad Request',
         json: async () => ({ message: 'Estoque insuficiente' }),
-      } as Response);
+      } as unknown as Response);
 
       await expect(
         createPreSale({ items: [{ productId: 1, batchId: 1, quantity: 100 }] })

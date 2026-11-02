@@ -1,4 +1,3 @@
-import React from 'react';
 import { ShoppingCart, Trash2, Plus, Minus, Package, Calendar } from 'lucide-react';
 import { Product, Batch } from '../services/api';
 import { renderStripeBadge, formatBrl } from './ProductSearch';

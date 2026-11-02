@@ -79,6 +79,18 @@ describe('ProductSearch Component', () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it('should not focus search input on F2 when disabled is true', () => {
+    const onSelect = vi.fn();
+    render(<ProductSearch onSelectProduct={onSelect} disabled={true} />);
+
+    const input = screen.getByPlaceholderText(/buscar medicamento/i);
+    expect(input.getAttribute('disabled')).not.toBeNull();
+    input.blur();
+
+    fireEvent.keyDown(window, { key: 'F2' });
+    expect(document.activeElement).not.toBe(input);
+  });
+
   it('should search with debounce and display products with stripe badges and CMED PMC ceiling', async () => {
     const searchSpy = vi.spyOn(api, 'searchProducts').mockResolvedValue(mockProducts);
     const onSelect = vi.fn();

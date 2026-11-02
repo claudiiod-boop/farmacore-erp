@@ -8,6 +8,7 @@ export interface ProductSearchProps {
   placeholder?: string;
   autoFocus?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
 export function formatBrl(amount: number): string {
@@ -58,6 +59,7 @@ export default function ProductSearch({
   placeholder = 'Buscar medicamento por Nome, EAN ou Princípio Ativo... (F2)',
   autoFocus = false,
   className = '',
+  disabled = false,
 }: ProductSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
@@ -80,9 +82,10 @@ export default function ProductSearch({
     };
   }, []);
 
-  // Foco global imediato com a tecla F2
+  // Foco global imediato com a tecla F2 (desabilitado se modal ativo ou disabled=true)
   useKeyboardShortcuts({
     F2: () => {
+      if (disabled) return;
       inputRef.current?.focus();
       inputRef.current?.select();
       if (results.length > 0) {
@@ -90,6 +93,7 @@ export default function ProductSearch({
       }
     },
     Escape: () => {
+      if (disabled) return;
       setIsOpen(false);
       setSelectedIndex(-1);
     },
@@ -255,7 +259,8 @@ export default function ProductSearch({
           }}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="w-full pl-11 pr-14 py-3 bg-white border-2 border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 transition shadow-sm text-base font-medium"
+          disabled={disabled}
+          className="w-full pl-11 pr-14 py-3 bg-white border-2 border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 transition shadow-sm text-base font-medium disabled:bg-slate-100 disabled:cursor-not-allowed"
         />
 
         <div className="absolute right-3 flex items-center pointer-events-none">

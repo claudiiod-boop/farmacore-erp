@@ -394,4 +394,55 @@ describe('CounterPage Integration', () => {
     expect(createPreSaleSpy).not.toHaveBeenCalled();
     expect(screen.getByText(/Adicione ao menos um medicamento/i)).toBeDefined();
   });
+
+  it('should prevent duplicate pre-sale submissions when F4 is pressed multiple times during submission', async () => {
+    vi.spyOn(api, 'searchProducts').mockResolvedValue([mockProductOtc]);
+    vi.spyOn(api, 'getAvailableBatches').mockResolvedValue(mockBatchesOtc);
+
+    let resolveApiCall!: (val: PreSale) => void;
+    const apiPromise = new Promise<PreSale>((res) => {
+      resolveApiCall = res;
+    });
+
+    const createPreSaleSpy = vi
+      .spyOn(api, 'createPreSale')
+      .mockImplementation(() => apiPromise);
+
+    render(<CounterPage />);
+
+    // Add item to cart
+    const searchInput = screen.getByPlaceholderText(/buscar medicamento/i);
+    fireEvent.change(searchInput, { target: { value: 'Dipirona' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Dipirona Monoidratada 500mg/i)).toBeDefined();
+    });
+    fireEvent.click(screen.getByText(/Dipirona Monoidratada 500mg/i));
+
+    await waitFor(() => {
+      expect(screen.getByText('LOTE-DIP-FEFO')).toBeDefined();
+    });
+    fireEvent.click(screen.getByTestId('select-batch-10'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/LOTE-DIP-FEFO/i)).toBeDefined();
+    });
+
+    // Press F4 first time
+    fireEvent.keyDown(window, { key: 'F4' });
+    expect(createPreSaleSpy).toHaveBeenCalledTimes(1);
+
+    // Press F4 second time while isSubmitting is true
+    fireEvent.keyDown(window, { key: 'F4' });
+    expect(createPreSaleSpy).toHaveBeenCalledTimes(1);
+
+    // Resolve API
+    await act(async () => {
+      resolveApiCall(mockCreatedPreSaleOtc);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Comprovante de Pré-Venda/i)).toBeDefined();
+    });
+  });
 });

@@ -1,13 +1,9 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   Printer,
   RotateCcw,
   X,
   FileText,
-  AlertCircle,
-  Package,
-  Calendar,
-  CheckCircle,
 } from 'lucide-react';
 import { CartItem } from './CartTable';
 import { PrescriptionDTO } from '../services/api';

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import PrescriptionModal, { PrescriptionModalProps } from '../../src/components/PrescriptionModal';
+import PrescriptionModal from '../../src/components/PrescriptionModal';
 import { PrescriptionDTO, Product, Batch } from '../../src/services/api';
 import { CartItem } from '../../src/components/CartTable';
 

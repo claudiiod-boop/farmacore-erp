@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar, PackageCheck, AlertCircle, Loader2, Award, Check } from 'lucide-react';
 import { Batch } from '../services/api';
 

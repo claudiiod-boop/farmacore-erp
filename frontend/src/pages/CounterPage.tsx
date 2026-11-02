@@ -1,16 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
-  ShoppingCart,
   Send,
   RotateCcw,
   X,
   AlertCircle,
-  CheckCircle,
   FileText,
-  User,
-  CreditCard,
-  Search,
-  Package,
 } from 'lucide-react';
 import ProductSearch from '../components/ProductSearch';
 import BatchSelector from '../components/BatchSelector';
@@ -219,6 +213,7 @@ export default function CounterPage() {
 
   // Trigger pre-sale finalization (F4)
   const handleFinalizePreSale = useCallback(() => {
+    if (isSubmitting) return;
     setErrorMessage(null);
 
     if (cartItems.length === 0) {
@@ -238,7 +233,7 @@ export default function CounterPage() {
     } else {
       sendPreSaleToApi(undefined);
     }
-  }, [cartItems, sendPreSaleToApi]);
+  }, [isSubmitting, cartItems, sendPreSaleToApi]);
 
   // When prescription is confirmed in PrescriptionModal
   const handleConfirmPrescription = useCallback(
@@ -263,10 +258,12 @@ export default function CounterPage() {
     setNoticeMessage(null);
   }, []);
 
+  const isAnyModalOpen = isTicketModalOpen || isPrescriptionModalOpen || isBatchModalOpen;
+
   // Global Keyboard Shortcuts
   useKeyboardShortcuts({
     F4: () => {
-      if (!isTicketModalOpen && !isPrescriptionModalOpen && !isBatchModalOpen) {
+      if (!isAnyModalOpen && !isSubmitting) {
         handleFinalizePreSale();
       }
     },
@@ -405,6 +402,7 @@ export default function CounterPage() {
             <ProductSearch
               onSelectProduct={handleSelectProduct}
               autoFocus={true}
+              disabled={isAnyModalOpen}
               placeholder="Buscar medicamento por Nome, EAN ou Princípio Ativo... (F2)"
             />
           </div>
