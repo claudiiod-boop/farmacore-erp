@@ -144,6 +144,40 @@ export interface CashSessionSummary {
   expectedCash?: number;
 }
 
+export interface SaleItem {
+  id: number;
+  saleId: number;
+  productId: number;
+  productName: string;
+  batchId: number;
+  batchNumber: string;
+  expirationDate?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface SalePayment {
+  id: number;
+  saleId: number;
+  method: PaymentMethod;
+  amount: number;
+  createdAt: string;
+}
+
+export interface Sale {
+  id: number;
+  preSaleId?: number | null;
+  cashSessionId?: number | null;
+  status: 'COMPLETED' | 'CANCELLED';
+  totalAmount: number;
+  discountAmount: number;
+  changeAmount: number;
+  createdAt: string;
+  items?: SaleItem[];
+  payments?: SalePayment[];
+}
+
 export interface AdditionalCheckoutItem {
   productId: number;
   batchId: number;
@@ -158,7 +192,7 @@ export interface CheckoutDTO {
 }
 
 export interface CheckoutResponse {
-  sale: any;
+  sale: Sale;
   receiptText: string;
 }
 

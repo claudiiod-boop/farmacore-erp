@@ -261,7 +261,7 @@ export default function CashSessionModal({
                   <span className="text-xs text-slate-500 uppercase font-semibold">Abertura</span>
                   <p className="text-xs text-slate-600 font-mono">
                     {currentSession?.openedAt
-                      ? new Date(currentSession.openedAt).toLocaleTimeString('pt-BR', {
+                      ? new Date(currentSession.openedAt.replace(' ', 'T')).toLocaleTimeString('pt-BR', {
                           hour: '2-digit',
                           minute: '2-digit',
                         })

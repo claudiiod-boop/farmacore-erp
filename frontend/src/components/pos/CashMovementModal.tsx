@@ -87,7 +87,8 @@ export default function CashMovementModal({
     }
 
     setErrors({});
-    onConfirmMovement(type, parsedAmount, reason.trim());
+    const cleanAmount = Number(parsedAmount.toFixed(2));
+    onConfirmMovement(type, cleanAmount, reason.trim());
   };
 
   return (
