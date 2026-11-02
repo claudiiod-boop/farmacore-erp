@@ -105,6 +105,63 @@ export interface PreSaleDetails {
   prescription: PrescriptionDetails | null;
 }
 
+export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX';
+
+export interface PaymentItem {
+  method: PaymentMethod;
+  amount: number;
+}
+
+export interface CashSession {
+  id: number;
+  operatorName: string;
+  initialCash: number;
+  currentCash: number;
+  status: 'OPEN' | 'CLOSED';
+  openedAt: string;
+  closedAt: string | null;
+}
+
+export type CashMovementType = 'SANGRIA' | 'SUPPLY';
+
+export interface CashMovement {
+  id: number;
+  cashSessionId: number;
+  type: CashMovementType;
+  amount: number;
+  reason: string;
+  operatorName: string;
+  createdAt: string;
+}
+
+export interface CashSessionSummary {
+  session: CashSession;
+  totalSalesCount: number;
+  totalSalesAmount: number;
+  totalsByMethod: Record<PaymentMethod, number>;
+  totalSupplies?: number;
+  totalSangrias?: number;
+  expectedCash?: number;
+}
+
+export interface AdditionalCheckoutItem {
+  productId: number;
+  batchId: number;
+  quantity: number;
+}
+
+export interface CheckoutDTO {
+  cashSessionId?: number;
+  preSaleCode?: string;
+  additionalItems?: AdditionalCheckoutItem[];
+  payments: PaymentItem[];
+}
+
+export interface CheckoutResponse {
+  sale: any;
+  receiptText: string;
+}
+
 let customBaseUrl = '';
 
 export function setBaseUrl(url: string): void {
@@ -194,6 +251,154 @@ export async function getPreSaleByCode(code: string): Promise<PreSaleDetails> {
   return response.json();
 }
 
+export async function openCashSession(
+  operatorName: string,
+  initialCash: number
+): Promise<CashSession> {
+  const base = getBaseUrl();
+  const url = `${base}/api/pos/sessions`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ operatorName, initialCash }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao abrir sessão de caixa: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function closeCashSession(sessionId: number): Promise<CashSessionSummary> {
+  const base = getBaseUrl();
+  const url = `${base}/api/pos/sessions/${sessionId}/close`;
+  const response = await fetch(url, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao fechar sessão de caixa: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function getCurrentSession(operatorName?: string): Promise<CashSession | null> {
+  const base = getBaseUrl();
+  const query = operatorName ? `?operatorName=${encodeURIComponent(operatorName)}` : '';
+  const url = `${base}/api/pos/sessions/current${query}`;
+  const response = await fetch(url);
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao obter sessão atual: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function getSessionSummary(sessionId: number): Promise<CashSessionSummary> {
+  const base = getBaseUrl();
+  const url = `${base}/api/pos/sessions/${sessionId}/summary`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao obter resumo da sessão: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function registerCashMovement(
+  sessionId: number,
+  movement: {
+    type: CashMovementType;
+    amount: number;
+    reason: string;
+    operatorName: string;
+  }
+): Promise<CashMovement> {
+  const base = getBaseUrl();
+  const url = `${base}/api/pos/sessions/${sessionId}/movements`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(movement),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao registrar movimentação de caixa: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function getCashMovements(sessionId: number): Promise<CashMovement[]> {
+  const base = getBaseUrl();
+  const url = `${base}/api/pos/sessions/${sessionId}/movements`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao buscar movimentações de caixa: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function checkoutSale(dto: CheckoutDTO): Promise<CheckoutResponse> {
+  const base = getBaseUrl();
+  const url = `${base}/api/pos/checkout`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dto),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao finalizar venda: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function cancelPreSale(code: string): Promise<{ message: string }> {
+  const base = getBaseUrl();
+  const url = `${base}/api/pre-sales/${encodeURIComponent(code)}/cancel`;
+  const response = await fetch(url, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao cancelar pré-venda: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -202,6 +407,14 @@ export const api = {
   getAvailableBatches,
   createPreSale,
   getPreSaleByCode,
+  openCashSession,
+  closeCashSession,
+  getCurrentSession,
+  getSessionSummary,
+  registerCashMovement,
+  getCashMovements,
+  checkoutSale,
+  cancelPreSale,
 };
 
 export default api;
