@@ -50,4 +50,29 @@ describe('Database Connection', () => {
       db.close();
     }
   });
+
+  it('should support nested transactions via savepoints and rollback correctly', () => {
+    const db = getDatabase(':memory:');
+    try {
+      db.exec('CREATE TABLE test_tx (id INTEGER PRIMARY KEY, val TEXT);');
+
+      const outerTx = db.transaction(() => {
+        db.prepare('INSERT INTO test_tx (val) VALUES (?)').run('outer');
+
+        const innerTx = db.transaction(() => {
+          db.prepare('INSERT INTO test_tx (val) VALUES (?)').run('inner');
+        });
+        innerTx();
+
+        throw new Error('ROLLBACK_OUTER');
+      });
+
+      expect(() => outerTx()).toThrow('ROLLBACK_OUTER');
+
+      const rows = db.prepare('SELECT * FROM test_tx').all();
+      expect(rows).toHaveLength(0);
+    } finally {
+      db.close();
+    }
+  });
 });

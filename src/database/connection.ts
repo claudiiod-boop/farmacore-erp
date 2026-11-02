@@ -29,6 +29,7 @@ function normalizeParams(params: any[]): any[] {
 
 export class FarmaDatabase implements Database {
   readonly raw: DatabaseSync;
+  private txDepth = 0;
 
   constructor(dbPath: string = ':memory:') {
     this.raw = new DatabaseSync(dbPath);
@@ -63,13 +64,37 @@ export class FarmaDatabase implements Database {
 
   transaction<F extends (...args: any[]) => any>(fn: F): F {
     return ((...args: Parameters<F>): ReturnType<F> => {
-      this.exec('BEGIN');
+      const depth = this.txDepth;
+      const savepoint = `sp_${depth}`;
+
+      if (depth === 0) {
+        this.exec('BEGIN');
+      } else {
+        this.exec(`SAVEPOINT ${savepoint}`);
+      }
+
+      this.txDepth++;
+
       try {
         const result = fn(...args);
-        this.exec('COMMIT');
+        this.txDepth--;
+
+        if (depth === 0) {
+          this.exec('COMMIT');
+        } else {
+          this.exec(`RELEASE ${savepoint}`);
+        }
+
         return result;
       } catch (error) {
-        this.exec('ROLLBACK');
+        this.txDepth--;
+
+        if (depth === 0) {
+          this.exec('ROLLBACK');
+        } else {
+          this.exec(`ROLLBACK TO ${savepoint}`);
+        }
+
         throw error;
       }
     }) as F;
