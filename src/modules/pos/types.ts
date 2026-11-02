@@ -42,6 +42,7 @@ export interface SaleItemDetails {
   productName: string;
   batchId: number;
   batchNumber: string;
+  expirationDate?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

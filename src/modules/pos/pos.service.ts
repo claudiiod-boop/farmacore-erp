@@ -1,6 +1,7 @@
 import { Database } from '../../database/connection';
 import { InventoryService } from '../inventory/inventory.service';
 import { PreSaleService } from '../counter/pre-sale.service';
+import { PrescriptionDetails } from '../counter/types';
 import {
   CashSession,
   CashSessionSummary,
@@ -40,6 +41,7 @@ interface SaleItemRow {
   product_name: string;
   batch_id: number | bigint;
   batch_number: string;
+  expiration_date?: string;
   quantity: number;
   unit_price: number;
   total_price: number;
@@ -51,6 +53,36 @@ interface SalePaymentRow {
   method: string;
   amount: number;
   created_at: string;
+}
+
+interface PrescriptionRow {
+  id: number | bigint;
+  pre_sale_id: number | bigint;
+  doctor_name: string;
+  doctor_crm: string;
+  doctor_uf: string;
+  prescription_type: string;
+  prescription_date: string;
+  patient_name: string;
+  buyer_name: string | null;
+  buyer_cpf: string | null;
+  created_at: string;
+}
+
+function mapPrescriptionRow(row: PrescriptionRow): PrescriptionDetails {
+  return {
+    id: Number(row.id),
+    preSaleId: Number(row.pre_sale_id),
+    doctorName: row.doctor_name,
+    doctorCrm: row.doctor_crm,
+    doctorUf: row.doctor_uf,
+    prescriptionType: row.prescription_type,
+    prescriptionDate: row.prescription_date,
+    patientName: row.patient_name,
+    buyerName: row.buyer_name,
+    buyerCpf: row.buyer_cpf,
+    createdAt: row.created_at,
+  };
 }
 
 function mapCashSessionRow(row: CashSessionRow): CashSession {
@@ -86,6 +118,7 @@ function mapSaleItemRow(row: SaleItemRow): SaleItemDetails {
     productName: row.product_name,
     batchId: Number(row.batch_id),
     batchNumber: row.batch_number,
+    expirationDate: row.expiration_date ?? undefined,
     quantity: Number(row.quantity),
     unitPrice: Number(row.unit_price),
     totalPrice: Number(row.total_price),
@@ -394,73 +427,102 @@ export class PosService {
         }
       }
 
-      // 6. Fetch created sale, items, and payments
-      const saleRow = this.db
-        .prepare<SaleRow>('SELECT * FROM sales WHERE id = ?')
-        .get(saleId);
-
-      if (!saleRow) {
+      // 6. Fetch created sale details
+      const saleDetails = this.getSaleById(saleId);
+      if (!saleDetails) {
         throw new Error('Failed to retrieve newly created sale');
       }
-
-      const sale = mapSaleRow(saleRow);
-
-      const itemRows = this.db
-        .prepare<SaleItemRow>(`
-          SELECT
-            si.id,
-            si.sale_id,
-            si.product_id,
-            p.name AS product_name,
-            si.batch_id,
-            b.batch_number AS batch_number,
-            si.quantity,
-            si.unit_price,
-            si.total_price
-          FROM sale_items si
-          JOIN products p ON p.id = si.product_id
-          JOIN batches b ON b.id = si.batch_id
-          WHERE si.sale_id = ?
-          ORDER BY si.id ASC
-        `)
-        .all(saleId);
-
-      const items = itemRows.map(mapSaleItemRow);
-
-      const paymentRows = this.db
-        .prepare<SalePaymentRow>(`
-          SELECT id, sale_id, method, amount, created_at
-          FROM sale_payments
-          WHERE sale_id = ?
-          ORDER BY id ASC
-        `)
-        .all(saleId);
-
-      const paymentDetails = paymentRows.map(mapSalePaymentRow);
-
-      const saleDetails: SaleDetails = {
-        sale,
-        items,
-        payments: paymentDetails,
-        preSaleCode,
-        prescription: preSaleDetails.prescription ?? null,
-      };
-
-      // Add compatibility getters
-      Object.defineProperties(saleDetails, {
-        id: { get: () => sale.id, enumerable: true },
-        status: { get: () => sale.status, enumerable: true },
-        totalAmount: { get: () => sale.totalAmount, enumerable: true },
-        discountAmount: { get: () => sale.discountAmount, enumerable: true },
-        changeAmount: { get: () => sale.changeAmount, enumerable: true },
-        cashSessionId: { get: () => sale.cashSessionId, enumerable: true },
-        preSaleId: { get: () => sale.preSaleId, enumerable: true },
-        createdAt: { get: () => sale.createdAt, enumerable: true },
-      });
 
       return saleDetails;
     });
 
     return finalizeTx();
+  }
+
+  getSaleById(saleId: number): SaleDetails | null {
+    const saleRow = this.db
+      .prepare<SaleRow>('SELECT * FROM sales WHERE id = ?')
+      .get(saleId);
+
+    if (!saleRow) {
+      return null;
+    }
+
+    const sale = mapSaleRow(saleRow);
+
+    const itemRows = this.db
+      .prepare<SaleItemRow>(`
+        SELECT
+          si.id,
+          si.sale_id,
+          si.product_id,
+          p.name AS product_name,
+          si.batch_id,
+          b.batch_number AS batch_number,
+          b.expiration_date AS expiration_date,
+          si.quantity,
+          si.unit_price,
+          si.total_price
+        FROM sale_items si
+        JOIN products p ON p.id = si.product_id
+        JOIN batches b ON b.id = si.batch_id
+        WHERE si.sale_id = ?
+        ORDER BY si.id ASC
+      `)
+      .all(saleId);
+
+    const items = itemRows.map(mapSaleItemRow);
+
+    const paymentRows = this.db
+      .prepare<SalePaymentRow>(`
+        SELECT id, sale_id, method, amount, created_at
+        FROM sale_payments
+        WHERE sale_id = ?
+        ORDER BY id ASC
+      `)
+      .all(saleId);
+
+    const paymentDetails = paymentRows.map(mapSalePaymentRow);
+
+    let preSaleCode: string | undefined;
+    let prescription: PrescriptionDetails | null = null;
+
+    if (sale.preSaleId !== null) {
+      const preSaleRow = this.db
+        .prepare<{ code: string }>('SELECT code FROM pre_sales WHERE id = ?')
+        .get(sale.preSaleId);
+      if (preSaleRow) {
+        preSaleCode = preSaleRow.code;
+      }
+
+      const prescriptionRow = this.db
+        .prepare<PrescriptionRow>('SELECT * FROM prescriptions WHERE pre_sale_id = ?')
+        .get(sale.preSaleId);
+      if (prescriptionRow) {
+        prescription = mapPrescriptionRow(prescriptionRow);
+      }
+    }
+
+    const saleDetails: SaleDetails = {
+      sale,
+      items,
+      payments: paymentDetails,
+      preSaleCode,
+      prescription,
+    };
+
+    // Add compatibility getters
+    Object.defineProperties(saleDetails, {
+      id: { get: () => sale.id, enumerable: true },
+      status: { get: () => sale.status, enumerable: true },
+      totalAmount: { get: () => sale.totalAmount, enumerable: true },
+      discountAmount: { get: () => sale.discountAmount, enumerable: true },
+      changeAmount: { get: () => sale.changeAmount, enumerable: true },
+      cashSessionId: { get: () => sale.cashSessionId, enumerable: true },
+      preSaleId: { get: () => sale.preSaleId, enumerable: true },
+      createdAt: { get: () => sale.createdAt, enumerable: true },
+    });
+
+    return saleDetails;
   }
 }
