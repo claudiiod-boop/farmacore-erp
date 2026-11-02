@@ -73,6 +73,38 @@ export interface PreSale {
   createdAt: string;
 }
 
+export interface PreSaleItemDetails {
+  id: number;
+  preSaleId: number;
+  productId: number;
+  productName: string;
+  batchId: number;
+  batchNumber: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface PrescriptionDetails {
+  id: number;
+  preSaleId: number;
+  doctorName: string;
+  doctorCrm: string;
+  doctorUf: string;
+  prescriptionType: string;
+  prescriptionDate: string;
+  patientName: string;
+  buyerName: string | null;
+  buyerCpf: string | null;
+  createdAt: string;
+}
+
+export interface PreSaleDetails {
+  preSale: PreSale;
+  items: PreSaleItemDetails[];
+  prescription: PrescriptionDetails | null;
+}
+
 let customBaseUrl = '';
 
 export function setBaseUrl(url: string): void {
@@ -149,6 +181,19 @@ export async function createPreSale(dto: CreatePreSaleDTO): Promise<PreSale> {
   return response.json();
 }
 
+export async function getPreSaleByCode(code: string): Promise<PreSaleDetails> {
+  const base = getBaseUrl();
+  const url = `${base}/api/pre-sales/${encodeURIComponent(code)}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao buscar pré-venda: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -156,6 +201,7 @@ export const api = {
   getProductByEan,
   getAvailableBatches,
   createPreSale,
+  getPreSaleByCode,
 };
 
 export default api;
