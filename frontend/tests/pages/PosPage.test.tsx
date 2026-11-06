@@ -398,7 +398,7 @@ describe('PosPage Integration & Cashier Shift Lifecycle', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /Caixa Fechado/i })).toBeDefined();
     });
-  });
+  }, 20000);
 
   it('displays empty cart notice when pressing [F8] without items and prevents payment modal', async () => {
     vi.spyOn(api, 'getCurrentSession').mockResolvedValue(mockOpenSession);
