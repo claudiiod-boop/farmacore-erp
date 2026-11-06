@@ -32,6 +32,7 @@ import {
   Sale,
   CashMovementType,
   CheckoutDTO,
+  Stripe,
 } from '../services/api';
 
 export default function PosPage() {
