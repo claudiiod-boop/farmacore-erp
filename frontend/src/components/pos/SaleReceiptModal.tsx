@@ -1,12 +1,15 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Printer,
   RotateCcw,
   X,
   FileText,
   CheckCircle2,
+  Copy,
+  Check,
+  AlertTriangle,
 } from 'lucide-react';
-import { Sale } from '../../services/api';
+import { Sale, NfceInvoiceDetails } from '../../services/api';
 import { formatBrl } from '../ProductSearch';
 import { formatDate } from '../BatchSelector';
 
@@ -17,6 +20,7 @@ export interface SaleReceiptModalProps {
   receiptText?: string;
   onPrint?: () => void;
   onNewSale?: () => void;
+  nfceInvoice?: NfceInvoiceDetails | null;
 }
 
 export function formatDateTime(dateStr?: string): string {
@@ -39,6 +43,78 @@ export function formatDateTime(dateStr?: string): string {
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
+export function formatAccessKey(key?: string): string {
+  if (!key) return '';
+  const clean = key.replace(/\D/g, '');
+  if (clean.length !== 44) return key;
+  return clean.match(/.{1,4}/g)?.join(' ') || key;
+}
+
+export function renderQrCodeMatrix(text: string) {
+  const size = 160;
+  const modules = 29;
+  const cellSize = size / modules;
+
+  let hashVal = 2166136261;
+  const bytes: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    hashVal ^= text.charCodeAt(i);
+    hashVal = Math.imul(hashVal, 16777619);
+    bytes.push(hashVal & 0xff);
+  }
+  while (bytes.length < 128) {
+    hashVal = Math.imul(hashVal, 16777619);
+    bytes.push(hashVal & 0xff);
+  }
+
+  const isCorner = (r: number, c: number): boolean => {
+    if (r < 7 && c < 7) return true;
+    if (r < 7 && c >= modules - 7) return true;
+    if (r >= modules - 7 && c < 7) return true;
+    return false;
+  };
+
+  const isCornerBlack = (r: number, c: number): boolean => {
+    const checkBox = (row: number, col: number) => {
+      if (row === 0 || row === 6 || col === 0 || col === 6) return true;
+      if (row >= 2 && row <= 4 && col >= 2 && col <= 4) return true;
+      return false;
+    };
+    if (r < 7 && c < 7) return checkBox(r, c);
+    if (r < 7 && c >= modules - 7) return checkBox(r, c - (modules - 7));
+    if (r >= modules - 7 && c < 7) return checkBox(r - (modules - 7), c);
+    return false;
+  };
+
+  const rects: Array<{ x: number; y: number; w: number; h: number }> = [];
+
+  for (let r = 0; r < modules; r++) {
+    for (let c = 0; c < modules; c++) {
+      let isBlack = false;
+      if (isCorner(r, c)) {
+        isBlack = isCornerBlack(r, c);
+      } else if (r === 6 || c === 6) {
+        isBlack = (r + c) % 2 === 0;
+      } else {
+        const byteIndex = (r * modules + c) % bytes.length;
+        const bitIndex = (r + c) % 8;
+        isBlack = ((bytes[byteIndex] >> bitIndex) & 1) === 1;
+      }
+
+      if (isBlack) {
+        rects.push({
+          x: c * cellSize,
+          y: r * cellSize,
+          w: cellSize + 0.1,
+          h: cellSize + 0.1,
+        });
+      }
+    }
+  }
+
+  return { size, rects };
+}
+
 export default function SaleReceiptModal({
   isOpen,
   onClose,
@@ -46,7 +122,10 @@ export default function SaleReceiptModal({
   receiptText,
   onPrint,
   onNewSale,
+  nfceInvoice,
 }: SaleReceiptModalProps) {
+  const [copiedKey, setCopiedKey] = useState(false);
+
   const handlePrint = () => {
     if (onPrint) {
       onPrint();
@@ -60,6 +139,19 @@ export default function SaleReceiptModal({
       onNewSale();
     } else {
       onClose();
+    }
+  };
+
+  const handleCopyAccessKey = async () => {
+    if (!nfceInvoice?.invoice?.chNFe) return;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(nfceInvoice.invoice.chNFe);
+        setCopiedKey(true);
+        setTimeout(() => setCopiedKey(false), 2000);
+      }
+    } catch {
+      // fallback
     }
   };
 
@@ -81,6 +173,12 @@ export default function SaleReceiptModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onPrint, onNewSale, onClose]);
 
+  const qrMatrix = useMemo(() => {
+    if (!nfceInvoice?.invoice) return null;
+    const text = nfceInvoice.invoice.qrCodeUrl || nfceInvoice.invoice.chNFe;
+    return renderQrCodeMatrix(text);
+  }, [nfceInvoice]);
+
   if (!isOpen) return null;
 
   const saleCode = `#VENDA-${String(sale.id).padStart(5, '0')}`;
@@ -94,6 +192,11 @@ export default function SaleReceiptModal({
     Boolean(prescription) ||
     items.some((it) => it.controlType && it.controlType !== 'ISENTO');
 
+  const isContingency =
+    nfceInvoice?.invoice.tpEmis === 9 || nfceInvoice?.invoice.status === 'CONTINGENCIA';
+
+  const consumerCpf = nfceInvoice?.customerCpf || sale.prescription?.buyerCpf;
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 print:static print:block print:overflow-visible print:p-0 print:bg-white"
@@ -106,7 +209,9 @@ export default function SaleReceiptModal({
         <div className="w-full bg-emerald-600 text-white p-3 rounded-t-xl flex items-center justify-between shadow-lg print:hidden">
           <div className="flex items-center space-x-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-200" />
-            <span className="font-bold text-sm">Venda Concluída com Sucesso!</span>
+            <span className="font-bold text-sm">
+              Venda Concluída com Sucesso!
+            </span>
           </div>
           <button
             type="button"
@@ -123,29 +228,74 @@ export default function SaleReceiptModal({
           id="printable-sale-receipt"
           className="bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-300 w-full p-6 font-mono text-xs max-w-[380px] print:max-w-none print:w-full print:m-0 print:shadow-none print:border-none print:p-2 print:rounded-none"
         >
-          {/* Cabeçalho Comercial */}
-          <div className="text-center pb-3 border-b-2 border-dashed border-slate-300 space-y-1">
-            <h2 id="receipt-modal-title" className="text-base font-extrabold text-slate-900 tracking-tight">
-              FARMACORE ERP & PDV
-            </h2>
-            <p className="text-[11px] text-slate-600 font-sans font-medium">
-              Comprovante de Venda Fiscal PDV
-            </p>
-            <p className="text-[10px] text-slate-400">
-              CNPJ: 12.345.678/0001-99 • Farmacêutico Resp.: CRF-SP 54.321
-            </p>
-            <p className="text-[10px] text-slate-500">
-              Data/Hora: {formatDateTime(sale.createdAt)}
-            </p>
-            <p className="text-[10px] text-slate-600 font-semibold">
-              Operador: {cashierInfo}
-            </p>
-          </div>
+          {/* Cabeçalho Comercial ou DANFE Oficial */}
+          {nfceInvoice ? (
+            <div className="text-center pb-3 border-b-2 border-dashed border-slate-300 space-y-1">
+              <h2 id="receipt-modal-title" className="text-sm font-extrabold text-slate-900 tracking-tight">
+                {nfceInvoice.profile.razaoSocial || nfceInvoice.profile.nomeFantasia || 'FARMACORE DROGARIA LTDA'}
+              </h2>
+              <p className="text-[10px] text-slate-600">
+                CNPJ: {nfceInvoice.profile.cnpj} • IE: {nfceInvoice.profile.ie}
+              </p>
+              <p className="text-[10px] text-slate-500">
+                {nfceInvoice.profile.logradouro}, {nfceInvoice.profile.numero} - {nfceInvoice.profile.bairro}, {nfceInvoice.profile.municipio}
+              </p>
+              <div className="pt-2 pb-1 border-t border-b border-slate-200 my-1 space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-900 uppercase">
+                  DANFE NFC-e - Documento Auxiliar da Nota Fiscal de Consumidor Eletrônica
+                </p>
+                <p className="text-[9px] text-slate-600 font-sans italic">
+                  Não permite aproveitamento de crédito de ICMS
+                </p>
+              </div>
+              <div className="text-[10px] text-slate-700 flex justify-between font-mono font-semibold pt-0.5">
+                <span>NFC-e Nº: {String(nfceInvoice.invoice.nNF).padStart(9, '0')}</span>
+                <span>Série: {nfceInvoice.invoice.serie}</span>
+              </div>
+              <div className="text-[10px] text-slate-500">
+                Emissão: {formatDateTime(nfceInvoice.invoice.createdAt || sale.createdAt)}
+              </div>
+              <div className="text-[10px] text-slate-600 font-semibold">
+                Operador: {cashierInfo}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center pb-3 border-b-2 border-dashed border-slate-300 space-y-1">
+              <h2 id="receipt-modal-title" className="text-base font-extrabold text-slate-900 tracking-tight">
+                FARMACORE ERP & PDV
+              </h2>
+              <p className="text-[11px] text-slate-600 font-sans font-medium">
+                Comprovante de Venda Fiscal PDV
+              </p>
+              <p className="text-[10px] text-slate-400">
+                CNPJ: 12.345.678/0001-99 • Farmacêutico Resp.: CRF-SP 54.321
+              </p>
+              <p className="text-[10px] text-slate-500">
+                Data/Hora: {formatDateTime(sale.createdAt)}
+              </p>
+              <p className="text-[10px] text-slate-600 font-semibold">
+                Operador: {cashierInfo}
+              </p>
+            </div>
+          )}
+
+          {/* Selo Prominente de Contingência se tpEmis === 9 ou CONTINGENCIA */}
+          {isContingency && (
+            <div className="bg-amber-100 border-2 border-amber-600 text-amber-950 p-2.5 my-2.5 rounded text-center">
+              <div className="flex items-center justify-center space-x-1.5 font-black text-[11px] uppercase tracking-wide">
+                <AlertTriangle className="w-4 h-4 text-amber-800 shrink-0" />
+                <span>EMITIDA EM CONTINGÊNCIA - PENDENTE DE AUTORIZAÇÃO</span>
+              </div>
+              <p className="text-[9px] text-amber-900 font-sans mt-0.5">
+                Transmissão à SEFAZ em até 24 horas úteis.
+              </p>
+            </div>
+          )}
 
           {/* Destaque do Código da Venda #VENDA-XXXXX */}
           <div className="py-2.5 text-center border-b-2 border-dashed border-slate-300 my-2 bg-slate-50 rounded">
             <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 block mb-0.5">
-              CUPOM NÃO FISCAL
+              {nfceInvoice ? 'IDENTIFICADOR DA VENDA' : 'CUPOM NÃO FISCAL'}
             </span>
             <div
               data-testid="sale-receipt-code"
@@ -231,6 +381,25 @@ export default function SaleReceiptModal({
             </div>
           </div>
 
+          {/* Tributos Totais Incidentes (Lei 12.741/2012) */}
+          {nfceInvoice?.taxes && (
+            <div className="py-2 border-b-2 border-dashed border-slate-300 text-[10px] text-slate-600 flex justify-between">
+              <span>Tributos Totais Incidentes (Lei 12.741/2012):</span>
+              <span className="font-bold text-slate-800">
+                {formatBrl(nfceInvoice.taxes.vTotTrib || 0)}
+              </span>
+            </div>
+          )}
+
+          {/* Identificação do Consumidor */}
+          {nfceInvoice && (
+            <div className="py-2 border-b-2 border-dashed border-slate-300 text-[10px] text-slate-700 space-y-0.5 text-center">
+              <span className="font-bold">
+                {consumerCpf ? `CONSUMIDOR CPF: ${consumerCpf}` : 'CONSUMIDOR NÃO IDENTIFICADO'}
+              </span>
+            </div>
+          )}
+
           {/* Seção Sanitária / Receituário Retido (se houver controlados) */}
           {hasControlledItems && (
             <div
@@ -280,6 +449,91 @@ export default function SaleReceiptModal({
                     </div>
                   )}
                 </>
+              )}
+            </div>
+          )}
+
+          {/* Dados Fiscais SEFAZ (Chave, Protocolo e QR Code) */}
+          {nfceInvoice && (
+            <div className="py-3 border-b-2 border-dashed border-slate-300 text-center space-y-2.5">
+              {/* Chave de Acesso de 44 Dígitos */}
+              <div>
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  CHAVE DE ACESSO
+                </span>
+                <div className="font-mono text-[10px] font-bold text-slate-900 bg-slate-50 p-2 rounded border border-slate-200 select-all tracking-wider leading-relaxed">
+                  {formatAccessKey(nfceInvoice.invoice.chNFe)}
+                </div>
+                <div className="flex justify-center mt-1.5 print:hidden">
+                  <button
+                    type="button"
+                    onClick={handleCopyAccessKey}
+                    aria-label="Copiar Chave"
+                    className="inline-flex items-center space-x-1 px-2.5 py-1 text-[10px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded border border-slate-300 transition cursor-pointer"
+                  >
+                    {copiedKey ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span className="text-emerald-700 font-semibold">Chave Copiada!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3 text-slate-500" />
+                        <span>Copiar Chave</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Protocolo de Autorização */}
+              {nfceInvoice.invoice.status === 'AUTORIZADA' && nfceInvoice.invoice.protocolNumber && (
+                <div className="text-[10px] text-slate-700">
+                  <span className="font-semibold">Protocolo de Autorização: </span>
+                  <span className="font-mono font-bold text-slate-900">
+                    {nfceInvoice.invoice.protocolNumber}
+                  </span>
+                  {nfceInvoice.invoice.protocolDate && (
+                    <span className="text-slate-500">
+                      {' '}- {formatDateTime(nfceInvoice.invoice.protocolDate)}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* QR Code SEFAZ */}
+              {qrMatrix && (
+                <div className="pt-2">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                    CONSULTA VIA LEITOR DE QR CODE
+                  </span>
+                  <div className="flex justify-center">
+                    <svg
+                      data-testid="nfce-qrcode-svg"
+                      aria-label="QR Code SEFAZ"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox={`0 0 ${qrMatrix.size} ${qrMatrix.size}`}
+                      className="w-36 h-36 bg-white p-1 border border-slate-200 rounded shadow-xs"
+                    >
+                      <rect width="100%" height="100%" fill="#ffffff" />
+                      {qrMatrix.rects.map((rect, idx) => (
+                        <rect
+                          key={idx}
+                          x={rect.x}
+                          y={rect.y}
+                          width={rect.w}
+                          height={rect.h}
+                          fill="#000000"
+                        />
+                      ))}
+                    </svg>
+                  </div>
+                  {nfceInvoice.invoice.qrCodeUrl && (
+                    <div className="text-[9px] text-slate-500 truncate max-w-xs mx-auto mt-1 font-mono">
+                      {nfceInvoice.invoice.qrCodeUrl}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

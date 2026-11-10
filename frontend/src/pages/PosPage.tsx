@@ -33,6 +33,7 @@ import {
   CashMovementType,
   CheckoutDTO,
   Stripe,
+  NfceInvoiceDetails,
 } from '../services/api';
 
 export default function PosPage() {
@@ -56,6 +57,7 @@ export default function PosPage() {
 
   // Completed Sale & Receipt State
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
+  const [currentNfce, setCurrentNfce] = useState<NfceInvoiceDetails | null>(null);
   const [receiptText, setReceiptText] = useState<string>('');
 
   // Status & Feedback
@@ -296,7 +298,7 @@ export default function PosPage() {
 
   // Checkout Submission
   const handleConfirmPayments = useCallback(
-    async (payments: PaymentItem[]) => {
+    async (payments: PaymentItem[], options?: { emitNfce?: boolean }) => {
       if (isSubmitting || !currentSession) return;
       setIsSubmitting(true);
       setErrorMessage(null);
@@ -332,6 +334,36 @@ export default function PosPage() {
 
         setCompletedSale(res.sale);
         setReceiptText(res.receiptText);
+
+        // Issue NFC-e if enabled (default true)
+        if (options?.emitNfce !== false) {
+          try {
+            const nfceDetails = await api.issueNfce(res.sale.id);
+            setCurrentNfce(nfceDetails);
+            if (nfceDetails.danfeText) {
+              setReceiptText(nfceDetails.danfeText);
+            }
+          } catch (fiscalErr: any) {
+            // Attempt offline contingency if regular issuance fails
+            try {
+              const contingencyDetails = await api.issueNfce(res.sale.id, {
+                offlineContingency: true,
+              });
+              setCurrentNfce(contingencyDetails);
+              if (contingencyDetails.danfeText) {
+                setReceiptText(contingencyDetails.danfeText);
+              }
+              setNoticeMessage('NFC-e emitida em contingência offline (pendente de transmissão).');
+            } catch {
+              setErrorMessage(
+                `Venda finalizada, mas falha na emissão da NFC-e: ${fiscalErr.message || 'Erro fiscal'}`
+              );
+            }
+          }
+        } else {
+          setCurrentNfce(null);
+        }
+
         setIsPaymentModalOpen(false);
         setIsReceiptModalOpen(true);
       } catch (err: any) {
@@ -347,6 +379,7 @@ export default function PosPage() {
   const handleNewSale = useCallback(() => {
     setIsReceiptModalOpen(false);
     setCompletedSale(null);
+    setCurrentNfce(null);
     setReceiptText('');
     setItems([]);
     setLoadedPreSale(null);
@@ -744,6 +777,7 @@ export default function PosPage() {
           onNewSale={handleNewSale}
           sale={completedSale}
           receiptText={receiptText}
+          nfceInvoice={currentNfce}
         />
       )}
 

@@ -168,9 +168,66 @@ describe('PosPage Integration & Cashier Shift Lifecycle', () => {
     expectedCash: 75.0,
   };
 
+  const mockDefaultNfce: any = {
+    invoice: {
+      id: 1,
+      saleId: 1,
+      chNFe: '35261112345678000199650010000000011928374652',
+      nNF: 1,
+      serie: 1,
+      tpAmb: 2,
+      tpEmis: 1,
+      status: 'AUTORIZADA',
+      protocolNumber: '135260000012345',
+      protocolDate: '2026-11-02T10:00:05.000Z',
+      xmlSigned: '<xml></xml>',
+      xmlAuthorized: '<xml></xml>',
+      qrCodeUrl: 'https://www.fazenda.sp.gov.br/nfce/qrcode?p=35261112345678000199650010000000011928374652|2|2|000001|hash',
+      digestValue: 'abc123digest',
+      cStat: 100,
+      xMotivo: 'Autorizado o uso da NF-e',
+      cancellationReason: null,
+      createdAt: '2026-11-02T10:00:00.000Z',
+    },
+    profile: {
+      cnpj: '12.345.678/0001-99',
+      ie: '123.456.789.111',
+      razaoSocial: 'DROGARIA FARMACORE LTDA',
+      nomeFantasia: 'FARMACORE DROGARIA',
+      crt: 1,
+      cUf: 35,
+      municipio: 'SAO PAULO',
+      cMun: 3550308,
+      logradouro: 'AV PAULISTA',
+      numero: '1000',
+      bairro: 'BELA VISTA',
+      cep: '01310-100',
+      serie: 1,
+      nextNnf: 2,
+      cscToken: 'token123',
+      cscId: '000001',
+      environment: 'HOMOLOGACAO',
+    },
+    items: [
+      {
+        name: 'Dipirona 500mg Gotas',
+        ean: '7891234567890',
+        quantity: 2,
+        unitPrice: 12.5,
+        totalPrice: 25.0,
+      },
+    ],
+    payments: [{ method: 'DINHEIRO', amount: 25.0 }],
+    taxes: { vTotTrib: 8.5, vICMS: 0, vICMSST: 0, vPIS: 0, vCOFINS: 0, items: [] },
+    customerCpf: '123.456.789-00',
+    changeAmount: 0,
+    danfeText: 'DANFE NFC-e...',
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(window, 'print').mockImplementation(() => {});
+    vi.spyOn(api, 'issueNfce').mockResolvedValue(mockDefaultNfce);
   });
 
   afterEach(() => {
@@ -500,6 +557,132 @@ describe('PosPage Integration & Cashier Shift Lifecycle', () => {
     await waitFor(() => {
       expect(screen.queryByText(/Dipirona 500mg Gotas/i)).toBeNull();
       expect(screen.getByText(/Venda cancelada/i)).toBeDefined();
+    });
+  });
+
+  it('automatically triggers NFC-e issuance on checkout when emitNfce is enabled and passes invoice to receipt modal', async () => {
+    vi.spyOn(api, 'getCurrentSession').mockResolvedValue(mockOpenSession);
+    vi.spyOn(api, 'getPreSaleByCode').mockResolvedValue(mockPreSaleDetails);
+    vi.spyOn(api, 'checkoutSale').mockResolvedValue(mockCheckoutResponse);
+
+    const mockNfce: any = {
+      invoice: {
+        id: 1,
+        saleId: 1,
+        chNFe: '35261112345678000199650010000000011928374652',
+        nNF: 1,
+        serie: 1,
+        tpAmb: 2,
+        tpEmis: 1,
+        status: 'AUTORIZADA',
+        protocolNumber: '135260000012345',
+        protocolDate: '2026-11-02T10:00:05.000Z',
+        xmlSigned: '<xml></xml>',
+        xmlAuthorized: '<xml></xml>',
+        qrCodeUrl: 'https://www.fazenda.sp.gov.br/nfce/qrcode?p=35261112345678000199650010000000011928374652|2|2|000001|hash',
+        digestValue: 'abc123digest',
+        cStat: 100,
+        xMotivo: 'Autorizado o uso da NF-e',
+        cancellationReason: null,
+        createdAt: '2026-11-02T10:00:00.000Z',
+      },
+      profile: {
+        cnpj: '12.345.678/0001-99',
+        ie: '123.456.789.111',
+        razaoSocial: 'DROGARIA FARMACORE LTDA',
+        nomeFantasia: 'FARMACORE DROGARIA',
+        crt: 1,
+        cUf: 35,
+        municipio: 'SAO PAULO',
+        cMun: 3550308,
+        logradouro: 'AV PAULISTA',
+        numero: '1000',
+        bairro: 'BELA VISTA',
+        cep: '01310-100',
+        serie: 1,
+        nextNnf: 2,
+        cscToken: 'token123',
+        cscId: '000001',
+        environment: 'HOMOLOGACAO',
+      },
+      items: [
+        {
+          name: 'Dipirona 500mg Gotas',
+          ean: '7891234567890',
+          quantity: 2,
+          unitPrice: 12.5,
+          totalPrice: 25.0,
+        },
+      ],
+      payments: [{ method: 'DINHEIRO', amount: 25.0 }],
+      taxes: { vTotTrib: 8.5, vICMS: 0, vICMSST: 0, vPIS: 0, vCOFINS: 0, items: [] },
+      customerCpf: '123.456.789-00',
+      changeAmount: 0,
+      danfeText: 'DANFE NFC-e...',
+    };
+
+    const issueNfceSpy = vi.spyOn(api, 'issueNfce').mockResolvedValue(mockNfce);
+
+    render(<PosPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/CAIXA ABERTO/i)).toBeDefined();
+    });
+
+    // Load pre-sale
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F5', bubbles: true }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Resgatar Pré-Venda/i })).toBeDefined();
+    });
+
+    const preSaleInput = screen.getByLabelText(/Código da Pré-Venda/i);
+    fireEvent.change(preSaleInput, { target: { value: '#PV-8801' } });
+
+    const lookupBtn = screen.getByRole('button', { name: /Buscar Pré-Venda/i });
+    await act(async () => {
+      fireEvent.click(lookupBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Dipirona 500mg Gotas/i)).toBeDefined();
+    });
+
+    // Open Payment Modal [F8]
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F8', bubbles: true }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Recebimento \/ Pagamento PDV/i })).toBeDefined();
+    });
+
+    // Checkbox emitNfce is present and checked by default
+    const nfceCheckbox = screen.getByRole('checkbox', { name: /Emitir NFC-e Fiscal/i }) as HTMLInputElement;
+    expect(nfceCheckbox.checked).toBe(true);
+
+    // Add payment
+    const paymentAmountInput = screen.getByPlaceholderText('0,00');
+    fireEvent.change(paymentAmountInput, { target: { value: '25.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /Adicionar Pagamento/i }));
+
+    // Finalize payment
+    const finalizeSaleBtn = screen.getByRole('button', { name: /Finalizar Venda/i });
+    await act(async () => {
+      fireEvent.click(finalizeSaleBtn);
+    });
+
+    // Expect issueNfce to be called with saleId = 1
+    await waitFor(() => {
+      expect(issueNfceSpy).toHaveBeenCalledWith(1);
+    });
+
+    // Receipt modal displays DANFE NFC-e
+    await waitFor(() => {
+      expect(screen.getByText(/DANFE NFC-e - Documento Auxiliar da Nota Fiscal de Consumidor Eletrônica/i)).toBeDefined();
+      expect(screen.getByText(/3526 1112 3456 7800 0199 6500 1000 0000 0119 2837 4652/i)).toBeDefined();
     });
   });
 });

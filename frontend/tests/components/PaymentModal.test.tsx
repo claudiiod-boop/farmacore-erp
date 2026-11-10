@@ -297,7 +297,10 @@ describe('PaymentModal Component', () => {
     const confirmBtn = screen.getByRole('button', { name: /Finalizar Venda|Confirmar/i });
     fireEvent.click(confirmBtn);
 
-    expect(handleConfirm).toHaveBeenCalledWith([{ method: 'DINHEIRO', amount: 50 }]);
+    expect(handleConfirm).toHaveBeenCalledWith(
+      [{ method: 'DINHEIRO', amount: 50 }],
+      expect.objectContaining({ emitNfce: true })
+    );
   });
 
   it('should close on Escape key', () => {

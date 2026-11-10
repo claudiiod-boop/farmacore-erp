@@ -105,6 +105,107 @@ export interface PreSaleDetails {
   prescription: PrescriptionDetails | null;
 }
 
+export type FiscalEnvironment = 'HOMOLOGACAO' | 'PRODUCAO' | 'SIMULADOR';
+export type NfceInvoiceStatus = 'AUTORIZADA' | 'CONTINGENCIA' | 'CANCELADA' | 'REJEITADA';
+
+export interface FiscalProfile {
+  id?: number;
+  cnpj: string;
+  ie: string;
+  razaoSocial: string;
+  nomeFantasia: string;
+  crt: number;
+  cUf: number;
+  municipio: string;
+  cMun: number;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cep: string;
+  serie: number;
+  nextNnf: number;
+  cscToken: string;
+  cscId: string;
+  environment: FiscalEnvironment;
+  certPfxBase64?: string | null;
+  certPassword?: string | null;
+  updatedAt?: string;
+}
+
+export interface NfceInvoice {
+  id: number;
+  saleId: number;
+  chNFe: string;
+  nNF: number;
+  serie: number;
+  tpAmb: number;
+  tpEmis: number;
+  status: NfceInvoiceStatus;
+  protocolNumber: string | null;
+  protocolDate: string | null;
+  xmlSigned: string;
+  xmlAuthorized: string | null;
+  qrCodeUrl: string;
+  digestValue: string | null;
+  cStat: number | null;
+  xMotivo: string | null;
+  cancellationReason: string | null;
+  createdAt: string;
+}
+
+export interface NfceInvoiceItemDetail {
+  name: string;
+  ean: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface NfceInvoicePaymentDetail {
+  method: string;
+  amount: number;
+}
+
+export interface CalculatedItemTax {
+  vBC: number;
+  pICMS: number;
+  vICMS: number;
+  vBCST: number;
+  pICMSST: number;
+  vICMSST: number;
+  csosn: string;
+  cfop: string;
+  cstPis: string;
+  vBCPis: number;
+  pPis: number;
+  vPis: number;
+  cstCofins: string;
+  vBCCofins: number;
+  pCofins: number;
+  vCofins: number;
+  vTotTrib: number;
+}
+
+export interface CalculatedSaleTaxes {
+  vTotTrib: number;
+  vICMS: number;
+  vICMSST: number;
+  vPIS: number;
+  vCOFINS: number;
+  items: CalculatedItemTax[];
+}
+
+export interface NfceInvoiceDetails {
+  invoice: NfceInvoice;
+  profile: FiscalProfile;
+  items: NfceInvoiceItemDetail[];
+  payments: NfceInvoicePaymentDetail[];
+  taxes: CalculatedSaleTaxes;
+  customerCpf?: string | null;
+  changeAmount?: number;
+  danfeText?: string;
+}
+
 export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX';
 
 export interface PaymentItem {
@@ -438,6 +539,107 @@ export async function cancelPreSale(code: string): Promise<{ message: string }> 
   return response.json();
 }
 
+export async function issueNfce(
+  saleId: number,
+  options?: { offlineContingency?: boolean }
+): Promise<NfceInvoiceDetails> {
+  const base = getBaseUrl();
+  const url = `${base}/api/fiscal/nfce/issue`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      saleId,
+      offlineContingency: options?.offlineContingency,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao emitir NFC-e: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function getNfceBySaleId(saleId: number): Promise<NfceInvoiceDetails> {
+  const base = getBaseUrl();
+  const url = `${base}/api/fiscal/nfce/${saleId}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao buscar NFC-e: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function getFiscalProfile(): Promise<FiscalProfile | null> {
+  const base = getBaseUrl();
+  const url = `${base}/api/fiscal/profile`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao buscar perfil fiscal: ${response.statusText}`
+    );
+  }
+  const data = await response.json();
+  if (!data || data.profile === null) return null;
+  return data;
+}
+
+export async function updateFiscalProfile(
+  profile: Partial<FiscalProfile>
+): Promise<FiscalProfile> {
+  const base = getBaseUrl();
+  const url = `${base}/api/fiscal/profile`;
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(profile),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao atualizar perfil fiscal: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
+export async function cancelNfce(
+  saleId: number,
+  reason: string
+): Promise<{ success: boolean; cStat: number; cancellationProtocol?: string }> {
+  const base = getBaseUrl();
+  const url = `${base}/api/fiscal/nfce/${saleId}/cancel`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Falha ao cancelar NFC-e: ${response.statusText}`
+    );
+  }
+  return response.json();
+}
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -454,6 +656,11 @@ export const api = {
   getCashMovements,
   checkoutSale,
   cancelPreSale,
+  issueNfce,
+  getNfceBySaleId,
+  getFiscalProfile,
+  updateFiscalProfile,
+  cancelNfce,
 };
 
 export default api;

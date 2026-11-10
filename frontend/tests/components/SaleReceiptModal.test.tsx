@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import SaleReceiptModal from '../../src/components/pos/SaleReceiptModal';
-import { Sale } from '../../src/services/api';
+import { Sale, NfceInvoiceDetails } from '../../src/services/api';
 
 const mockSale: Sale = {
   id: 42,
@@ -229,5 +229,150 @@ describe('SaleReceiptModal Component', () => {
     // Escape key
     fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
     expect(handleNewSale).toHaveBeenCalledTimes(2);
+  });
+
+  const mockNfceInvoice: NfceInvoiceDetails = {
+    invoice: {
+      id: 1,
+      saleId: 42,
+      chNFe: '35261112345678000199650010000000011928374652',
+      nNF: 1,
+      serie: 1,
+      tpAmb: 2,
+      tpEmis: 1,
+      status: 'AUTORIZADA',
+      protocolNumber: '135260000012345',
+      protocolDate: '2026-11-02T15:30:05.000Z',
+      xmlSigned: '<xml></xml>',
+      xmlAuthorized: '<xml></xml>',
+      qrCodeUrl: 'https://www.fazenda.sp.gov.br/nfce/qrcode?p=35261112345678000199650010000000011928374652|2|2|000001|hash',
+      digestValue: 'abc123digest',
+      cStat: 100,
+      xMotivo: 'Autorizado o uso da NF-e',
+      cancellationReason: null,
+      createdAt: '2026-11-02T15:30:00.000Z',
+    },
+    profile: {
+      cnpj: '12.345.678/0001-99',
+      ie: '123.456.789.111',
+      razaoSocial: 'DROGARIA FARMACORE LTDA',
+      nomeFantasia: 'FARMACORE DROGARIA',
+      crt: 1,
+      cUf: 35,
+      municipio: 'SAO PAULO',
+      cMun: 3550308,
+      logradouro: 'AV PAULISTA',
+      numero: '1000',
+      bairro: 'BELA VISTA',
+      cep: '01310-100',
+      serie: 1,
+      nextNnf: 2,
+      cscToken: 'token123',
+      cscId: '000001',
+      environment: 'HOMOLOGACAO',
+    },
+    items: [
+      {
+        name: 'Dipirona 500mg 20 Comprimidos',
+        ean: '7891234567890',
+        quantity: 2,
+        unitPrice: 15.0,
+        totalPrice: 30.0,
+      },
+      {
+        name: 'Shampoo Anticaspa 200ml',
+        ean: '7899876543210',
+        quantity: 1,
+        unitPrice: 25.0,
+        totalPrice: 25.0,
+      },
+    ],
+    payments: [
+      {
+        method: 'DINHEIRO',
+        amount: 60.0,
+      },
+    ],
+    taxes: {
+      vTotTrib: 17.6,
+      vICMS: 0,
+      vICMSST: 0,
+      vPIS: 0,
+      vCOFINS: 0,
+      items: [],
+    },
+    customerCpf: null,
+    changeAmount: 5.0,
+    danfeText: 'DANFE NFC-e...',
+  };
+
+  it('should render official DANFE NFC-e header, 44-digit formatted access key, authorization protocol, IBPT taxes and QR Code when nfceInvoice is provided', async () => {
+    // Mock navigator.clipboard
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <SaleReceiptModal
+        isOpen={true}
+        sale={mockSale}
+        nfceInvoice={mockNfceInvoice}
+        onClose={vi.fn()}
+      />
+    );
+
+    // Official DANFE NFC-e header
+    expect(screen.getByText(/DANFE NFC-e - Documento Auxiliar da Nota Fiscal de Consumidor Eletrônica/i)).toBeDefined();
+    expect(screen.getByText(/Não permite aproveitamento de crédito de ICMS/i)).toBeDefined();
+
+    // Formatted 44-digit key: 3526 1112 3456 7800 0199 6500 1000 0000 0119 2837 4652
+    expect(screen.getByText(/3526 1112 3456 7800 0199 6500 1000 0000 0119 2837 4652/i)).toBeDefined();
+
+    // Protocol
+    expect(screen.getByText(/Protocolo de Autorização:/i)).toBeDefined();
+    expect(screen.getByText(/135260000012345/i)).toBeDefined();
+
+    // IBPT taxes
+    expect(screen.getByText(/Tributos Totais Incidentes \(Lei 12\.741\/2012\):/i)).toBeDefined();
+    expect(screen.getByText(/R\$\s*17,60/i)).toBeDefined();
+
+    // Consumer info
+    expect(screen.getByText(/CONSUMIDOR NÃO IDENTIFICADO/i)).toBeDefined();
+
+    // QR Code SVG
+    expect(screen.getByTestId('nfce-qrcode-svg')).toBeDefined();
+
+    // Copy access key button
+    const copyKeyBtn = screen.getByRole('button', { name: /Copiar Chave/i });
+    fireEvent.click(copyKeyBtn);
+    expect(writeTextMock).toHaveBeenCalledWith('35261112345678000199650010000000011928374652');
+  });
+
+  it('should render prominent offline contingency banner when tpEmis is 9 or status is CONTINGENCIA', () => {
+    const contingencyInvoice: NfceInvoiceDetails = {
+      ...mockNfceInvoice,
+      invoice: {
+        ...mockNfceInvoice.invoice,
+        tpEmis: 9,
+        status: 'CONTINGENCIA',
+        protocolNumber: null,
+      },
+    };
+
+    render(
+      <SaleReceiptModal
+        isOpen={true}
+        sale={mockSale}
+        nfceInvoice={contingencyInvoice}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText(/EMITIDA EM CONTINGÊNCIA - PENDENTE DE AUTORIZAÇÃO/i)
+    ).toBeDefined();
   });
 });
