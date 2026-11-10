@@ -9,12 +9,15 @@ import { CreatePreSaleDTO } from '../modules/counter/types';
 import { PosService } from '../modules/pos/pos.service';
 import { formatReceipt } from '../modules/pos/receipt-formatter';
 import { CashMovementType, CheckoutParams } from '../modules/pos/types';
+import { FiscalService } from '../modules/fiscal/fiscal.service';
+import { FiscalProfile } from '../modules/fiscal/types';
 
 export async function registerRoutes(app: FastifyInstance, db: Database): Promise<void> {
   const catalogService = new CatalogService(db);
   const inventoryService = new InventoryService(db);
   const preSaleService = new PreSaleService(db, catalogService, inventoryService);
   const posService = new PosService(db, preSaleService, inventoryService);
+  const fiscalService = new FiscalService(db);
 
   // Health check
   app.get('/health', async () => {
@@ -525,4 +528,193 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
     const receiptText = formatReceipt(sale);
     return reply.status(200).send({ receiptText });
   });
+
+  // ===================== FISCAL / NFC-E =====================
+  app.get('/api/fiscal/profile', async (_req, reply) => {
+    const profile = fiscalService.getFiscalProfile();
+    return reply.status(200).send(profile ?? { profile: null });
+  });
+
+  app.put<{ Body: Partial<FiscalProfile> }>('/api/fiscal/profile', async (req, reply) => {
+    try {
+      const updated = fiscalService.updateFiscalProfile(req.body || {});
+      return reply.status(200).send(updated);
+    } catch (err: any) {
+      return reply.status(400).send({
+        error: err.message || 'PROFILE_UPDATE_FAILED',
+        message: err.message,
+      });
+    }
+  });
+
+  app.post<{ Body: { saleId: number; offlineContingency?: boolean } }>(
+    '/api/fiscal/nfce/issue',
+    async (req, reply) => {
+      const saleId = Number(req.body?.saleId);
+      if (!saleId || isNaN(saleId) || saleId <= 0) {
+        return reply.status(400).send({
+          error: 'INVALID_SALE_ID',
+          message: 'O identificador da venda deve ser um número válido',
+        });
+      }
+
+      try {
+        const details = await fiscalService.issueNfce(saleId, {
+          offlineContingency: req.body?.offlineContingency,
+        });
+        return reply.status(201).send(details);
+      } catch (err: any) {
+        if (err.message === 'FISCAL_PROFILE_NOT_CONFIGURED') {
+          return reply.status(400).send({
+            error: 'FISCAL_PROFILE_NOT_CONFIGURED',
+            message: 'Perfil fiscal não configurado',
+          });
+        }
+        if (err.message === 'SALE_NOT_FOUND') {
+          return reply.status(404).send({
+            error: 'SALE_NOT_FOUND',
+            message: 'Venda não encontrada',
+          });
+        }
+        if (err.message === 'NFCE_ALREADY_ISSUED') {
+          return reply.status(400).send({
+            error: 'NFCE_ALREADY_ISSUED',
+            message: 'NFC-e já emitida para esta venda',
+          });
+        }
+        return reply.status(400).send({
+          error: err.message || 'NFCE_ISSUE_FAILED',
+          message: err.message,
+        });
+      }
+    }
+  );
+
+  app.get<{ Params: { saleId: string } }>('/api/fiscal/nfce/:saleId', async (req, reply) => {
+    const saleId = Number(req.params.saleId);
+    if (isNaN(saleId) || saleId <= 0) {
+      return reply.status(400).send({
+        error: 'INVALID_ID',
+        message: 'Identificador de venda inválido',
+      });
+    }
+
+    const details = fiscalService.getNfceBySaleId(saleId);
+    if (!details) {
+      return reply.status(404).send({
+        error: 'NFCE_NOT_FOUND',
+        message: 'NFC-e não encontrada para esta venda',
+      });
+    }
+
+    return reply.status(200).send(details);
+  });
+
+  app.get<{ Params: { saleId: string } }>('/api/fiscal/nfce/:saleId/xml', async (req, reply) => {
+    const saleId = Number(req.params.saleId);
+    if (isNaN(saleId) || saleId <= 0) {
+      return reply.status(400).send({
+        error: 'INVALID_ID',
+        message: 'Identificador de venda inválido',
+      });
+    }
+
+    const details = fiscalService.getNfceBySaleId(saleId);
+    if (!details) {
+      return reply.status(404).send({
+        error: 'NFCE_NOT_FOUND',
+        message: 'NFC-e não encontrada para esta venda',
+      });
+    }
+
+    const xml = details.invoice.xmlAuthorized || details.invoice.xmlSigned;
+    if (!xml) {
+      return reply.status(404).send({
+        error: 'XML_NOT_FOUND',
+        message: 'XML da NFC-e não encontrado',
+      });
+    }
+
+    reply.header('content-type', 'application/xml; charset=utf-8');
+    return reply.status(200).send(xml);
+  });
+
+  app.get<{ Params: { saleId: string } }>('/api/fiscal/nfce/:saleId/danfe', async (req, reply) => {
+    const saleId = Number(req.params.saleId);
+    if (isNaN(saleId) || saleId <= 0) {
+      return reply.status(400).send({
+        error: 'INVALID_ID',
+        message: 'Identificador de venda inválido',
+      });
+    }
+
+    const details = fiscalService.getNfceBySaleId(saleId);
+    if (!details) {
+      return reply.status(404).send({
+        error: 'NFCE_NOT_FOUND',
+        message: 'NFC-e não encontrada para esta venda',
+      });
+    }
+
+    const danfeText = details.danfeText || '';
+    reply.header('content-type', 'text/plain; charset=utf-8');
+    return reply.status(200).send(danfeText);
+  });
+
+  app.post<{ Params: { saleId: string }; Body: { reason: string } }>(
+    '/api/fiscal/nfce/:saleId/cancel',
+    async (req, reply) => {
+      const saleId = Number(req.params.saleId);
+      if (isNaN(saleId) || saleId <= 0) {
+        return reply.status(400).send({
+          error: 'INVALID_ID',
+          message: 'Identificador de venda inválido',
+        });
+      }
+
+      const reason = req.body?.reason;
+      if (!reason || typeof reason !== 'string' || reason.trim().length < 15) {
+        return reply.status(400).send({
+          error: 'INVALID_CANCELLATION_REASON',
+          message: 'A justificativa de cancelamento deve conter no mínimo 15 caracteres',
+        });
+      }
+
+      const details = fiscalService.getNfceBySaleId(saleId);
+      if (!details) {
+        return reply.status(404).send({
+          error: 'NFCE_NOT_FOUND',
+          message: 'NFC-e não encontrada para esta venda',
+        });
+      }
+
+      try {
+        const result = await fiscalService.cancelNfce(saleId, reason);
+        return reply.status(200).send(result);
+      } catch (err: any) {
+        if (err.message === 'INVALID_CANCELLATION_REASON') {
+          return reply.status(400).send({
+            error: 'INVALID_CANCELLATION_REASON',
+            message: 'A justificativa de cancelamento deve conter no mínimo 15 caracteres',
+          });
+        }
+        if (err.message === 'INVOICE_NOT_CANCELLABLE') {
+          return reply.status(400).send({
+            error: 'INVOICE_NOT_CANCELLABLE',
+            message: 'Apenas notas com status AUTORIZADA podem ser canceladas',
+          });
+        }
+        if (err.message === 'NFCE_NOT_FOUND') {
+          return reply.status(404).send({
+            error: 'NFCE_NOT_FOUND',
+            message: 'NFC-e não encontrada para esta venda',
+          });
+        }
+        return reply.status(400).send({
+          error: err.message || 'CANCELLATION_FAILED',
+          message: err.message,
+        });
+      }
+    }
+  );
 }
