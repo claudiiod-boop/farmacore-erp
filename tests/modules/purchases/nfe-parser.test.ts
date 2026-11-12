@@ -279,5 +279,45 @@ describe('NF-e 4.00 Parser (nfe-parser)', () => {
       const invalidKeyXml = `<NFe><infNFe Id="NFe123"><ide><nNF>1</nNF></ide></infNFe></NFe>`;
       expect(() => parseNfeXml(invalidKeyXml)).toThrowError(/chave de acesso/i);
     });
+
+    it('should parse XML with explicit namespace prefix (e.g. nfe:infNFe, nfe:det)', () => {
+      const prefixedXml = `<nfe:NFe xmlns:nfe="http://www.portalfiscal.inf.br/nfe">
+        <nfe:infNFe Id="NFe35231012345678000199550010000001231000001234" versao="4.00">
+          <nfe:ide>
+            <nfe:nNF>999</nfe:nNF>
+            <nfe:serie>1</nfe:serie>
+            <nfe:dhEmi>2023-11-01T10:00:00-03:00</nfe:dhEmi>
+          </nfe:ide>
+          <nfe:emit>
+            <nfe:CNPJ>12345678000199</nfe:CNPJ>
+            <nfe:xNome>DISTRIBUIDORA PREFIXADA S/A</nfe:xNome>
+          </nfe:emit>
+          <nfe:total>
+            <nfe:ICMSTot>
+              <nfe:vNF>100.00</nfe:vNF>
+              <nfe:vProd>100.00</nfe:vProd>
+            </nfe:ICMSTot>
+          </nfe:total>
+          <nfe:det nItem="1">
+            <nfe:prod>
+              <nfe:cProd>PROD01</nfe:cProd>
+              <nfe:cEAN>7890000000001</nfe:cEAN>
+              <nfe:xProd>PRODUTO PREFIXADO</nfe:xProd>
+              <nfe:NCM>30049099</nfe:NCM>
+              <nfe:CFOP>5102</nfe:CFOP>
+              <nfe:qCom>10</nfe:qCom>
+              <nfe:vUnCom>10.00</nfe:vUnCom>
+              <nfe:vProd>100.00</nfe:vProd>
+            </nfe:prod>
+          </nfe:det>
+        </nfe:infNFe>
+      </nfe:NFe>`;
+      const parsed = parseNfeXml(prefixedXml);
+      expect(parsed.accessKey).toBe('35231012345678000199550010000001231000001234');
+      expect(parsed.invoiceNumber).toBe(999);
+      expect(parsed.supplierName).toBe('DISTRIBUIDORA PREFIXADA S/A');
+      expect(parsed.items).toHaveLength(1);
+      expect(parsed.items[0].productName).toBe('PRODUTO PREFIXADO');
+    });
   });
 });

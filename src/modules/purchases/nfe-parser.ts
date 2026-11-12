@@ -88,7 +88,7 @@ export function parseNfeXml(xmlString: string): ParsedNfeInvoice {
   const cleanXml = xmlString.replace(/<!--[\s\S]*?-->/g, '');
 
   // Verify presence of <infNFe> tag and extract its opening tag to get Id attribute
-  const infNFeMatch = cleanXml.match(/<(?:\\w+:)?infNFe\b([^>]*)>([\s\S]*?)<\/(?:\\w+:)?infNFe>/i);
+  const infNFeMatch = cleanXml.match(/<(?:\w+:)?infNFe\b([^>]*)>([\s\S]*?)<\/(?:\w+:)?infNFe>/i);
   if (!infNFeMatch) {
     throw new NfeParseError('Tag <infNFe> não encontrada no XML da NF-e', 'INVALID_NFE_XML');
   }
@@ -150,7 +150,7 @@ export function parseNfeXml(xmlString: string): ParsedNfeInvoice {
   const totalIcmsSt = parseNumber(icmsTotBlock ? getTagContent(icmsTotBlock, 'vST') : null);
 
   // 4. Tag <det> (Itens da NF-e)
-  const detRegex = /<(?:\\w+:)?det\b([^>]*)>([\s\S]*?)<\/(?:\\w+:)?det>/gi;
+  const detRegex = /<(?:\w+:)?det\b([^>]*)>([\s\S]*?)<\/(?:\w+:)?det>/gi;
   const items: ParsedNfeItem[] = [];
   let detMatch: RegExpExecArray | null;
   let defaultItemIndex = 1;
