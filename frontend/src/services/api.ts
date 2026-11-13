@@ -1,3 +1,15 @@
+import type {
+  PurchasePreviewResult,
+  PurchaseImportOptions,
+  PurchaseImportResult,
+  PurchaseInvoiceSummary,
+  PurchaseInvoiceDetails,
+  SngpcMovement,
+  SngpcLivroRegistro,
+  SngpcTransmission,
+  SngpcTransmissionParams,
+} from '../types';
+
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
   | 'ISENTO'
@@ -640,6 +652,167 @@ export async function cancelNfce(
   return response.json();
 }
 
+export const purchasesApi = {
+  previewXml: async (xmlContent: string): Promise<PurchasePreviewResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/purchases/preview-xml`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ xmlContent }),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || body?.message || `Falha na pré-visualização da NF-e: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  importXml: async (
+    xmlContent: string,
+    options?: PurchaseImportOptions
+  ): Promise<PurchaseImportResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/purchases/import-xml`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        xmlContent,
+        autoRegisterProducts: options?.autoRegisterProducts,
+        itemClassifications: options?.itemClassifications,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || body?.message || `Falha ao importar NF-e: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  getInvoices: async (): Promise<PurchaseInvoiceSummary[]> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/purchases/invoices`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || body?.message || `Falha ao buscar notas fiscais: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  getInvoiceById: async (id: number): Promise<PurchaseInvoiceDetails> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/purchases/invoices/${id}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || body?.message || `Falha ao buscar nota fiscal #${id}: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+};
+
+export const sngpcApi = {
+  getMovements: async (params?: {
+    startDate?: string;
+    endDate?: string;
+    movementType?: string;
+    isTransmitted?: number;
+    productId?: number;
+  }): Promise<SngpcMovement[]> => {
+    const base = getBaseUrl();
+    const searchParams = new URLSearchParams();
+    if (params?.startDate) searchParams.append('startDate', params.startDate);
+    if (params?.endDate) searchParams.append('endDate', params.endDate);
+    if (params?.movementType && params.movementType !== 'TODAS') {
+      searchParams.append('movementType', params.movementType);
+    }
+    if (params?.isTransmitted !== undefined) {
+      searchParams.append('isTransmitted', String(params.isTransmitted));
+    }
+    if (params?.productId) searchParams.append('productId', String(params.productId));
+
+    const qs = searchParams.toString();
+    const url = `${base}/api/sngpc/movements${qs ? `?${qs}` : ''}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || body?.message || `Falha ao buscar movimentações SNGPC: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  getLivroRegistro: async (params: {
+    startDate: string;
+    endDate: string;
+    productId?: number;
+  }): Promise<SngpcLivroRegistro> => {
+    const base = getBaseUrl();
+    const searchParams = new URLSearchParams({
+      startDate: params.startDate,
+      endDate: params.endDate,
+    });
+    if (params.productId) {
+      searchParams.append('productId', String(params.productId));
+    }
+
+    const response = await fetch(`${base}/api/sngpc/livro?${searchParams.toString()}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || body?.message || `Falha ao carregar Livro de Registro: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  generateWeeklyXml: async (
+    params: SngpcTransmissionParams
+  ): Promise<{ transmissionId: number; movementsCount: number; hashXml: string; xmlContent: string }> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/sngpc/generate-xml`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || body?.message || `Falha ao gerar XML semanal SNGPC: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  getTransmissions: async (): Promise<SngpcTransmission[]> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/sngpc/transmissions`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.error || body?.message || `Falha ao listar transmissões SNGPC: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  downloadTransmissionXml: async (id: number): Promise<string> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/sngpc/transmissions/${id}/xml`);
+    if (!response.ok) {
+      throw new Error(`Falha ao baixar XML da transmissão #${id}: ${response.statusText}`);
+    }
+    return response.text();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -661,6 +834,10 @@ export const api = {
   getFiscalProfile,
   updateFiscalProfile,
   cancelNfce,
+  purchases: purchasesApi,
+  sngpc: sngpcApi,
+  purchasesApi,
+  sngpcApi,
 };
 
 export default api;

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
+import type { StationMode } from '../types';
 
-export type StationMode = 'COUNTER' | 'POS';
+export type { StationMode };
 
 export const STATION_MODE_STORAGE_KEY = 'farmacore_station_mode';
 
@@ -8,7 +9,12 @@ function getStoredMode(initialDefault: StationMode): StationMode {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const stored = window.localStorage.getItem(STATION_MODE_STORAGE_KEY);
-      if (stored === 'COUNTER' || stored === 'POS') {
+      if (
+        stored === 'COUNTER' ||
+        stored === 'POS' ||
+        stored === 'PURCHASES' ||
+        stored === 'SNGPC'
+      ) {
         return stored;
       }
     }
@@ -37,6 +43,8 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     setMode,
     isCounter: mode === 'COUNTER',
     isPos: mode === 'POS',
+    isPurchases: mode === 'PURCHASES',
+    isSngpc: mode === 'SNGPC',
   };
 }
 
