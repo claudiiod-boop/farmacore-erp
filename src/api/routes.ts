@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { Database } from '../database/connection';
 import { CatalogService } from '../modules/catalog/catalog.service';
 import { CreateProductDTO } from '../modules/catalog/types';
@@ -11,12 +12,45 @@ import { formatReceipt } from '../modules/pos/receipt-formatter';
 import { CashMovementType, CheckoutParams } from '../modules/pos/types';
 import { FiscalService } from '../modules/fiscal/fiscal.service';
 import { FiscalProfile } from '../modules/fiscal/types';
+import { PurchaseService, PurchaseImportError } from '../modules/purchases/purchase.service';
+import { NfeParseError } from '../modules/purchases/nfe-parser';
+import { SngpcService } from '../modules/sngpc/sngpc.service';
+import { SngpcMovementType } from '../modules/sngpc/types';
+
+const previewXmlSchema = z.object({
+  xmlContent: z.string().trim().min(1, 'xmlContent é obrigatório'),
+});
+
+const importXmlSchema = z.object({
+  xmlContent: z.string().trim().min(1, 'xmlContent é obrigatório'),
+  autoRegisterProducts: z.boolean().optional(),
+  itemClassifications: z
+    .record(
+      z.string(),
+      z.object({
+        stripe: z.string(),
+        controlType: z.string(),
+      })
+    )
+    .optional(),
+});
+
+const sngpcGenerateXmlSchema = z.object({
+  startDate: z.string().trim().min(1, 'startDate é obrigatório'),
+  endDate: z.string().trim().min(1, 'endDate é obrigatório'),
+  pharmacistName: z.string().trim().min(1, 'pharmacistName é obrigatório'),
+  pharmacistCpf: z.string().trim().min(1, 'pharmacistCpf é obrigatório'),
+  pharmacistCrf: z.string().trim().min(1, 'pharmacistCrf é obrigatório'),
+  pharmacistCrfUf: z.string().trim().min(1, 'pharmacistCrfUf é obrigatório'),
+});
 
 export async function registerRoutes(app: FastifyInstance, db: Database): Promise<void> {
   const catalogService = new CatalogService(db);
   const inventoryService = new InventoryService(db);
   const preSaleService = new PreSaleService(db, catalogService, inventoryService);
-  const posService = new PosService(db, preSaleService, inventoryService);
+  const sngpcService = new SngpcService(db);
+  const purchaseService = new PurchaseService(db, sngpcService);
+  const posService = new PosService(db, preSaleService, inventoryService, sngpcService);
   const fiscalService = new FiscalService(db);
 
   // Health check
@@ -717,4 +751,260 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
       }
     }
   );
+
+  // ===================== PURCHASES =====================
+  app.post<{ Body: { xmlContent: string } }>('/api/purchases/preview-xml', async (req, reply) => {
+    const parseResult = previewXmlSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: parseResult.error.issues[0]?.message || 'xmlContent é obrigatório',
+        code: 'INVALID_XML',
+      });
+    }
+
+    try {
+      const result = purchaseService.previewNfeXml(parseResult.data.xmlContent);
+      return reply.status(200).send(result);
+    } catch (err: any) {
+      if (err instanceof NfeParseError) {
+        return reply.status(400).send({
+          error: err.message,
+          code: err.code || 'INVALID_XML',
+        });
+      }
+      return reply.status(400).send({
+        error: err.message || 'Falha ao processar XML da NF-e',
+        code: err.code || 'INVALID_XML',
+      });
+    }
+  });
+
+  app.post<{
+    Body: {
+      xmlContent: string;
+      autoRegisterProducts?: boolean;
+      itemClassifications?: Record<string, { stripe: string; controlType: string }>;
+    };
+  }>('/api/purchases/import-xml', async (req, reply) => {
+    const parseResult = importXmlSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: parseResult.error.issues[0]?.message || 'Dados inválidos para importação de NF-e',
+        code: 'INVALID_NFE_XML',
+      });
+    }
+
+    try {
+      const result = purchaseService.importNfeXml(parseResult.data.xmlContent, {
+        autoRegisterProducts: parseResult.data.autoRegisterProducts,
+        itemClassifications: parseResult.data.itemClassifications,
+      });
+      return reply.status(201).send(result);
+    } catch (err: any) {
+      if (err instanceof PurchaseImportError) {
+        if (err.code === 'PURCHASE_INVOICE_ALREADY_IMPORTED') {
+          return reply.status(409).send({
+            error: err.message,
+            code: err.code,
+          });
+        }
+        if (err.code === 'PRODUCT_NOT_FOUND') {
+          return reply.status(400).send({
+            error: err.message,
+            code: err.code,
+          });
+        }
+        return reply.status(400).send({
+          error: err.message,
+          code: err.code,
+        });
+      }
+      if (err instanceof NfeParseError) {
+        return reply.status(400).send({
+          error: err.message,
+          code: err.code || 'INVALID_NFE_XML',
+        });
+      }
+      return reply.status(400).send({
+        error: err.message || 'Falha na importação do XML da NF-e',
+        code: err.code || 'IMPORT_FAILED',
+      });
+    }
+  });
+
+  app.get('/api/purchases/invoices', async (_req, reply) => {
+    try {
+      const invoices = purchaseService.getInvoices();
+      return reply.status(200).send(invoices);
+    } catch (err: any) {
+      return reply.status(500).send({
+        error: err.message || 'Falha ao listar notas fiscais',
+        code: 'PURCHASE_INVOICES_FETCH_FAILED',
+      });
+    }
+  });
+
+  app.get<{ Params: { id: string } }>('/api/purchases/invoices/:id', async (req, reply) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return reply.status(400).send({
+        error: 'O identificador da nota fiscal deve ser numérico',
+        code: 'INVALID_ID',
+      });
+    }
+
+    const invoice = purchaseService.getInvoiceById(id);
+    if (!invoice) {
+      return reply.status(404).send({
+        error: 'Nota fiscal não encontrada',
+        code: 'PURCHASE_INVOICE_NOT_FOUND',
+      });
+    }
+
+    return reply.status(200).send(invoice);
+  });
+
+  // ===================== SNGPC =====================
+  app.get<{
+    Querystring: {
+      startDate?: string;
+      endDate?: string;
+      movementType?: string;
+      isTransmitted?: string;
+      productId?: string;
+    };
+  }>('/api/sngpc/movements', async (req, reply) => {
+    const { startDate, endDate, movementType, isTransmitted, productId } = req.query;
+
+    let parsedIsTransmitted: number | undefined;
+    if (isTransmitted !== undefined && isTransmitted !== '') {
+      parsedIsTransmitted =
+        isTransmitted === '1' || isTransmitted === 'true'
+          ? 1
+          : isTransmitted === '0' || isTransmitted === 'false'
+          ? 0
+          : Number(isTransmitted);
+    }
+
+    let parsedProductId: number | undefined;
+    if (productId !== undefined && productId !== '') {
+      parsedProductId = Number(productId);
+      if (isNaN(parsedProductId)) {
+        return reply.status(400).send({
+          error: 'productId deve ser numérico',
+          code: 'INVALID_PARAMETERS',
+        });
+      }
+    }
+
+    const movements = sngpcService.getMovements({
+      startDate,
+      endDate,
+      movementType: movementType as SngpcMovementType | undefined,
+      isTransmitted: parsedIsTransmitted,
+      productId: parsedProductId,
+    });
+
+    return reply.status(200).send(movements);
+  });
+
+  app.get<{
+    Querystring: {
+      startDate?: string;
+      endDate?: string;
+      productId?: string;
+    };
+  }>('/api/sngpc/livro', async (req, reply) => {
+    const { startDate, endDate, productId } = req.query;
+
+    if (!startDate || !endDate || startDate.trim() === '' || endDate.trim() === '') {
+      return reply.status(400).send({
+        error: 'startDate e endDate são obrigatórios',
+        code: 'INVALID_DATE_RANGE',
+      });
+    }
+
+    let parsedProductId: number | undefined;
+    if (productId !== undefined && productId !== '') {
+      parsedProductId = Number(productId);
+      if (isNaN(parsedProductId)) {
+        return reply.status(400).send({
+          error: 'productId deve ser numérico',
+          code: 'INVALID_PARAMETERS',
+        });
+      }
+    }
+
+    try {
+      const livro = sngpcService.getLivroRegistro({
+        startDate: startDate.trim(),
+        endDate: endDate.trim(),
+        productId: parsedProductId,
+      });
+      return reply.status(200).send(livro);
+    } catch (err: any) {
+      return reply.status(400).send({
+        error: err.message || 'Erro ao emitir Livro de Registro',
+        code: err.code || 'LIVRO_ERROR',
+      });
+    }
+  });
+
+  app.post<{
+    Body: {
+      startDate: string;
+      endDate: string;
+      pharmacistName: string;
+      pharmacistCpf: string;
+      pharmacistCrf: string;
+      pharmacistCrfUf: string;
+    };
+  }>('/api/sngpc/generate-xml', async (req, reply) => {
+    const parseResult = sngpcGenerateXmlSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: parseResult.error.issues[0]?.message || 'Campos obrigatórios ausentes',
+        code: 'INVALID_PARAMETERS',
+      });
+    }
+
+    try {
+      const result = sngpcService.generateWeeklyXml(parseResult.data);
+      return reply.status(201).send(result);
+    } catch (err: any) {
+      return reply.status(400).send({
+        error: err.message || 'Falha ao gerar XML da transmissão SNGPC',
+        code: err.code || 'GENERATE_XML_FAILED',
+      });
+    }
+  });
+
+  app.get('/api/sngpc/transmissions', async (_req, reply) => {
+    const list = sngpcService.getTransmissions();
+    return reply.status(200).send(list);
+  });
+
+  app.get<{ Params: { id: string } }>('/api/sngpc/transmissions/:id/xml', async (req, reply) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return reply.status(400).send({
+        error: 'O identificador da transmissão deve ser numérico',
+        code: 'INVALID_ID',
+      });
+    }
+
+    const transmission = sngpcService.getTransmissionById(id);
+    if (!transmission) {
+      return reply.status(404).send({
+        error: 'Transmissão não encontrada',
+        code: 'TRANSMISSION_NOT_FOUND',
+      });
+    }
+
+    return reply
+      .header('Content-Type', 'application/xml')
+      .header('Content-Disposition', `attachment; filename="mensagemSNGPC-${transmission.id}.xml"`)
+      .status(200)
+      .send(transmission.xmlContent);
+  });
 }

@@ -367,6 +367,10 @@ export class PurchaseService {
     }));
   }
 
+  listInvoices(): PurchaseInvoiceSummary[] {
+    return this.getInvoices();
+  }
+
   /**
    * Returns purchase invoice details including all items and linked batch information.
    */
