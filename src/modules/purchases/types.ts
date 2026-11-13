@@ -102,3 +102,32 @@ export interface PurchaseImportResult {
   productsRegisteredCount: number;
   totalItems: number;
 }
+
+export interface PurchaseInvoiceSummary {
+  id: number;
+  accessKey: string;
+  invoiceNumber: number;
+  invoiceSeries: number;
+  issueDate: string;
+  supplierCnpj: string;
+  supplierName: string;
+  supplierIe?: string | null;
+  totalInvoiceAmount: number;
+  totalProductsAmount: number;
+  totalIcmsSt: number;
+  itemsCount: number;
+  createdAt: string;
+}
+
+export interface PurchaseInvoiceDetails extends PurchaseInvoice {
+  items: (PurchaseInvoiceItem & {
+    batch?: {
+      id: number;
+      batchNumber: string;
+      manufacturingDate: string;
+      expirationDate: string;
+      quantity: number;
+    } | null;
+  })[];
+}
+
