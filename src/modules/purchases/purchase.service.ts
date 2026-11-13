@@ -59,7 +59,15 @@ export class PurchaseService {
     );
 
     const previewItems: PurchasePreviewItem[] = parsed.items.map((item) => {
-      const product = findProductStmt.get(item.ean);
+      const isNonGtin =
+        !item.ean ||
+        item.ean.trim() === '' ||
+        item.ean.trim().toUpperCase() === 'SEM GTIN' ||
+        item.ean.trim().toUpperCase() === 'SEMGTIN';
+
+      const product = isNonGtin
+        ? (item.supplierProductCode ? findProductStmt.get(`INT-${item.supplierProductCode}`) : null)
+        : findProductStmt.get(item.ean);
 
       if (product) {
         const currentPrice = Number(product.price);
@@ -203,7 +211,15 @@ export class PurchaseService {
       `);
 
       for (const item of parsed.items) {
-        let product = findProductStmt.get(item.ean);
+        const isNonGtin =
+          !item.ean ||
+          item.ean.trim() === '' ||
+          item.ean.trim().toUpperCase() === 'SEM GTIN' ||
+          item.ean.trim().toUpperCase() === 'SEMGTIN';
+
+        let product = isNonGtin
+          ? (item.supplierProductCode ? findProductStmt.get(`INT-${item.supplierProductCode}`) : null)
+          : findProductStmt.get(item.ean);
         let productId: number;
         let controlType = 'ISENTO';
         let msRegistration = item.anvisaRegistration || '';
@@ -211,19 +227,27 @@ export class PurchaseService {
         if (!product) {
           if (!options?.autoRegisterProducts) {
             throw new PurchaseImportError(
-              `Produto com EAN ${item.ean} (${item.productName}) não cadastrado no catálogo. Habilite auto-cadastro para prosseguir.`,
+              `Produto com EAN ${item.ean || 'SEM GTIN'} (${item.productName}) não cadastrado no catálogo. Habilite auto-cadastro para prosseguir.`,
               'PRODUCT_NOT_FOUND'
             );
           }
 
-          const customClass = options.itemClassifications?.[item.ean];
+          let finalEan = item.ean;
+          if (isNonGtin) {
+            finalEan = `INT-${item.supplierProductCode || Date.now()}`;
+          }
+
+          const customClass =
+            options?.itemClassifications?.[item.ean] ||
+            (finalEan ? options?.itemClassifications?.[finalEan] : undefined) ||
+            options?.itemClassifications?.[String(item.itemIndex)];
           const stripe = customClass?.stripe || 'SEM_TARJA';
           controlType = customClass?.controlType || 'ISENTO';
           const pmc = item.pmc && item.pmc > 0 ? item.pmc : item.unitCost * 1.5;
           const price = pmc;
 
           const productRun = insertProductStmt.run(
-            item.ean,
+            finalEan,
             item.productName,
             item.productName,
             item.anvisaRegistration || '',

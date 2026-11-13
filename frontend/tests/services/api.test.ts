@@ -5,6 +5,8 @@ import {
   getAvailableBatches,
   createPreSale,
   setBaseUrl,
+  purchasesApi,
+  sngpcApi,
 } from '../../src/services/api';
 
 describe('API Service', () => {
@@ -148,6 +150,80 @@ describe('API Service', () => {
       await expect(
         createPreSale({ items: [{ productId: 1, batchId: 1, quantity: 100 }] })
       ).rejects.toThrow('Estoque insuficiente');
+    });
+  });
+
+  describe('purchasesApi.importXml', () => {
+    it('should support object payload with itemClassifications and post to /api/purchases/import-xml', async () => {
+      const mockResult = { invoiceId: 1, accessKey: '123', batchesCreatedCount: 1, productsRegisteredCount: 1, totalItems: 1 };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockResult,
+      } as unknown as Response);
+
+      const payload = {
+        xmlContent: '<xml></xml>',
+        autoRegisterProducts: true,
+        itemClassifications: {
+          '789000': { stripe: 'VERMELHA', controlType: 'ANTIBIOTICO' },
+        },
+      };
+
+      const result = await purchasesApi.importXml(payload);
+
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/purchases/import-xml', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('sngpcApi.generateWeeklyXml', () => {
+    it('should unwrap backend response containing transmission object', async () => {
+      const backendResponse = {
+        transmission: {
+          id: 42,
+          startDate: '2026-11-01',
+          endDate: '2026-11-07',
+          pharmacistName: 'DR. TESTE',
+          pharmacistCpf: '12345678901',
+          pharmacistCrf: '12345',
+          pharmacistCrfUf: 'SP',
+          xmlContent: '<mensagemSNGPC></mensagemSNGPC>',
+          status: 'GERADO',
+          hashXml: 'abcdef1234567890',
+        },
+        movementsCount: 5,
+      };
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => backendResponse,
+      } as unknown as Response);
+
+      const params = {
+        startDate: '2026-11-01',
+        endDate: '2026-11-07',
+        pharmacistName: 'DR. TESTE',
+        pharmacistCpf: '12345678901',
+        pharmacistCrf: '12345',
+        pharmacistCrfUf: 'SP',
+      };
+
+      const result = await sngpcApi.generateWeeklyXml(params);
+
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/sngpc/generate-xml', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      expect(result.transmissionId).toBe(42);
+      expect(result.movementsCount).toBe(5);
+      expect(result.hashXml).toBe('abcdef1234567890');
+      expect(result.xmlContent).toBe('<mensagemSNGPC></mensagemSNGPC>');
+      expect(result.transmission).toEqual(backendResponse.transmission);
     });
   });
 });

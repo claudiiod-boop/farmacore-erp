@@ -22,6 +22,14 @@ import type {
 
 type SngpcTab = 'MOVIMENTACOES' | 'LIVRO' | 'TRANSMISSAO';
 
+function formatIsoDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return dateStr;
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+}
+
 export default function SngpcPage() {
   const [activeTab, setActiveTab] = useState<SngpcTab>('MOVIMENTACOES');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -146,8 +154,12 @@ export default function SngpcPage() {
         endDate: transmissionEndDate,
       });
 
+      const transmissionId = result.transmissionId ?? result.transmission?.id;
+      const hashXml = result.hashXml ?? result.transmission?.hashXml ?? '';
+      const hashDisplay = hashXml ? `${hashXml.substring(0, 10)}...` : '-';
+
       setSuccessMessage(
-        `Transmissão gerada com sucesso! ID #${result.transmissionId} (${result.movementsCount} movimentações incluídas, Hash: ${result.hashXml.substring(0, 10)}...).`
+        `Transmissão gerada com sucesso! ID #${transmissionId} (${result.movementsCount} movimentações incluídas, Hash: ${hashDisplay}).`
       );
       loadTransmissions();
     } catch (err: any) {
@@ -364,7 +376,7 @@ export default function SngpcPage() {
                     movements.map((mov) => (
                       <tr key={mov.id} className="hover:bg-slate-800/30 transition">
                         <td className="py-3 px-4 font-mono text-slate-300">
-                          {mov.movementDate}
+                          {formatIsoDate(mov.movementDate)}
                         </td>
                         <td className="py-3 px-4">
                           {mov.movementType === 'ENTRADA' && (
@@ -537,7 +549,7 @@ export default function SngpcPage() {
                       ) : (
                         livroData.items.map((it, idx) => (
                           <tr key={idx} className="hover:bg-slate-50">
-                            <td className="py-1.5 px-2 border border-slate-300 font-mono">{it.date}</td>
+                            <td className="py-1.5 px-2 border border-slate-300 font-mono">{formatIsoDate(it.date)}</td>
                             <td className="py-1.5 px-2 border border-slate-300 font-mono">{it.documentNumber}</td>
                             <td className="py-1.5 px-2 border border-slate-300">
                               <span className="font-bold block">{it.productName}</span>
@@ -770,7 +782,7 @@ export default function SngpcPage() {
                       <tr key={t.id} className="hover:bg-slate-800/30 transition">
                         <td className="py-3 px-4 font-mono text-slate-400">#{t.id}</td>
                         <td className="py-3 px-4 text-slate-200">
-                          {t.startDate} a {t.endDate}
+                          {formatIsoDate(t.startDate)} a {formatIsoDate(t.endDate)}
                         </td>
                         <td className="py-3 px-4">
                           <span className="font-semibold text-slate-200 block">{t.pharmacistName}</span>

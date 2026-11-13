@@ -670,17 +670,34 @@ export const purchasesApi = {
   },
 
   importXml: async (
-    xmlContent: string,
+    xmlOrPayload:
+      | string
+      | {
+          xmlContent: string;
+          autoRegisterProducts?: boolean;
+          itemClassifications?: Record<string, { stripe: string; controlType: string }>;
+        },
     options?: PurchaseImportOptions
   ): Promise<PurchaseImportResult> => {
     const base = getBaseUrl();
+    const xmlContent =
+      typeof xmlOrPayload === 'string' ? xmlOrPayload : xmlOrPayload.xmlContent;
+    const autoRegisterProducts =
+      typeof xmlOrPayload === 'string'
+        ? options?.autoRegisterProducts
+        : xmlOrPayload.autoRegisterProducts;
+    const itemClassifications =
+      typeof xmlOrPayload === 'string'
+        ? options?.itemClassifications
+        : xmlOrPayload.itemClassifications;
+
     const response = await fetch(`${base}/api/purchases/import-xml`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         xmlContent,
-        autoRegisterProducts: options?.autoRegisterProducts,
-        itemClassifications: options?.itemClassifications,
+        autoRegisterProducts,
+        itemClassifications,
       }),
     });
     if (!response.ok) {
@@ -775,7 +792,13 @@ export const sngpcApi = {
 
   generateWeeklyXml: async (
     params: SngpcTransmissionParams
-  ): Promise<{ transmissionId: number; movementsCount: number; hashXml: string; xmlContent: string }> => {
+  ): Promise<{
+    transmission?: SngpcTransmission;
+    transmissionId: number;
+    movementsCount: number;
+    hashXml: string;
+    xmlContent: string;
+  }> => {
     const base = getBaseUrl();
     const response = await fetch(`${base}/api/sngpc/generate-xml`, {
       method: 'POST',
@@ -788,7 +811,14 @@ export const sngpcApi = {
         body?.error || body?.message || `Falha ao gerar XML semanal SNGPC: ${response.statusText}`
       );
     }
-    return response.json();
+    const data = await response.json();
+    return {
+      transmission: data.transmission,
+      transmissionId: data.transmission?.id ?? data.transmissionId,
+      movementsCount: data.movementsCount,
+      hashXml: data.transmission?.hashXml ?? data.hashXml ?? '',
+      xmlContent: data.transmission?.xmlContent ?? data.xmlContent ?? '',
+    };
   },
 
   getTransmissions: async (): Promise<SngpcTransmission[]> => {

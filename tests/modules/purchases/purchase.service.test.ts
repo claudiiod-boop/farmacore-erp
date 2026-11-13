@@ -370,6 +370,72 @@ describe('PurchaseService (Orquestrador de Compras)', () => {
       expect(batchCount.count).toBe(0);
       expect(sngpcCount.count).toBe(0);
     });
+
+    it('should generate internal barcode INT-CODE for non-GTIN items without violating unique constraint', () => {
+      const xmlNonGtin = `<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
+  <NFe>
+    <infNFe Id="NFe35231012345678000199550010000007771000007777" versao="4.00">
+      <ide>
+        <cUF>35</cUF>
+        <cNF>00000777</cNF>
+        <serie>1</serie>
+        <nNF>777</nNF>
+        <dhEmi>2023-11-05T10:00:00-03:00</dhEmi>
+      </ide>
+      <emit>
+        <CNPJ>12345678000199</CNPJ>
+        <xNome>DISTRIBUIDORA DE MEDICAMENTOS FARMA S/A</xNome>
+      </emit>
+      <dest><CNPJ>98765432000188</CNPJ></dest>
+      <det nItem="1">
+        <prod>
+          <cProd>MANIP01</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>PRODUTO MANIPULADO SEM GTIN 1</xProd>
+          <NCM>30049099</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>10.0000</qCom>
+          <vUnCom>20.0000</vUnCom>
+          <vProd>200.00</vProd>
+        </prod>
+      </det>
+      <det nItem="2">
+        <prod>
+          <cProd>MANIP02</cProd>
+          <cEAN></cEAN>
+          <xProd>PRODUTO MANIPULADO SEM GTIN 2</xProd>
+          <NCM>30049099</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>5.0000</qCom>
+          <vUnCom>30.0000</vUnCom>
+          <vProd>150.00</vProd>
+        </prod>
+      </det>
+      <total>
+        <ICMSTot>
+          <vST>0.00</vST>
+          <vProd>350.00</vProd>
+          <vNF>350.00</vNF>
+        </ICMSTot>
+      </total>
+    </infNFe>
+  </NFe>
+</nfeProc>`;
+
+      const result = purchaseService.importNfeXml(xmlNonGtin, { autoRegisterProducts: true });
+      expect(result.productsRegisteredCount).toBe(2);
+
+      const p1 = db.prepare('SELECT * FROM products WHERE ean = ?').get('INT-MANIP01') as any;
+      expect(p1).toBeDefined();
+      expect(p1.name).toBe('PRODUTO MANIPULADO SEM GTIN 1');
+
+      const p2 = db.prepare('SELECT * FROM products WHERE ean = ?').get('INT-MANIP02') as any;
+      expect(p2).toBeDefined();
+      expect(p2.name).toBe('PRODUTO MANIPULADO SEM GTIN 2');
+    });
   });
 
   describe('Consultas: getInvoices & getInvoiceById', () => {

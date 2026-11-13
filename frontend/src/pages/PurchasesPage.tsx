@@ -18,6 +18,14 @@ import type {
   PurchaseInvoiceDetails,
 } from '../types';
 
+function formatIsoDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return dateStr;
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+}
+
 export default function PurchasesPage() {
   const [invoices, setInvoices] = useState<PurchaseInvoiceSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +38,9 @@ export default function PurchasesPage() {
   const [previewData, setPreviewData] = useState<PurchasePreviewResult | null>(null);
   const [rawXml, setRawXml] = useState<string | null>(null);
   const [autoRegister, setAutoRegister] = useState(true);
+  const [itemClassifications, setItemClassifications] = useState<
+    Record<string, { stripe: string; controlType: string }>
+  >({});
   const [isImporting, setIsImporting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -77,12 +88,14 @@ export default function PurchasesPage() {
     try {
       const text = await readFileAsText(file);
       setRawXml(text);
+      setItemClassifications({});
       const preview = await purchasesApi.previewXml(text);
       setPreviewData(preview);
     } catch (err: any) {
       setErrorMessage(err.message || 'Erro ao processar arquivo XML.');
       setPreviewData(null);
       setRawXml(null);
+      setItemClassifications({});
     } finally {
       setIsAnalyzing(false);
     }
@@ -123,8 +136,10 @@ export default function PurchasesPage() {
     setErrorMessage(null);
 
     try {
-      const result = await purchasesApi.importXml(rawXml, {
+      const result = await purchasesApi.importXml({
+        xmlContent: rawXml,
         autoRegisterProducts: autoRegister,
+        itemClassifications,
       });
 
       setSuccessMessage(
@@ -132,6 +147,7 @@ export default function PurchasesPage() {
       );
       setPreviewData(null);
       setRawXml(null);
+      setItemClassifications({});
       loadInvoices();
     } catch (err: any) {
       setErrorMessage(err.message || 'Erro ao efetivar entrada de nota fiscal.');
@@ -343,7 +359,7 @@ export default function PurchasesPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-slate-300">
-                        {new Date(inv.issueDate).toLocaleDateString('pt-BR')}
+                        {formatIsoDate(inv.issueDate)}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded-full font-mono text-[11px]">
@@ -421,7 +437,7 @@ export default function PurchasesPage() {
                     {previewData.invoiceNumber} / {previewData.invoiceSeries}
                   </span>
                   <span className="text-[10px] text-slate-400 block">
-                    Emissão: {new Date(previewData.issueDate).toLocaleDateString('pt-BR')}
+                    Emissão: {formatIsoDate(previewData.issueDate)}
                   </span>
                 </div>
 
@@ -481,60 +497,113 @@ export default function PurchasesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {previewData.items.map((item) => (
-                      <tr
-                        key={item.itemIndex}
-                        className={`hover:bg-slate-800/30 ${
-                          item.cmedWarning ? 'bg-amber-950/20' : ''
-                        }`}
-                      >
-                        <td className="py-2.5 px-3 text-slate-500 font-mono">{item.itemIndex}</td>
-                        <td className="py-2.5 px-3 font-mono">
-                          <span className="text-slate-200 block">{item.ean || 'SEM GTIN'}</span>
-                          <span className="text-[10px] text-slate-500">{item.supplierProductCode}</span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="font-medium text-slate-100">{item.productName}</div>
-                          {item.anvisaRegistration && (
-                            <span className="text-[10px] text-slate-400 font-mono block">
-                              Reg. MS: {item.anvisaRegistration}
+                    {previewData.items.map((item, idx) => {
+                      const itemKey = item.ean || String(item.itemIndex);
+                      const currentClassification = itemClassifications[itemKey] || {
+                        stripe: 'SEM_TARJA',
+                        controlType: 'ISENTO',
+                      };
+
+                      return (
+                        <tr
+                          key={`${item.itemIndex}-${item.batchNumber || item.ean || idx}`}
+                          className={`hover:bg-slate-800/30 ${
+                            item.cmedWarning ? 'bg-amber-950/20' : ''
+                          }`}
+                        >
+                          <td className="py-2.5 px-3 text-slate-500 font-mono">{item.itemIndex}</td>
+                          <td className="py-2.5 px-3 font-mono">
+                            <span className="text-slate-200 block">{item.ean || 'SEM GTIN'}</span>
+                            <span className="text-[10px] text-slate-500">{item.supplierProductCode}</span>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <div className="font-medium text-slate-100">{item.productName}</div>
+                            {item.anvisaRegistration && (
+                              <span className="text-[10px] text-slate-400 font-mono block">
+                                Reg. MS: {item.anvisaRegistration}
+                              </span>
+                            )}
+                            {item.cmedWarning && (
+                              <div className="flex items-center space-x-1 mt-1 text-amber-400 font-semibold text-[11px]">
+                                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                <span>{item.cmedWarning}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            {item.isExistingProduct ? (
+                              <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded-full font-semibold text-[10px]">
+                                Existente
+                              </span>
+                            ) : (
+                              <div className="flex flex-col items-center gap-1.5 py-0.5">
+                                <span className="px-2 py-0.5 bg-blue-950 text-blue-400 border border-blue-800 rounded-full font-semibold text-[10px]">
+                                  Novo Produto
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <select
+                                    aria-label={`Tarja do item ${item.itemIndex}`}
+                                    value={currentClassification.stripe}
+                                    onChange={(e) => {
+                                      const stripeVal = e.target.value;
+                                      setItemClassifications((prev) => ({
+                                        ...prev,
+                                        [itemKey]: {
+                                          stripe: stripeVal,
+                                          controlType: prev[itemKey]?.controlType || 'ISENTO',
+                                        },
+                                      }));
+                                    }}
+                                    className="bg-slate-900 border border-slate-700 text-[10px] text-slate-200 rounded px-1.5 py-0.5 focus:outline-none focus:border-amber-500"
+                                  >
+                                    <option value="SEM_TARJA">SEM_TARJA</option>
+                                    <option value="VERMELHA">VERMELHA</option>
+                                    <option value="PRETA">PRETA</option>
+                                    <option value="AMARELA">AMARELA</option>
+                                  </select>
+                                  <select
+                                    aria-label={`Tipo de controle do item ${item.itemIndex}`}
+                                    value={currentClassification.controlType}
+                                    onChange={(e) => {
+                                      const controlVal = e.target.value;
+                                      setItemClassifications((prev) => ({
+                                        ...prev,
+                                        [itemKey]: {
+                                          stripe: prev[itemKey]?.stripe || 'SEM_TARJA',
+                                          controlType: controlVal,
+                                        },
+                                      }));
+                                    }}
+                                    className="bg-slate-900 border border-slate-700 text-[10px] text-slate-200 rounded px-1.5 py-0.5 focus:outline-none focus:border-amber-500"
+                                  >
+                                    <option value="ISENTO">ISENTO</option>
+                                    <option value="ANTIBIOTICO">ANTIBIOTICO</option>
+                                    <option value="C1_BRANCA">C1_BRANCA</option>
+                                    <option value="B1_AZUL">B1_AZUL</option>
+                                    <option value="A1_AMARELA">A1_AMARELA</option>
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono text-[11px]">
+                            <span className="text-slate-300 block">{item.batchNumber || 'S/ LOTE'}</span>
+                            <span className="text-[10px] text-slate-500">
+                              Val: {formatIsoDate(item.expirationDate)}
                             </span>
-                          )}
-                          {item.cmedWarning && (
-                            <div className="flex items-center space-x-1 mt-1 text-amber-400 font-semibold text-[11px]">
-                              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                              <span>{item.cmedWarning}</span>
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          {item.isExistingProduct ? (
-                            <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded-full font-semibold text-[10px]">
-                              Existente
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 bg-blue-950 text-blue-400 border border-blue-800 rounded-full font-semibold text-[10px]">
-                              Novo Produto
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono text-[11px]">
-                          <span className="text-slate-300 block">{item.batchNumber || 'S/ LOTE'}</span>
-                          <span className="text-[10px] text-slate-500">
-                            Val: {item.expirationDate ? new Date(item.expirationDate).toLocaleDateString('pt-BR') : '-'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-200">
-                          {item.quantity}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono text-slate-300">
-                          R$ {item.unitCost.toFixed(2)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
-                          R$ {item.totalCost.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-200">
+                            {item.quantity}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-300">
+                            R$ {item.unitCost.toFixed(2)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+                            R$ {item.totalCost.toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -632,7 +701,7 @@ export default function PurchasesPage() {
                 <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs">
                   <span className="text-slate-400 font-semibold block">Data de Emissão</span>
                   <span className="font-bold text-slate-100 block">
-                    {new Date(selectedInvoice.issueDate).toLocaleDateString('pt-BR')}
+                    {formatIsoDate(selectedInvoice.issueDate)}
                   </span>
                   <span className="text-slate-400 text-[11px]">
                     Série: {selectedInvoice.invoiceSeries}
@@ -665,8 +734,11 @@ export default function PurchasesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {selectedInvoice.items.map((it) => (
-                      <tr key={it.id} className="hover:bg-slate-800/30">
+                    {selectedInvoice.items.map((it, idx) => (
+                      <tr
+                        key={`${it.id || it.itemIndex}-${it.batch?.batchNumber || it.batchNumber || it.ean || idx}`}
+                        className="hover:bg-slate-800/30"
+                      >
                         <td className="py-2.5 px-3 font-mono text-slate-500">{it.itemIndex}</td>
                         <td className="py-2.5 px-3">
                           <span className="font-semibold text-slate-200 block">{it.productName}</span>
@@ -677,12 +749,7 @@ export default function PurchasesPage() {
                             {it.batch?.batchNumber || it.batchNumber || '-'}
                           </span>
                           <span className="text-[10px] text-slate-400">
-                            Val:{' '}
-                            {it.batch?.expirationDate || it.expirationDate
-                              ? new Date(
-                                  it.batch?.expirationDate || it.expirationDate!
-                                ).toLocaleDateString('pt-BR')
-                              : '-'}
+                            Val: {formatIsoDate(it.batch?.expirationDate || it.expirationDate)}
                           </span>
                         </td>
                         <td className="py-2.5 px-3 font-mono text-slate-300">

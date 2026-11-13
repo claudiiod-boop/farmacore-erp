@@ -217,9 +217,12 @@ describe('PurchasesPage Component', () => {
     });
 
     await waitFor(() => {
-      expect(purchasesApi.importXml).toHaveBeenCalledWith(sampleXml, expect.objectContaining({
-        autoRegisterProducts: true,
-      }));
+      expect(purchasesApi.importXml).toHaveBeenCalledWith(
+        expect.objectContaining({
+          xmlContent: sampleXml,
+          autoRegisterProducts: true,
+        })
+      );
     });
 
     // Success alert should appear and getInvoices called again
@@ -246,6 +249,52 @@ describe('PurchasesPage Component', () => {
       expect(screen.getByText(/Detalhes da Nota Fiscal/i)).toBeDefined();
       expect(screen.getByText('LOTE-AMX-01')).toBeDefined();
       expect(screen.getByText('1058300120011')).toBeDefined();
+    });
+  });
+
+  it('should allow setting stripe and controlType for new products and pass to importXml', async () => {
+    render(<PurchasesPage />);
+
+    const sampleXml = '<nfeProc><NFe></NFe></nfeProc>';
+    const file = new File([sampleXml], 'nfe-teste.xml', { type: 'text/xml' });
+    file.text = () => Promise.resolve(sampleXml);
+
+    const fileInput = screen.getByLabelText(/Selecionar arquivo XML/i, { selector: 'input' });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Conferência de NF-e/i)).toBeDefined();
+    });
+
+    const stripeSelect = screen.getByLabelText(/Tarja do item 2/i);
+    const controlSelect = screen.getByLabelText(/Tipo de controle do item 2/i);
+
+    await act(async () => {
+      fireEvent.change(stripeSelect, { target: { value: 'PRETA' } });
+      fireEvent.change(controlSelect, { target: { value: 'A1_AMARELA' } });
+    });
+
+    const confirmBtn = screen.getByRole('button', { name: /Confirmar Entrada|Efetivar Entrada/i });
+    await act(async () => {
+      fireEvent.click(confirmBtn);
+    });
+
+    await waitFor(() => {
+      expect(purchasesApi.importXml).toHaveBeenCalledWith(
+        expect.objectContaining({
+          xmlContent: sampleXml,
+          autoRegisterProducts: true,
+          itemClassifications: expect.objectContaining({
+            '7891058009999': {
+              stripe: 'PRETA',
+              controlType: 'A1_AMARELA',
+            },
+          }),
+        })
+      );
     });
   });
 });
