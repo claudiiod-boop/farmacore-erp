@@ -2,6 +2,7 @@ import { Database } from '../../database/connection';
 import { InventoryService } from '../inventory/inventory.service';
 import { PreSaleService } from '../counter/pre-sale.service';
 import { PrescriptionDetails } from '../counter/types';
+import { SngpcService } from '../sngpc/sngpc.service';
 import {
   AdditionalCheckoutItem,
   CashMovement,
@@ -162,11 +163,16 @@ function mapSalePaymentRow(row: SalePaymentRow): PaymentItemDetails {
 }
 
 export class PosService {
+  private sngpcService: SngpcService;
+
   constructor(
     private db: Database,
     private preSaleService: PreSaleService,
-    private inventoryService: InventoryService
-  ) {}
+    private inventoryService: InventoryService,
+    sngpcService?: SngpcService
+  ) {
+    this.sngpcService = sngpcService ?? new SngpcService(db);
+  }
 
   openCashSession(operatorName: string, initialCash: number): CashSession {
     if (!operatorName || typeof operatorName !== 'string' || operatorName.trim() === '') {
@@ -660,6 +666,28 @@ export class PosService {
           );
 
           this.inventoryService.deductBatchStock(item.batchId, item.quantity);
+
+          // Sanitary SNGPC movement recording for controlled medicines
+          if (preSaleDetails.prescription) {
+            const product = this.db
+              .prepare<{ control_type: string; ms_registration: string }>(
+                'SELECT control_type, ms_registration FROM products WHERE id = ?'
+              )
+              .get(item.productId);
+
+            if (product && product.control_type !== 'ISENTO') {
+              const movementDate = new Date().toISOString().slice(0, 10);
+              this.sngpcService.recordSaleMovement({
+                productId: item.productId,
+                batchId: item.batchId,
+                quantity: item.quantity,
+                referenceId: saleId,
+                movementDate,
+                msRegistration: product.ms_registration || '',
+                prescriptionId: preSaleDetails.prescription.id,
+              });
+            }
+          }
         }
       }
 
