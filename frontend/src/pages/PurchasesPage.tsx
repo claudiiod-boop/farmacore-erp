@@ -7,13 +7,8 @@ import {
   Eye,
   X,
   Search,
-  Building2,
-  Calendar,
-  Layers,
-  ArrowRight,
   RefreshCw,
   Loader2,
-  ShieldCheck,
   Package,
 } from 'lucide-react';
 import { purchasesApi } from '../services/api';
@@ -361,10 +356,15 @@ export default function PurchasesPage() {
                       <td className="py-3 px-4 text-center">
                         <button
                           onClick={() => handleOpenDetails(inv.id)}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded border border-slate-700 transition flex items-center space-x-1 mx-auto text-xs"
+                          disabled={isLoadingDetails}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 hover:text-white rounded border border-slate-700 transition flex items-center space-x-1 mx-auto text-xs"
                           title="Ver detalhes da nota"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          {isLoadingDetails ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
                           <span>Ver Detalhes</span>
                         </button>
                       </td>
