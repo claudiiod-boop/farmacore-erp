@@ -6,3 +6,9 @@ frontend/dist/
 *.db
 *.db-journal
 *.db-wal
+*.pfx
+*.pem
+.env
+.env.local
+.DS_Store
+Thumbs.db
