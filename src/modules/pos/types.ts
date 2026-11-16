@@ -1,6 +1,6 @@
 import { PrescriptionDetails } from '../counter/types';
 
-export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX';
+export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX' | 'CONVENIO_PBM';
 
 export interface PaymentItem {
   method: PaymentMethod;
@@ -90,5 +90,6 @@ export interface CheckoutParams {
   preSaleCode?: string;
   additionalItems?: AdditionalCheckoutItem[];
   payments: PaymentItem[];
+  pbmProtocol?: string;
 }
 

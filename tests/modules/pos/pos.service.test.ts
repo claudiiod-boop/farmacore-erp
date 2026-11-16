@@ -139,6 +139,7 @@ describe('PosService (PDV & Finalização de Vendas)', () => {
         CARTAO_CREDITO: 0,
         CARTAO_DEBITO: 0,
         PIX: 0,
+        CONVENIO_PBM: 0,
       });
 
       // Verify session is no longer current

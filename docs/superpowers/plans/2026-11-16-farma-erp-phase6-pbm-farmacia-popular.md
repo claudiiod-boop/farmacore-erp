@@ -159,30 +159,10 @@ Expected: PASS (6/6 testes passando).
   - Regra de troco: `CONVENIO_PBM` não gera troco.
   - Vínculo no checkout: quando uma venda possui transação PBM, confirma automaticamente a autorização vinculando o `saleId` e a chave NFC-e.
 
-- [ ] **Step 1: Write failing tests for PDV & PBM integration**
-
-Create `tests/modules/pos/pos-pbm-integration.test.ts`:
-```ts
-describe('PDV & PBM Integration (CONVENIO_PBM Payment & Cash Closure)', () => {
-  it('should allow checkout with split payment: CONVENIO_PBM (subsidy) + DINHEIRO (copay)', async () => {});
-  it('should prevent change generation from CONVENIO_PBM amount', async () => {});
-  it('should not add CONVENIO_PBM to physical cash drawer in calculateSessionSummary', async () => {});
-  it('should automatically confirm PBM transaction upon checkout completion', async () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/modules/pos/pos-pbm-integration.test.ts"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement PDV changes in `pos.service.ts`, `types.ts`, and `xml-builder.ts`**
-
-1. Expandir `PaymentMethod` com `'CONVENIO_PBM'`.
-2. Proteger cálculo de gaveta física em `calculateSessionSummary`.
-3. Adicionar gancho de confirmação da transação PBM no checkout.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for PDV & PBM integration**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement PDV changes in `pos.service.ts`, `types.ts`, and `xml-builder.ts`**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/pos/pos-pbm-integration.test.ts"`
 Expected: PASS (4/4 testes passando).

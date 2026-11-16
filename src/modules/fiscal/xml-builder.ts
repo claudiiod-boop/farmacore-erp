@@ -101,6 +101,7 @@ const PAYMENT_METHOD_MAP: Record<string, string> = {
   '18': '18',
   SEM_PAGAMENTO: '90',
   '90': '90',
+  CONVENIO_PBM: '99',
   OUTROS: '99',
   '99': '99',
 };

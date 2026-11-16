@@ -3,6 +3,7 @@ import { InventoryService } from '../inventory/inventory.service';
 import { PreSaleService } from '../counter/pre-sale.service';
 import { PrescriptionDetails } from '../counter/types';
 import { SngpcService } from '../sngpc/sngpc.service';
+import { PbmService } from '../pbm/pbm.service';
 import {
   AdditionalCheckoutItem,
   CashMovement,
@@ -164,14 +165,21 @@ function mapSalePaymentRow(row: SalePaymentRow): PaymentItemDetails {
 
 export class PosService {
   private sngpcService: SngpcService;
+  private pbmService?: PbmService;
 
   constructor(
     private db: Database,
     private preSaleService: PreSaleService,
     private inventoryService: InventoryService,
-    sngpcService?: SngpcService
+    sngpcService?: SngpcService,
+    pbmService?: PbmService
   ) {
     this.sngpcService = sngpcService ?? new SngpcService(db);
+    this.pbmService = pbmService;
+  }
+
+  setPbmService(service: PbmService): void {
+    this.pbmService = service;
   }
 
   openCashSession(operatorName: string, initialCash: number): CashSession {
@@ -279,6 +287,7 @@ export class PosService {
       CARTAO_CREDITO: 0,
       CARTAO_DEBITO: 0,
       PIX: 0,
+      CONVENIO_PBM: 0,
     };
 
     const paymentRows = this.db
@@ -458,7 +467,7 @@ export class PosService {
     return row ? mapCashSessionRow(row) : null;
   }
 
-  checkout(params: CheckoutParams): SaleDetails {
+  checkout(params: CheckoutParams): SaleDetails & Promise<SaleDetails> {
     if (params.cashSessionId !== undefined && params.cashSessionId !== null) {
       const sessionRow = this.db
         .prepare<CashSessionRow>('SELECT * FROM cash_sessions WHERE id = ?')
@@ -576,7 +585,13 @@ export class PosService {
       throw new Error('NO_PAYMENT_PROVIDED');
     }
 
-    const VALID_METHODS: PaymentMethod[] = ['DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'PIX'];
+    const VALID_METHODS: PaymentMethod[] = [
+      'DINHEIRO',
+      'CARTAO_CREDITO',
+      'CARTAO_DEBITO',
+      'PIX',
+      'CONVENIO_PBM',
+    ];
 
     for (const p of params.payments) {
       if (!VALID_METHODS.includes(p.method)) {
@@ -737,18 +752,34 @@ export class PosService {
       return saleDetails;
     });
 
-    return checkoutTx();
+    const saleDetails = checkoutTx();
+
+    if (params.pbmProtocol && this.pbmService) {
+      const confirmPromise = this.pbmService
+        .confirm({
+          authorizationProtocol: params.pbmProtocol,
+          saleId: saleDetails.sale.id,
+        })
+        .then(() => saleDetails);
+
+      return Object.assign(confirmPromise, saleDetails) as SaleDetails & Promise<SaleDetails>;
+    }
+
+    const resolved = Promise.resolve(saleDetails);
+    return Object.assign(resolved, saleDetails) as SaleDetails & Promise<SaleDetails>;
   }
 
   finalizeSaleFromPreSale(
     preSaleCode: string,
     payments: PaymentItem[],
-    cashSessionId?: number
-  ): SaleDetails {
+    cashSessionId?: number,
+    pbmProtocol?: string
+  ): SaleDetails & Promise<SaleDetails> {
     return this.checkout({
       preSaleCode,
       payments,
       cashSessionId,
+      pbmProtocol,
     });
   }
 
