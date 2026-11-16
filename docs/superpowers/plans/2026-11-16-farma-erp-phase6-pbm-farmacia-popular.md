@@ -91,7 +91,7 @@ Expected: PASS (10/10 testes passando).
   - `formatPbmReceipt(transaction: PbmTransaction, items: PbmTransactionItem[], storeInfo: StoreInfo): { consumerCopy: string; storeCopy: string; fullEscPos: string }`
   - Formatação precisa em 48 colunas de largura, separadores, cabeçalho do Ministério da Saúde, tabela de itens e lote entregue, cálculo de subsídios, e bloco de termos legais com linhas de assinatura do paciente/procurador e do farmacêutico RT (CRF).
 
-- [ ] **Step 1: Write failing tests for `pbm-receipt-formatter.ts`**
+- [x] **Step 1: Write failing tests for `pbm-receipt-formatter.ts`**
 
 Create `tests/modules/pbm/pbm-receipt-formatter.test.ts`:
 ```ts
@@ -103,19 +103,19 @@ describe('PBM Receipt Formatter (Cupom Vinculado 48 Colunas ESC/POS)', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/pbm/pbm-receipt-formatter.test.ts"`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement `src/modules/pbm/pbm-receipt-formatter.ts`**
+- [x] **Step 3: Implement `src/modules/pbm/pbm-receipt-formatter.ts`**
 
 1. Helper de alinhamento e padding para 48 colunas.
 2. Formatação da 1ª Via (Consumidor).
 3. Formatação da 2ª Via (Estabelecimento - Auditoria Denasus).
 4. Junção com comando de corte ESC/POS `\x1b\x69`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/pbm/pbm-receipt-formatter.test.ts"`
 Expected: PASS (4/4 testes passando).
