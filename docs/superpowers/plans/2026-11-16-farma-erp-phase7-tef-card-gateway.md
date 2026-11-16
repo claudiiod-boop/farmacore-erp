@@ -43,28 +43,10 @@
   - `TefTransaction`: id, transactionUuid, providerId, terminalId, saleId, paymentId, operationType, status, amount, installments, installmentType, brandName, brandCodeSefaz, acquirerName, acquirerCnpj, authorizationCode, nsu, hostNsu, cardLastFour, customerReceipt, merchantReceipt, cancellationReceipt, failureReason, reversalReason, cancellationNsu, cancellationReason, mdrRate, netAmount, expectedSettlementDate, batchNumber, createdAt, confirmedAt, reversedAt, cancelledAt.
   - Colunas adicionadas em `sale_payments`: `tef_transaction_id`, `tef_nsu`.
 
-- [ ] **Step 1: Write failing tests for TEF schema 006 & domain types**
-
-Create `tests/modules/tef/schema.test.ts`:
-```ts
-describe('TEF Card Gateway Schema 006 & Types', () => {
-  it('should apply migration 006 and create tef_configs and tef_transactions tables', () => {});
-  it('should verify sale_payments table has tef_transaction_id and tef_nsu columns', () => {});
-  it('should verify foreign keys and status check constraints on tef_transactions', () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/modules/tef/schema.test.ts"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement migration `006_tef_card_gateway.sql` and `src/modules/tef/types.ts`**
-
-1. Create `src/database/migrations/006_tef_card_gateway.sql`.
-2. Create `src/modules/tef/types.ts`.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for TEF schema 006 & domain types**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement migration `006_tef_card_gateway.sql` and `src/modules/tef/types.ts`**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/tef/schema.test.ts"`
 Expected: PASS.
