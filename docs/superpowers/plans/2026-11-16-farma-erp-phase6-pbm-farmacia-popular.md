@@ -70,35 +70,10 @@ Expected: PASS (4/4 testes passando).
   - `DatasusMockProvider`: implementação com matriz de 9 cenários regulatórios (gratuidade 100%, co-pagamento 90/10, Bolsa Família, intervalo 30 dias, validade de receita 180/365 dias, idade mínima para fraldas, validação de CPF, cancelamento idempotente).
   - `DatasusSoapProvider`: cliente SOAP WSDL estruturado para ambiente de produção com mTLS.
 
-- [ ] **Step 1: Write failing tests for `DatasusMockProvider`**
-
-Create `tests/modules/pbm/datasus-mock-provider.test.ts`:
-```ts
-describe('DatasusMockProvider (Farmácia Popular Simulator)', () => {
-  it('should authorize 100% free medications (Hypertension, Diabetes, Asthma)', async () => {});
-  it('should authorize co-payment medications (Dyslipidemia, Parkinson) with up to 90% subsidy', async () => {});
-  it('should grant 100% subsidy for all medications when isBolsaFamilia is true', async () => {});
-  it('should reject authorization if CPF ends in 99 (30-day interval violation)', async () => {});
-  it('should reject authorization if prescription date is older than 180 days for general medications', async () => {});
-  it('should accept authorization for contraceptives with prescription up to 365 days', async () => {});
-  it('should reject diapers for patients under 60 years old without CID laudo', async () => {});
-  it('should reject invalid CPF digits', async () => {});
-  it('should confirm authorization and return official receipt number', async () => {});
-  it('should cancel authorization and return cancellation protocol', async () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/modules/pbm/datasus-mock-provider.test.ts"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement `DatasusMockProvider` and `DatasusSoapProvider`**
-
-1. Implement `datasus-mock-provider.ts` com validação de CPF (dígitos verificadores), lógica de idade baseada em `patientBirthDate`, lógica de validade de receita (180 dias vs 365 dias para anticoncepcionais), regras de cota mensal e cálculo de subsídios.
-2. Implement `datasus-soap-provider.ts` com envelope SOAP Datasus canônico.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for `DatasusMockProvider`**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement `DatasusMockProvider` and `DatasusSoapProvider`**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/pbm/datasus-mock-provider.test.ts"`
 Expected: PASS (10/10 testes passando).
