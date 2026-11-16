@@ -180,31 +180,10 @@ Expected: PASS (4/4 testes passando).
 - Produces:
   - Endpoints REST `/api/pbm/providers`, `/api/pbm/authorize`, `/api/pbm/confirm`, `/api/pbm/cancel`, `/api/pbm/transactions`, `/api/pbm/transactions/:id/coupon`, `/api/pbm/config`.
 
-- [ ] **Step 1: Write failing tests for PBM API routes**
-
-Create `tests/api/pbm-routes.test.ts`:
-```ts
-describe('PBM Fastify API Routes', () => {
-  it('GET /api/pbm/providers should return active providers', async () => {});
-  it('POST /api/pbm/authorize should return authorization protocol and subsidy breakdown', async () => {});
-  it('POST /api/pbm/confirm should confirm authorization with saleId', async () => {});
-  it('POST /api/pbm/cancel should cancel authorization', async () => {});
-  it('GET /api/pbm/transactions should list transactions', async () => {});
-  it('GET /api/pbm/transactions/:id/coupon should return 48-column printable text', async () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/api/pbm-routes.test.ts"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement `src/api/routes/pbm.ts` and register in `src/server.ts`**
-
-1. Implementar rotas com validação de payload Fastify.
-2. Registrar plugin no `src/server.ts`.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for PBM API routes**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement `src/api/routes/pbm.ts` and register in `src/server.ts`**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/api/pbm-routes.test.ts"`
 Expected: PASS (6/6 testes passando).

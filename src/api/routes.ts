@@ -16,6 +16,7 @@ import { PurchaseService, PurchaseImportError } from '../modules/purchases/purch
 import { NfeParseError } from '../modules/purchases/nfe-parser';
 import { SngpcService } from '../modules/sngpc/sngpc.service';
 import { SngpcMovementType } from '../modules/sngpc/types';
+import { PbmService } from '../modules/pbm/pbm.service';
 
 const previewXmlSchema = z.object({
   xmlContent: z.string().trim().min(1, 'xmlContent é obrigatório'),
@@ -44,6 +45,52 @@ const sngpcGenerateXmlSchema = z.object({
   pharmacistCrfUf: z.string().trim().min(1, 'pharmacistCrfUf é obrigatório'),
 });
 
+const pbmAuthorizeItemSchema = z.object({
+  productId: z.number().int().positive('productId deve ser um número positivo'),
+  ean: z.string().trim().min(1, 'ean é obrigatório'),
+  msRegistration: z.string().trim().min(1, 'msRegistration é obrigatório'),
+  productName: z.string().trim().min(1, 'productName é obrigatório'),
+  quantity: z.number().positive('quantity deve ser maior que zero'),
+  unitPrice: z.number().nonnegative('unitPrice não pode ser negativo'),
+  dailyDose: z.number().positive().optional(),
+  batchId: z.number().int().positive().optional(),
+});
+
+const pbmAuthorizeSchema = z.object({
+  providerId: z.string().trim().min(1).default('FARMACIA_POPULAR'),
+  patientCpf: z.string().trim().min(11, 'patientCpf deve conter ao menos 11 dígitos'),
+  patientName: z.string().trim().min(1, 'patientName é obrigatório'),
+  patientBirthDate: z.string().trim().optional(),
+  doctorCrm: z.string().trim().min(1, 'doctorCrm é obrigatório'),
+  doctorUf: z.string().trim().min(2, 'doctorUf deve conter a UF com 2 caracteres'),
+  doctorName: z.string().trim().optional(),
+  prescriptionDate: z.string().trim().min(1, 'prescriptionDate é obrigatória'),
+  proxyName: z.string().trim().optional(),
+  proxyCpf: z.string().trim().optional(),
+  isBolsaFamilia: z.boolean().optional(),
+  cidLaudo: z.string().trim().optional(),
+  items: z.array(pbmAuthorizeItemSchema).min(1, 'items deve conter ao menos um item'),
+});
+
+const pbmConfirmSchema = z.object({
+  authorizationProtocol: z.string().trim().min(1, 'authorizationProtocol é obrigatório'),
+  saleId: z.number().int().positive('saleId deve ser um número inteiro positivo'),
+  fiscalKeyNfce: z.string().trim().optional(),
+  nfceNumber: z.number().int().positive().optional(),
+});
+
+const pbmCancelSchema = z.object({
+  protocol: z.string().trim().min(1, 'protocol é obrigatório'),
+  reason: z.string().trim().min(1, 'reason é obrigatório'),
+});
+
+const pbmConfigUpdateSchema = z.object({
+  providerName: z.string().trim().optional(),
+  environment: z.enum(['PRODUCAO', 'HOMOLOGACAO', 'MOCK']).optional(),
+  isActive: z.number().int().min(0).max(1).optional(),
+  credentialsJson: z.string().nullable().optional(),
+});
+
 export async function registerRoutes(app: FastifyInstance, db: Database): Promise<void> {
   const catalogService = new CatalogService(db);
   const inventoryService = new InventoryService(db);
@@ -52,6 +99,8 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
   const purchaseService = new PurchaseService(db, sngpcService);
   const posService = new PosService(db, preSaleService, inventoryService, sngpcService);
   const fiscalService = new FiscalService(db);
+  const pbmService = new PbmService(db);
+  posService.setPbmService(pbmService);
 
   // Health check
   app.get('/health', async () => {
@@ -1006,5 +1055,251 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
       .header('Content-Disposition', `attachment; filename="mensagemSNGPC-${transmission.id}.xml"`)
       .status(200)
       .send(transmission.xmlContent);
+  });
+
+  // ===================== PBM / FARMÁCIA POPULAR =====================
+  app.get<{ Querystring: { onlyActive?: string } }>('/api/pbm/providers', async (req, reply) => {
+    const onlyActive = req.query.onlyActive === 'true' || req.query.onlyActive === '1';
+    const providers = pbmService.listConfigs(onlyActive);
+    return reply.status(200).send(providers);
+  });
+
+  app.post<{ Body: unknown }>('/api/pbm/authorize', async (req, reply) => {
+    const parseResult = pbmAuthorizeSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de autorização PBM inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await pbmService.authorize(parseResult.data);
+      if (!result.success) {
+        return reply.status(400).send({
+          error: 'PBM_AUTHORIZATION_FAILED',
+          message: result.errorMessage || 'Autorização negada pelo provedor PBM',
+          details: result,
+        });
+      }
+      return reply.status(200).send(result);
+    } catch (err: any) {
+      return reply.status(400).send({
+        error: 'PBM_AUTHORIZATION_ERROR',
+        message: err.message || 'Erro inesperado na autorização PBM',
+      });
+    }
+  });
+
+  app.post<{ Body: unknown }>('/api/pbm/confirm', async (req, reply) => {
+    const parseResult = pbmConfirmSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de confirmação PBM inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await pbmService.confirm(parseResult.data);
+      if (!result.success) {
+        return reply.status(400).send({
+          error: 'PBM_CONFIRMATION_FAILED',
+          message: result.errorMessage || 'Falha na confirmação da autorização PBM',
+          details: result,
+        });
+      }
+      return reply.status(200).send(result);
+    } catch (err: any) {
+      if (err.message && err.message.includes('não encontrada')) {
+        return reply.status(404).send({
+          error: 'PBM_TRANSACTION_NOT_FOUND',
+          message: err.message,
+        });
+      }
+      return reply.status(400).send({
+        error: 'PBM_CONFIRMATION_ERROR',
+        message: err.message || 'Erro inesperado na confirmação PBM',
+      });
+    }
+  });
+
+  app.post<{ Body: unknown }>('/api/pbm/cancel', async (req, reply) => {
+    const parseResult = pbmCancelSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de cancelamento PBM inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await pbmService.cancel(parseResult.data.protocol, parseResult.data.reason);
+      if (!result.success) {
+        return reply.status(400).send({
+          error: 'PBM_CANCELLATION_FAILED',
+          message: result.errorMessage || 'Falha no cancelamento da autorização PBM',
+          details: result,
+        });
+      }
+      return reply.status(200).send(result);
+    } catch (err: any) {
+      if (err.message && err.message.includes('não encontrada')) {
+        return reply.status(404).send({
+          error: 'PBM_TRANSACTION_NOT_FOUND',
+          message: err.message,
+        });
+      }
+      return reply.status(400).send({
+        error: 'PBM_CANCELLATION_ERROR',
+        message: err.message || 'Erro inesperado no cancelamento PBM',
+      });
+    }
+  });
+
+  app.get<{
+    Querystring: {
+      startDate?: string;
+      endDate?: string;
+      status?: string;
+      patientCpf?: string;
+      limit?: string;
+      offset?: string;
+    };
+  }>('/api/pbm/transactions', async (req, reply) => {
+    const { startDate, endDate, status, patientCpf, limit, offset } = req.query;
+    const result = pbmService.listTransactions({
+      startDate,
+      endDate,
+      status,
+      patientCpf,
+      limit: limit ? Number(limit) : undefined,
+      offset: offset ? Number(offset) : undefined,
+    });
+    return reply.status(200).send(result);
+  });
+
+  app.get<{ Params: { protocol: string } }>(
+    '/api/pbm/transactions/:protocol/coupon',
+    async (req, reply) => {
+      let protocol = req.params.protocol;
+      if (!protocol) {
+        return reply.status(400).send({
+          error: 'INVALID_PROTOCOL',
+          message: 'Protocolo é obrigatório',
+        });
+      }
+
+      // Se for passado ID numérico da transação, faz o de-para para o protocolo
+      if (/^\d+$/.test(protocol)) {
+        const rowById = db.prepare('SELECT authorization_protocol FROM pbm_transactions WHERE id = ?').get(Number(protocol)) as any;
+        if (rowById?.authorization_protocol) {
+          protocol = rowById.authorization_protocol;
+        }
+      }
+
+      try {
+        const receipt = pbmService.getReceiptText(protocol);
+        return reply.status(200).send(receipt);
+      } catch (err: any) {
+        if (err.message && err.message.includes('não encontrada')) {
+          return reply.status(404).send({
+            error: 'PBM_TRANSACTION_NOT_FOUND',
+            message: err.message,
+          });
+        }
+        return reply.status(400).send({
+          error: 'PBM_RECEIPT_ERROR',
+          message: err.message || 'Erro ao gerar cupom PBM',
+        });
+      }
+    }
+  );
+
+  app.get<{ Params: { providerId: string } }>(
+    '/api/pbm/config/:providerId',
+    async (req, reply) => {
+      const config = pbmService.getConfig(req.params.providerId);
+      if (!config) {
+        return reply.status(404).send({
+          error: 'PBM_CONFIG_NOT_FOUND',
+          message: `Configuração do provedor PBM '${req.params.providerId}' não encontrada`,
+        });
+      }
+      return reply.status(200).send(config);
+    }
+  );
+
+  app.get('/api/pbm/config', async (_req, reply) => {
+    const configs = pbmService.listConfigs();
+    return reply.status(200).send(configs);
+  });
+
+  app.put<{ Params: { providerId: string }; Body: unknown }>(
+    '/api/pbm/config/:providerId',
+    async (req, reply) => {
+      const parseResult = pbmConfigUpdateSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'INVALID_PARAMETERS',
+          message: parseResult.error.issues[0]?.message || 'Parâmetros de configuração inválidos',
+          issues: parseResult.error.issues,
+        });
+      }
+
+      try {
+        const updated = pbmService.updateConfig(req.params.providerId, parseResult.data);
+        return reply.status(200).send(updated);
+      } catch (err: any) {
+        if (err.message && err.message.includes('não encontrada')) {
+          return reply.status(404).send({
+            error: 'PBM_CONFIG_NOT_FOUND',
+            message: err.message,
+          });
+        }
+        return reply.status(400).send({
+          error: 'PBM_CONFIG_UPDATE_FAILED',
+          message: err.message || 'Erro ao atualizar configuração PBM',
+        });
+      }
+    }
+  );
+
+  app.put<{ Body: { providerId?: string; [key: string]: any } }>('/api/pbm/config', async (req, reply) => {
+    const providerId = req.body?.providerId;
+    if (!providerId || typeof providerId !== 'string') {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: 'providerId é obrigatório para atualização de configuração',
+      });
+    }
+
+    const parseResult = pbmConfigUpdateSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de configuração inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const updated = pbmService.updateConfig(providerId, parseResult.data);
+      return reply.status(200).send(updated);
+    } catch (err: any) {
+      if (err.message && err.message.includes('não encontrada')) {
+        return reply.status(404).send({
+          error: 'PBM_CONFIG_NOT_FOUND',
+          message: err.message,
+        });
+      }
+      return reply.status(400).send({
+        error: 'PBM_CONFIG_UPDATE_FAILED',
+        message: err.message || 'Erro ao atualizar configuração PBM',
+      });
+    }
   });
 }
