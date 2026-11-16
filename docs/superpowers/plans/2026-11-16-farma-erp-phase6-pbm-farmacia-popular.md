@@ -46,30 +46,10 @@
   - `PbmTransactionItem`: id, pbmTransactionId, productId, batchId, ean, msRegistration, productName, dailyDose, authorizedQuantity, unitGrossPrice, totalGrossPrice, referenceUnitPrice, subsidyUnitPrice, subsidyTotalPrice, patientUnitPrice, patientTotalPrice, programType, createdAt.
   - Extensões na tabela `products`: `fp_eligible`, `fp_code`, `fp_reference_price`, `fp_type`.
 
-- [ ] **Step 1: Write failing tests for PBM schema 005 & domain types**
-
-Create `tests/modules/pbm/schema.test.ts`:
-```ts
-describe('PBM & Farmacia Popular Schema 005 & Types', () => {
-  it('should apply migration 005 and create pbm_configs, pbm_transactions, and pbm_transaction_items tables', () => {});
-  it('should verify products table has fp_eligible, fp_code, fp_reference_price, and fp_type columns', () => {});
-  it('should verify unique constraint on authorization_protocol and provider_id', () => {});
-  it('should verify check constraint on fp_type allows NULL, GRATUITO and CO_PAGAMENTO', () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/modules/pbm/schema.test.ts"`
-Expected: FAIL (migração e tabelas inexistentes).
-
-- [ ] **Step 3: Implement migration `005_pbm_farmacia_popular.sql` and `src/modules/pbm/types.ts`**
-
-1. Create `src/database/migrations/005_pbm_farmacia_popular.sql`.
-2. Ensure SQLite compatibility with `CHECK (fp_type IS NULL OR fp_type IN ('GRATUITO', 'CO_PAGAMENTO'))`.
-3. Create `src/modules/pbm/types.ts` com todas as interfaces, enums e tipos tipados.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for PBM schema 005 & domain types**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement migration `005_pbm_farmacia_popular.sql` and `src/modules/pbm/types.ts`**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/pbm/schema.test.ts"`
 Expected: PASS (4/4 testes passando).
