@@ -134,34 +134,10 @@ Expected: PASS (4/4 testes passando).
   - Persistência atômica no SQLite das tabelas `pbm_transactions` e `pbm_transaction_items`.
   - Validação de regras e concorrência: impedimento de confirmação dupla ou cancelamento de transação já cancelada.
 
-- [ ] **Step 1: Write failing tests for `PbmService`**
-
-Create `tests/modules/pbm/pbm-service.test.ts`:
-```ts
-describe('PbmService Lifecycle', () => {
-  it('should authorize a Farmácia Popular transaction and persist to database with status AUTHORIZED', async () => {});
-  it('should confirm an authorized transaction linking it to saleId and fiscalKeyNfce', async () => {});
-  it('should cancel an authorized or confirmed transaction and update status to CANCELLED', async () => {});
-  it('should reject confirming an already confirmed or cancelled transaction', async () => {});
-  it('should generate printable 48-column coupon for an existing transaction', async () => {});
-  it('should list transactions with filters by date, status, and patient CPF', async () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/modules/pbm/pbm-service.test.ts"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement `src/modules/pbm/pbm.service.ts`**
-
-1. Instanciação e chaveamento de provedores (`DatasusMockProvider`, `DatasusSoapProvider`, etc.).
-2. Execução de `authorize()` com gravação em transação SQLite.
-3. Execução de `confirm()` com atualização atômica e vínculo ao `sale_id`.
-4. Execução de `cancel()` com geração de protocolo de cancelamento.
-5. Métodos de consulta e emissão de cupom vinculado.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for `PbmService`**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement `src/modules/pbm/pbm.service.ts`**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/pbm/pbm-service.test.ts"`
 Expected: PASS (6/6 testes passando).
