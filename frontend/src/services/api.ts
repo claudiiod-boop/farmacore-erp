@@ -8,6 +8,13 @@ import type {
   SngpcLivroRegistro,
   SngpcTransmission,
   SngpcTransmissionParams,
+  PbmConfig,
+  PbmAuthorizeParams,
+  PbmAuthorizationResult,
+  PbmConfirmResult,
+  PbmCancelResult,
+  PbmTransaction,
+  PbmReceiptResult,
 } from '../types';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
@@ -218,7 +225,7 @@ export interface NfceInvoiceDetails {
   danfeText?: string;
 }
 
-export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX';
+export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX' | 'CONVENIO_PBM';
 
 export interface PaymentItem {
   method: PaymentMethod;
@@ -307,6 +314,7 @@ export interface CheckoutDTO {
   preSaleCode?: string;
   additionalItems?: AdditionalCheckoutItem[];
   payments: PaymentItem[];
+  pbmProtocol?: string;
 }
 
 export interface CheckoutResponse {
@@ -843,6 +851,116 @@ export const sngpcApi = {
   },
 };
 
+export const pbmApi = {
+  getProviders: async (onlyActive = true): Promise<PbmConfig[]> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/pbm/providers?onlyActive=${onlyActive}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.message || body?.error || `Falha ao listar provedores PBM: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  authorize: async (params: PbmAuthorizeParams): Promise<PbmAuthorizationResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/pbm/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        data?.message || data?.error || `Falha na autorização PBM: ${response.statusText}`
+      );
+    }
+    return data;
+  },
+
+  confirm: async (params: {
+    authorizationProtocol: string;
+    saleId: number;
+    fiscalKeyNfce?: string;
+    nfceNumber?: number;
+  }): Promise<PbmConfirmResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/pbm/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        data?.message || data?.error || `Falha na confirmação PBM: ${response.statusText}`
+      );
+    }
+    return data;
+  },
+
+  cancel: async (protocol: string, reason: string): Promise<PbmCancelResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/pbm/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ protocol, reason }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        data?.message || data?.error || `Falha no cancelamento PBM: ${response.statusText}`
+      );
+    }
+    return data;
+  },
+
+  getTransactions: async (filters?: {
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    patientCpf?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ transactions: PbmTransaction[]; total: number }> => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.patientCpf) params.append('patientCpf', filters.patientCpf);
+    if (filters?.limit !== undefined) params.append('limit', String(filters.limit));
+    if (filters?.offset !== undefined) params.append('offset', String(filters.offset));
+
+    const queryStr = params.toString();
+    const url = `${base}/api/pbm/transactions${queryStr ? `?${queryStr}` : ''}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.message || body?.error || `Falha ao listar transações PBM: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  getCoupon: async (protocol: string): Promise<PbmReceiptResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(
+      `${base}/api/pbm/transactions/${encodeURIComponent(protocol)}/coupon`
+    );
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.message || body?.error || `Falha ao obter cupom PBM: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -866,8 +984,10 @@ export const api = {
   cancelNfce,
   purchases: purchasesApi,
   sngpc: sngpcApi,
+  pbm: pbmApi,
   purchasesApi,
   sngpcApi,
+  pbmApi,
 };
 
 export default api;

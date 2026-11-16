@@ -11,6 +11,7 @@ import {
   Check,
   Loader2,
   ArrowRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { PaymentItem, PaymentMethod } from '../../services/api';
 import { formatBrl } from '../ProductSearch';
@@ -21,6 +22,8 @@ export interface PaymentModalProps {
   totalAmount: number;
   onConfirmPayments: (payments: PaymentItem[], options?: { emitNfce?: boolean }) => Promise<void> | void;
   isLoading?: boolean;
+  pbmSubsidyAmount?: number;
+  pbmProtocol?: string;
 }
 
 const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -28,6 +31,7 @@ const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: React.Component
   { id: 'CARTAO_CREDITO', label: 'Cartão Crédito', icon: CreditCard },
   { id: 'CARTAO_DEBITO', label: 'Cartão Débito', icon: CreditCard },
   { id: 'PIX', label: 'Pix', icon: QrCode },
+  { id: 'CONVENIO_PBM', label: 'Convênio PBM', icon: ShieldCheck },
 ];
 
 export default function PaymentModal({
@@ -36,6 +40,8 @@ export default function PaymentModal({
   totalAmount,
   onConfirmPayments,
   isLoading = false,
+  pbmSubsidyAmount,
+  pbmProtocol,
 }: PaymentModalProps) {
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [activeMethod, setActiveMethod] = useState<PaymentMethod>('DINHEIRO');
@@ -47,14 +53,21 @@ export default function PaymentModal({
   // Initialize or reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setPayments([]);
+      if (pbmSubsidyAmount && pbmSubsidyAmount > 0) {
+        const pbmPayAmount = Math.min(totalAmount, Number(pbmSubsidyAmount.toFixed(2)));
+        setPayments([{ method: 'CONVENIO_PBM', amount: pbmPayAmount }]);
+        const rem = Math.max(0, +(totalAmount - pbmPayAmount).toFixed(2));
+        setAmountInput(rem > 0 ? rem.toFixed(2) : '');
+      } else {
+        setPayments([]);
+        setAmountInput(totalAmount > 0 ? totalAmount.toFixed(2) : '');
+      }
       setActiveMethod('DINHEIRO');
-      setAmountInput(totalAmount > 0 ? totalAmount.toFixed(2) : '');
       setCopiedPix(false);
       setEmitNfce(true);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [isOpen, totalAmount]);
+  }, [isOpen, totalAmount, pbmSubsidyAmount]);
 
   // Calculations
   const totalPaid = useMemo(() => {
@@ -210,8 +223,13 @@ export default function PaymentModal({
         {/* Header */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 id="payment-modal-title" className="text-lg font-bold tracking-tight">
+            <h2 id="payment-modal-title" className="text-lg font-bold tracking-tight flex items-center gap-2">
               Recebimento / Pagamento PDV
+              {pbmProtocol && (
+                <span className="text-xs font-mono font-semibold text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-700">
+                  PBM Prot: {pbmProtocol}
+                </span>
+              )}
             </h2>
             <p className="text-xs text-slate-400">
               Selecione as formas de pagamento e confira os valores

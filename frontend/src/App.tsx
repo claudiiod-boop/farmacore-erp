@@ -1,15 +1,17 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CounterPage from './pages/CounterPage';
 import PosPage from './pages/PosPage';
 import PurchasesPage from './pages/PurchasesPage';
 import SngpcPage from './pages/SngpcPage';
+import PbmModal from './components/pbm/PbmModal';
 import { useStationMode } from './hooks/useStationMode';
-import { ArrowLeftRight, Monitor, Store, Package, ShieldAlert } from 'lucide-react';
+import { ArrowLeftRight, Monitor, Store, Package, ShieldAlert, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const { mode, setMode, isCounter, isPos, isPurchases, isSngpc } = useStationMode();
+  const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
-  // Listen to keyboard shortcuts (F1-F4 and Ctrl+Shift+S)
+  // Listen to keyboard shortcuts (F1-F4, F6, and Ctrl+Shift+S)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Station hotkeys F1-F4
@@ -31,6 +33,13 @@ export default function App() {
       if (e.key === 'F4') {
         e.preventDefault();
         setMode('SNGPC');
+        return;
+      }
+
+      // PBM / Farmácia Popular shortcut F6
+      if (e.key === 'F6') {
+        e.preventDefault();
+        setIsPbmModalOpen((prev) => !prev);
         return;
       }
 
@@ -150,18 +159,34 @@ export default function App() {
           </nav>
         </div>
 
-        <div className="hidden lg:flex items-center space-x-3 text-slate-400 text-[11px]">
-          <span>
-            Atalhos:{' '}
-            <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F1</kbd>{' '}
-            Balcão |{' '}
-            <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F2</kbd>{' '}
-            Caixa |{' '}
-            <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F3</kbd>{' '}
-            Compras |{' '}
-            <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F4</kbd>{' '}
-            SNGPC
-          </span>
+        {/* Global Action [F6] Convênio & Shortcuts Hint */}
+        <div className="flex items-center space-x-3 text-xs">
+          <button
+            type="button"
+            data-testid="topbar-pbm-button"
+            onClick={() => setIsPbmModalOpen(true)}
+            title="Gateway de Convênios Farmacêuticos & Farmácia Popular (F6)"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-bold transition border text-xs cursor-pointer bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-600 shadow-sm"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>[F6] Convênio</span>
+          </button>
+
+          <div className="hidden lg:flex items-center space-x-3 text-slate-400 text-[11px]">
+            <span>
+              Atalhos:{' '}
+              <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F1</kbd>{' '}
+              Balcão |{' '}
+              <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F2</kbd>{' '}
+              Caixa |{' '}
+              <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F3</kbd>{' '}
+              Compras |{' '}
+              <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F4</kbd>{' '}
+              SNGPC |{' '}
+              <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F6</kbd>{' '}
+              Convênio
+            </span>
+          </div>
         </div>
       </div>
 
@@ -172,6 +197,12 @@ export default function App() {
         {isPurchases && <PurchasesPage />}
         {isSngpc && <SngpcPage />}
       </div>
+
+      {/* Global PBM Modal */}
+      <PbmModal
+        isOpen={isPbmModalOpen}
+        onClose={() => setIsPbmModalOpen(false)}
+      />
     </div>
   );
 }

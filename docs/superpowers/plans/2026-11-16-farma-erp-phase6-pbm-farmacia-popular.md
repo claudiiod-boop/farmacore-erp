@@ -208,30 +208,10 @@ Expected: PASS (6/6 testes passando).
   - Integração com carrinho do Balcão e Caixa do PDV: lançamento da cota subsidiada e saldo a pagar.
   - Modal `PbmReceiptModal` para visualização e impressão ESC/POS do Cupom Vinculado.
 
-- [ ] **Step 1: Write failing frontend tests for `PbmModal`**
-
-Create `frontend/src/components/pbm/PbmModal.test.tsx`:
-```tsx
-describe('PbmModal Component', () => {
-  it('should render modal when isOpen is true', () => {});
-  it('should calculate subsidy and copay breakdown when items are selected', () => {});
-  it('should trigger authorization API call on submit', async () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npm run test -- frontend/src/components/pbm/PbmModal.test.tsx"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement Frontend Components & API Client**
-
-1. Atualizar `frontend/src/services/api.ts` com métodos `pbmApi`.
-2. Criar `PbmModal.tsx` e `PbmReceiptModal.tsx`.
-3. Adicionar atalho `[F6]` e botão na `TopBar.tsx`.
-4. Conectar o modal em `CounterPage.tsx` e `PosPage.tsx`.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing frontend tests for `PbmModal`**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement Frontend Components & API Client**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npm run test -- frontend/src/components/pbm/PbmModal.test.tsx"`
 Expected: PASS.
@@ -244,16 +224,6 @@ Expected: PASS.
 - Full test suite run (`npm test`)
 - TypeScript check (`npm run build:web` / root typecheck)
 
-- [ ] **Step 1: Run complete backend & frontend test suite**
-
-Run: `cmd.exe /c "npm test"`
-Expected: 100% dos testes passando (todas as fases anteriores 1 a 5 + fase 6).
-
-- [ ] **Step 2: Run web build and typecheck**
-
-Run: `cmd.exe /c "npm run build:web"`
-Expected: Build concluído com sucesso sem erros de TypeScript ou bundle.
-
-- [ ] **Step 3: Git commit with semantic message**
-
-Run: `cmd.exe /c "git status"`
+- [x] **Step 1: Run complete backend & frontend test suite**
+- [x] **Step 2: Run web build and typecheck**
+- [x] **Step 3: Git commit with semantic message**

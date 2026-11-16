@@ -251,3 +251,7 @@ export interface SngpcLivroRegistro {
   closingTerm?: string;
   items: SngpcLivroItem[];
 }
+
+// ===================== PBM & CONVÊNIOS TYPES =====================
+export * from './pbm';
+

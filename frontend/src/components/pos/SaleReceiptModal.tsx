@@ -21,6 +21,8 @@ export interface SaleReceiptModalProps {
   onPrint?: () => void;
   onNewSale?: () => void;
   nfceInvoice?: NfceInvoiceDetails | null;
+  pbmProtocol?: string;
+  onOpenPbmReceipt?: () => void;
 }
 
 export function formatDateTime(dateStr?: string): string {
@@ -123,6 +125,8 @@ export default function SaleReceiptModal({
   onPrint,
   onNewSale,
   nfceInvoice,
+  pbmProtocol,
+  onOpenPbmReceipt,
 }: SaleReceiptModalProps) {
   const [copiedKey, setCopiedKey] = useState(false);
 
@@ -565,6 +569,18 @@ export default function SaleReceiptModal({
           </button>
 
           <div className="flex items-center space-x-2">
+            {Boolean(pbmProtocol && onOpenPbmReceipt) && (
+              <button
+                type="button"
+                data-testid="print-pbm-receipt-btn"
+                onClick={onOpenPbmReceipt}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs rounded-lg transition flex items-center shadow-sm"
+              >
+                <FileText className="w-4 h-4 mr-1.5" />
+                Cupom PBM (Denasus)
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handlePrint}

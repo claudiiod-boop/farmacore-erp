@@ -5,13 +5,17 @@ import {
   X,
   AlertCircle,
   FileText,
+  ShieldCheck,
 } from 'lucide-react';
-import ProductSearch from '../components/ProductSearch';
+import ProductSearch, { formatBrl } from '../components/ProductSearch';
 import BatchSelector from '../components/BatchSelector';
 import CartTable, { CartItem } from '../components/CartTable';
 import PrescriptionModal from '../components/PrescriptionModal';
 import PreSaleTicket from '../components/PreSaleTicket';
+import PbmModal from '../components/pbm/PbmModal';
+import PbmReceiptModal from '../components/pbm/PbmReceiptModal';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import type { PbmAuthorizationResult } from '../types';
 import {
   getAvailableBatches,
   createPreSale,
@@ -45,6 +49,11 @@ export default function CounterPage() {
   const [createdPreSale, setCreatedPreSale] = useState<PreSale | null>(null);
   const [ticketItems, setTicketItems] = useState<CartItem[]>([]);
   const [ticketPrescription, setTicketPrescription] = useState<PrescriptionDTO | null>(null);
+
+  // PBM Modal State
+  const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
+  const [isPbmReceiptModalOpen, setIsPbmReceiptModalOpen] = useState(false);
+  const [authorizedPbm, setAuthorizedPbm] = useState<PbmAuthorizationResult | null>(null);
 
   // Status and feedback
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -251,14 +260,68 @@ export default function CounterPage() {
     setCustomerCpf('');
     setPendingProduct(null);
     setPendingBatches([]);
+    setAuthorizedPbm(null);
     setIsBatchModalOpen(false);
     setIsPrescriptionModalOpen(false);
     setIsTicketModalOpen(false);
+    setIsPbmModalOpen(false);
+    setIsPbmReceiptModalOpen(false);
     setErrorMessage(null);
     setNoticeMessage(null);
   }, []);
 
-  const isAnyModalOpen = isTicketModalOpen || isPrescriptionModalOpen || isBatchModalOpen;
+  // When PBM is authorized
+  const handlePbmAuthorized = useCallback(
+    (result: PbmAuthorizationResult) => {
+      setAuthorizedPbm(result);
+      if (result.patientCpf) setCustomerCpf(result.patientCpf);
+      if (result.patientName) setCustomerName(result.patientName);
+
+      // Add authorized items to counter cart
+      for (const authItem of result.items) {
+        if (authItem.status === 'APROVADO' || authItem.authorizedQuantity > 0) {
+          const dummyProd: Product = {
+            id: authItem.productId,
+            ean: authItem.ean,
+            name: authItem.productName,
+            activeIngredient: '',
+            msRegistration: authItem.msRegistration,
+            stripe: 'SEM_TARJA',
+            controlType: 'ISENTO',
+            pmc: authItem.unitGrossPrice,
+            pf: authItem.unitGrossPrice,
+            price: authItem.unitGrossPrice,
+            isActive: true,
+            createdAt: '',
+          };
+          const dummyBatch: Batch = {
+            id: authItem.batchId || 1,
+            productId: authItem.productId,
+            batchNumber: 'LOTE-PBM',
+            manufacturingDate: '2024-01-01',
+            expirationDate: '2028-12-31',
+            quantity: 999,
+            reservedQuantity: 0,
+            availableQuantity: 999,
+            createdAt: '',
+          };
+          addItemToCart(dummyProd, dummyBatch);
+        }
+      }
+
+      setNoticeMessage(
+        `Convênio Farmácia Popular autorizado com sucesso! Prot: ${result.authorizationProtocol} | Cota Subsidiada: ${formatBrl(result.subsidyAmount)}`
+      );
+    },
+    [addItemToCart]
+  );
+
+  const isAnyModalOpen =
+    isTicketModalOpen ||
+    isPrescriptionModalOpen ||
+    isBatchModalOpen ||
+    isPbmModalOpen ||
+    isPbmReceiptModalOpen;
 
   // Global Keyboard Shortcuts
   useKeyboardShortcuts({
@@ -267,11 +330,20 @@ export default function CounterPage() {
         handleFinalizePreSale();
       }
     },
+    F6: () => {
+      if (!isAnyModalOpen && !isSubmitting) {
+        setIsPbmModalOpen(true);
+      }
+    },
     F9: () => {
       handleNewOrder();
     },
     Escape: () => {
-      if (isTicketModalOpen) {
+      if (isPbmReceiptModalOpen) {
+        setIsPbmReceiptModalOpen(false);
+      } else if (isPbmModalOpen) {
+        setIsPbmModalOpen(false);
+      } else if (isTicketModalOpen) {
         setIsTicketModalOpen(false);
       } else if (isPrescriptionModalOpen) {
         setIsPrescriptionModalOpen(false);
@@ -334,6 +406,26 @@ export default function CounterPage() {
               F4
             </kbd>
             <span className="font-semibold">F4 - Gerar Pré-Venda</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="counter-pbm-button"
+            title="[F6] Convênio Farmácia Popular"
+            onClick={() => setIsPbmModalOpen(true)}
+            className={`flex items-center px-3 py-1.5 rounded-lg border shadow-sm transition cursor-pointer ${
+              authorizedPbm
+                ? 'bg-emerald-950 border-emerald-400 text-emerald-200'
+                : 'bg-emerald-800/90 hover:bg-emerald-800 border-emerald-600/50'
+            }`}
+          >
+            <kbd className="bg-emerald-950 text-white px-1.5 py-0.5 rounded font-mono font-bold mr-1.5 shadow-inner">
+              F6
+            </kbd>
+            <span className="font-semibold flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
+              {authorizedPbm ? `Convênio: ${authorizedPbm.authorizationProtocol}` : 'F6 - Convênio PBM'}
+            </span>
           </button>
 
           <button
@@ -544,6 +636,26 @@ export default function CounterPage() {
           prescription={ticketPrescription}
         />
       )}
+
+      {/* Gateway de Convênios & Farmácia Popular */}
+      <PbmModal
+        isOpen={isPbmModalOpen}
+        onClose={() => setIsPbmModalOpen(false)}
+        onAuthorized={handlePbmAuthorized}
+        initialCpf={customerCpf}
+        initialPatientName={customerName}
+        initialItems={cartItems.map((it) => ({
+          product: it.product,
+          quantity: it.quantity,
+          batchId: it.batch.id,
+        }))}
+      />
+
+      <PbmReceiptModal
+        isOpen={isPbmReceiptModalOpen}
+        onClose={() => setIsPbmReceiptModalOpen(false)}
+        protocol={authorizedPbm?.authorizationProtocol || undefined}
+      />
     </div>
   );
 }

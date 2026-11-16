@@ -10,6 +10,7 @@ import {
   User,
   Wallet,
   RotateCcw,
+  ShieldCheck,
 } from 'lucide-react';
 import PreSaleLookupModal from '../components/pos/PreSaleLookupModal';
 import DirectItemInput from '../components/pos/DirectItemInput';
@@ -18,8 +19,11 @@ import PaymentModal from '../components/pos/PaymentModal';
 import SaleReceiptModal from '../components/pos/SaleReceiptModal';
 import CashSessionModal from '../components/pos/CashSessionModal';
 import CashMovementModal from '../components/pos/CashMovementModal';
+import PbmModal from '../components/pbm/PbmModal';
+import PbmReceiptModal from '../components/pbm/PbmReceiptModal';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { formatBrl } from '../components/ProductSearch';
+import type { PbmAuthorizationResult } from '../types';
 import {
   api,
   CashSession,
@@ -54,6 +58,10 @@ export default function PosPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
+  const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
+  const [isPbmReceiptModalOpen, setIsPbmReceiptModalOpen] = useState(false);
+  const [authorizedPbm, setAuthorizedPbm] = useState<PbmAuthorizationResult | null>(null);
+  const [lastPbmProtocol, setLastPbmProtocol] = useState<string | null>(null);
 
   // Completed Sale & Receipt State
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
@@ -317,9 +325,15 @@ export default function PosPage() {
           preSaleCode: loadedPreSale?.code,
           additionalItems: additionalItems.length > 0 ? additionalItems : undefined,
           payments,
+          pbmProtocol: authorizedPbm?.authorizationProtocol,
         };
 
         const res = await api.checkoutSale(dto);
+
+        if (authorizedPbm?.authorizationProtocol) {
+          setLastPbmProtocol(authorizedPbm.authorizationProtocol);
+        }
+        setAuthorizedPbm(null);
 
         // Update local session drawer cash
         const cashPaid = payments
@@ -378,19 +392,68 @@ export default function PosPage() {
   // New Sale / Reset State
   const handleNewSale = useCallback(() => {
     setIsReceiptModalOpen(false);
+    setIsPbmReceiptModalOpen(false);
     setCompletedSale(null);
     setCurrentNfce(null);
     setReceiptText('');
     setItems([]);
     setLoadedPreSale(null);
+    setAuthorizedPbm(null);
+    setLastPbmProtocol(null);
     setErrorMessage(null);
     setNoticeMessage(null);
+  }, []);
+
+  // Callback when PBM authorization succeeds
+  const handlePbmAuthorized = useCallback((result: PbmAuthorizationResult) => {
+    setAuthorizedPbm(result);
+    // Add or update approved items into POS grid
+    setItems((prev) => {
+      const updated = [...prev];
+      for (const authItem of result.items) {
+        if (authItem.status === 'APROVADO' || authItem.authorizedQuantity > 0) {
+          const idx = updated.findIndex((it) => it.productId === authItem.productId);
+          if (idx >= 0) {
+            updated[idx] = {
+              ...updated[idx],
+              quantity: authItem.authorizedQuantity,
+              unitPrice: authItem.unitGrossPrice,
+              totalPrice: authItem.totalGrossPrice,
+            };
+          } else {
+            updated.push({
+              id: `pbm-${authItem.productId}-${Date.now()}`,
+              source: 'DIRECT',
+              productId: authItem.productId,
+              productName: authItem.productName,
+              stripe: 'SEM_TARJA',
+              controlType: 'ISENTO',
+              batchId: authItem.batchId || 1,
+              batchNumber: 'LOTE-PBM',
+              expirationDate: '2028-12-31',
+              quantity: authItem.authorizedQuantity,
+              unitPrice: authItem.unitGrossPrice,
+              totalPrice: authItem.totalGrossPrice,
+            });
+          }
+        }
+      }
+      return updated;
+    });
+
+    setNoticeMessage(
+      `Convênio autorizado com sucesso! Prot: ${result.authorizationProtocol}. Cota Subsidiada: ${formatBrl(result.subsidyAmount)}`
+    );
   }, []);
 
   // Cancel / Clear Cart (Esc)
   const handleCancelOrClear = useCallback(() => {
     if (isReceiptModalOpen) {
       handleNewSale();
+    } else if (isPbmReceiptModalOpen) {
+      setIsPbmReceiptModalOpen(false);
+    } else if (isPbmModalOpen) {
+      setIsPbmModalOpen(false);
     } else if (isPaymentModalOpen) {
       setIsPaymentModalOpen(false);
     } else if (isPreSaleModalOpen) {
@@ -402,6 +465,7 @@ export default function PosPage() {
     } else if (items.length > 0 || loadedPreSale) {
       setItems([]);
       setLoadedPreSale(null);
+      setAuthorizedPbm(null);
       setNoticeMessage('Venda cancelada / carrinho limpo.');
     } else {
       setErrorMessage(null);
@@ -409,6 +473,8 @@ export default function PosPage() {
     }
   }, [
     isReceiptModalOpen,
+    isPbmReceiptModalOpen,
+    isPbmModalOpen,
     isPaymentModalOpen,
     isPreSaleModalOpen,
     isMovementModalOpen,
@@ -426,7 +492,9 @@ export default function PosPage() {
         isPaymentModalOpen ||
         isReceiptModalOpen ||
         isCashSessionModalOpen ||
-        isMovementModalOpen
+        isMovementModalOpen ||
+        isPbmModalOpen ||
+        isPbmReceiptModalOpen
       ) {
         return;
       }
@@ -435,6 +503,20 @@ export default function PosPage() {
         return;
       }
       setIsPreSaleModalOpen(true);
+    },
+    F6: () => {
+      if (
+        isPreSaleModalOpen ||
+        isPaymentModalOpen ||
+        isReceiptModalOpen ||
+        isCashSessionModalOpen ||
+        isMovementModalOpen ||
+        isPbmModalOpen ||
+        isPbmReceiptModalOpen
+      ) {
+        return;
+      }
+      setIsPbmModalOpen(true);
     },
     F8: () => {
       if (
@@ -531,12 +613,32 @@ export default function PosPage() {
             title="[F5] Resgatar Pré-Venda"
             disabled={!isSessionOpen}
             onClick={() => setIsPreSaleModalOpen(true)}
-            className="flex items-center bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 shadow-xs transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 shadow-xs transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <kbd className="bg-slate-950 text-white px-1.5 py-0.5 rounded font-mono font-bold mr-1.5 shadow-inner">
               F5
             </kbd>
             <span className="font-semibold">Resgatar Pré-Venda</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="pos-pbm-button"
+            title="[F6] Convênio / Farmácia Popular"
+            onClick={() => setIsPbmModalOpen(true)}
+            className={`flex items-center px-3 py-1.5 rounded-lg border shadow-xs transition cursor-pointer ${
+              authorizedPbm
+                ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
+                : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+            }`}
+          >
+            <kbd className="bg-slate-950 text-white px-1.5 py-0.5 rounded font-mono font-bold mr-1.5 shadow-inner">
+              F6
+            </kbd>
+            <span className="font-semibold flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              {authorizedPbm ? `Convênio: ${authorizedPbm.authorizationProtocol}` : 'Convênio PBM'}
+            </span>
           </button>
 
           <button
@@ -768,6 +870,8 @@ export default function PosPage() {
         totalAmount={totalCartAmount}
         onConfirmPayments={handleConfirmPayments}
         isLoading={isSubmitting}
+        pbmSubsidyAmount={authorizedPbm?.subsidyAmount}
+        pbmProtocol={authorizedPbm?.authorizationProtocol}
       />
 
       {completedSale && (
@@ -778,8 +882,40 @@ export default function PosPage() {
           sale={completedSale}
           receiptText={receiptText}
           nfceInvoice={currentNfce}
+          pbmProtocol={lastPbmProtocol || undefined}
+          onOpenPbmReceipt={() => setIsPbmReceiptModalOpen(true)}
         />
       )}
+
+      <PbmModal
+        isOpen={isPbmModalOpen}
+        onClose={() => setIsPbmModalOpen(false)}
+        onAuthorized={handlePbmAuthorized}
+        initialItems={items.map((it) => ({
+          product: {
+            id: it.productId,
+            name: it.productName,
+            ean: '',
+            price: it.unitPrice,
+            activeIngredient: '',
+            msRegistration: '',
+            stripe: it.stripe,
+            controlType: it.controlType as any,
+            pmc: it.unitPrice,
+            pf: it.unitPrice,
+            isActive: true,
+            createdAt: '',
+          },
+          quantity: it.quantity,
+          batchId: it.batchId,
+        }))}
+      />
+
+      <PbmReceiptModal
+        isOpen={isPbmReceiptModalOpen}
+        onClose={() => setIsPbmReceiptModalOpen(false)}
+        protocol={lastPbmProtocol || authorizedPbm?.authorizationProtocol || undefined}
+      />
 
       <CashSessionModal
         isOpen={isCashSessionModalOpen}
