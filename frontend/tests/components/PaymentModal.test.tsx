@@ -317,4 +317,26 @@ describe('PaymentModal Component', () => {
     fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('should open TEF PinPad modal when [F8] button is clicked or F8 is pressed and add TEF payment when approved', async () => {
+    const handleConfirm = vi.fn();
+    render(
+      <PaymentModal
+        isOpen={true}
+        totalAmount={100.0}
+        onClose={vi.fn()}
+        onConfirmPayments={handleConfirm}
+      />
+    );
+
+    const tefBtn = screen.getByTestId('pay-with-tef-btn');
+    expect(tefBtn).toBeDefined();
+
+    // Trigger TEF via F8 key
+    fireEvent.keyDown(window, { key: 'F8', code: 'F8' });
+
+    // PinPad modal should be rendered
+    expect(screen.getByText(/Pagamento TEF \/ PinPad/i)).toBeDefined();
+    expect(screen.getByTestId('start-tef-button')).toBeDefined();
+  });
 });

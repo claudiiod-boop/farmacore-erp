@@ -231,7 +231,7 @@ Expected: PASS.
   - Botão `[F8] Pagar com TEF (PinPad)` em `PaymentModal.tsx`.
   - Botão de impressão de comprovante TEF em `SaleReceiptModal.tsx`.
 
-- [ ] **Step 1: Write failing frontend tests for `TefPinpadModal`**
+- [x] **Step 1: Write failing frontend tests for `TefPinpadModal`**
 
 Create `frontend/tests/components/TefPinpadModal.test.tsx`:
 ```tsx
@@ -242,18 +242,18 @@ describe('TefPinpadModal Component', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cmd.exe /c "npm run test -- frontend/tests/components/TefPinpadModal.test.tsx"`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement Frontend TEF Components & Integration**
+- [x] **Step 3: Implement Frontend TEF Components & Integration**
 
 1. Implementar `frontend/src/types/tef.ts` e `tefApi` em `api.ts`.
 2. Implementar `TefPinpadModal.tsx` e `TefReceiptModal.tsx`.
 3. Integrar no `PaymentModal.tsx` e `SaleReceiptModal.tsx`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npm run test -- frontend/tests/components/TefPinpadModal.test.tsx"`
 Expected: PASS.

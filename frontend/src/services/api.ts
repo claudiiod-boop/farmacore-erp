@@ -15,6 +15,22 @@ import type {
   PbmCancelResult,
   PbmTransaction,
   PbmReceiptResult,
+  TefOperationType,
+  TefInstallmentType,
+  TefTransactionStatus,
+  TefMockScenario,
+  TefPayParams,
+  TefPayResult,
+  TefConfirmParams,
+  TefConfirmResult,
+  TefUndoParams,
+  TefUndoResult,
+  TefCancelParams,
+  TefCancelResult,
+  TefConfig,
+  TefTransaction,
+  TefReceiptResult,
+  TefListFilters,
 } from '../types';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
@@ -230,6 +246,14 @@ export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'P
 export interface PaymentItem {
   method: PaymentMethod;
   amount: number;
+  tefTransactionUuid?: string;
+  tefNsu?: string;
+  cardFiscalData?: {
+    tpIntegra: 1 | 2;
+    cnpjCredenciadora: string;
+    tBand: string;
+    cAut: string;
+  };
 }
 
 export interface CashSession {
@@ -315,6 +339,7 @@ export interface CheckoutDTO {
   additionalItems?: AdditionalCheckoutItem[];
   payments: PaymentItem[];
   pbmProtocol?: string;
+  tefNsuList?: string[];
 }
 
 export interface CheckoutResponse {
@@ -961,6 +986,159 @@ export const pbmApi = {
   },
 };
 
+export const tefApi = {
+  getProviders: async (onlyActive?: boolean): Promise<TefConfig[]> => {
+    const base = getBaseUrl();
+    const query = onlyActive ? '?onlyActive=true' : '';
+    const response = await fetch(`${base}/api/tef/providers${query}`);
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(
+        data?.message || data?.error || `Falha ao listar provedores TEF: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  pay: async (params: TefPayParams): Promise<TefPayResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/tef/pay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        data?.message || data?.error || `Falha no processamento TEF: ${response.statusText}`
+      );
+    }
+    return data;
+  },
+
+  confirm: async (params: TefConfirmParams): Promise<TefConfirmResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/tef/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        data?.message || data?.error || `Falha na confirmação TEF: ${response.statusText}`
+      );
+    }
+    return data;
+  },
+
+  undo: async (params: TefUndoParams): Promise<TefUndoResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/tef/undo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        data?.message || data?.error || `Falha no desfazimento TEF: ${response.statusText}`
+      );
+    }
+    return data;
+  },
+
+  cancel: async (params: TefCancelParams): Promise<TefCancelResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/tef/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        data?.message || data?.error || `Falha no cancelamento TEF: ${response.statusText}`
+      );
+    }
+    return data;
+  },
+
+  getTransactions: async (
+    filters?: TefListFilters
+  ): Promise<{ transactions: TefTransaction[]; total: number }> => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.operationType) params.append('operationType', filters.operationType);
+    if (filters?.brandName) params.append('brandName', filters.brandName);
+    if (filters?.acquirerName) params.append('acquirerName', filters.acquirerName);
+    if (filters?.saleId !== undefined) params.append('saleId', String(filters.saleId));
+    if (filters?.terminalId) params.append('terminalId', filters.terminalId);
+    if (filters?.nsu) params.append('nsu', filters.nsu);
+    if (filters?.limit !== undefined) params.append('limit', String(filters.limit));
+    if (filters?.offset !== undefined) params.append('offset', String(filters.offset));
+
+    const queryStr = params.toString();
+    const url = `${base}/api/tef/transactions${queryStr ? `?${queryStr}` : ''}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.message || body?.error || `Falha ao listar transações TEF: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  getReceipt: async (nsu: string): Promise<TefReceiptResult> => {
+    const base = getBaseUrl();
+    const response = await fetch(
+      `${base}/api/tef/transactions/${encodeURIComponent(nsu)}/receipt`
+    );
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.message || body?.error || `Falha ao obter comprovante TEF: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  getConfig: async (providerId?: string): Promise<TefConfig> => {
+    const base = getBaseUrl();
+    const url = providerId
+      ? `${base}/api/tef/config/${encodeURIComponent(providerId)}`
+      : `${base}/api/tef/config`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(
+        body?.message || body?.error || `Falha ao consultar configuração TEF: ${response.statusText}`
+      );
+    }
+    return response.json();
+  },
+
+  updateConfig: async (providerId: string, data: Partial<TefConfig>): Promise<TefConfig> => {
+    const base = getBaseUrl();
+    const response = await fetch(`${base}/api/tef/config/${encodeURIComponent(providerId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const resBody = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        resBody?.message || resBody?.error || `Falha ao atualizar configuração TEF: ${response.statusText}`
+      );
+    }
+    return resBody;
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -985,9 +1163,11 @@ export const api = {
   purchases: purchasesApi,
   sngpc: sngpcApi,
   pbm: pbmApi,
+  tef: tefApi,
   purchasesApi,
   sngpcApi,
   pbmApi,
+  tefApi,
 };
 
 export default api;

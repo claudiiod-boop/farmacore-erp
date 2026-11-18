@@ -375,4 +375,25 @@ describe('SaleReceiptModal Component', () => {
       screen.getByText(/EMITIDA EM CONTINGÊNCIA - PENDENTE DE AUTORIZAÇÃO/i)
     ).toBeDefined();
   });
+
+  it('should render TEF receipt button when tefReceiptNsu is provided and trigger onOpenTefReceipt', () => {
+    const onOpenTefReceiptMock = vi.fn();
+
+    render(
+      <SaleReceiptModal
+        isOpen={true}
+        sale={mockSale}
+        tefReceiptNsu="123456"
+        onOpenTefReceipt={onOpenTefReceiptMock}
+        onClose={vi.fn()}
+      />
+    );
+
+    const tefReceiptBtn = screen.getByTestId('print-tef-receipt-btn');
+    expect(tefReceiptBtn).toBeDefined();
+    expect(screen.getByText(/Comprovante TEF \(Cartão\)/i)).toBeDefined();
+
+    fireEvent.click(tefReceiptBtn);
+    expect(onOpenTefReceiptMock).toHaveBeenCalledTimes(1);
+  });
 });

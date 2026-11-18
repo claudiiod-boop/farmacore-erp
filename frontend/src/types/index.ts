@@ -255,3 +255,6 @@ export interface SngpcLivroRegistro {
 // ===================== PBM & CONVÊNIOS TYPES =====================
 export * from './pbm';
 
+// ===================== TEF & CARD GATEWAY TYPES =====================
+export * from './tef';
+

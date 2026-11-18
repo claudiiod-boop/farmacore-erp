@@ -11,6 +11,7 @@ import {
   Wallet,
   RotateCcw,
   ShieldCheck,
+  CreditCard,
 } from 'lucide-react';
 import PreSaleLookupModal from '../components/pos/PreSaleLookupModal';
 import DirectItemInput from '../components/pos/DirectItemInput';
@@ -21,9 +22,11 @@ import CashSessionModal from '../components/pos/CashSessionModal';
 import CashMovementModal from '../components/pos/CashMovementModal';
 import PbmModal from '../components/pbm/PbmModal';
 import PbmReceiptModal from '../components/pbm/PbmReceiptModal';
+import TefPinpadModal from '../components/tef/TefPinpadModal';
+import TefReceiptModal from '../components/tef/TefReceiptModal';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { formatBrl } from '../components/ProductSearch';
-import type { PbmAuthorizationResult } from '../types';
+import type { PbmAuthorizationResult, TefPayResult } from '../types';
 import {
   api,
   CashSession,
@@ -60,8 +63,11 @@ export default function PosPage() {
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
   const [isPbmReceiptModalOpen, setIsPbmReceiptModalOpen] = useState(false);
+  const [isTefModalOpen, setIsTefModalOpen] = useState(false);
+  const [isTefReceiptModalOpen, setIsTefReceiptModalOpen] = useState(false);
   const [authorizedPbm, setAuthorizedPbm] = useState<PbmAuthorizationResult | null>(null);
   const [lastPbmProtocol, setLastPbmProtocol] = useState<string | null>(null);
+  const [lastTefNsu, setLastTefNsu] = useState<string | null>(null);
 
   // Completed Sale & Receipt State
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
@@ -335,6 +341,17 @@ export default function PosPage() {
         }
         setAuthorizedPbm(null);
 
+        // Capture TEF NSU if present in payments or sale
+        const tefItem = payments.find((p) => p.tefNsu);
+        if (tefItem?.tefNsu) {
+          setLastTefNsu(tefItem.tefNsu);
+        } else {
+          const saleTef = res.sale.payments?.find((p: any) => p.tefNsu || p.tef_nsu);
+          if (saleTef) {
+            setLastTefNsu((saleTef as any).tefNsu || (saleTef as any).tef_nsu);
+          }
+        }
+
         // Update local session drawer cash
         const cashPaid = payments
           .filter((p) => p.method === 'DINHEIRO')
@@ -393,6 +410,8 @@ export default function PosPage() {
   const handleNewSale = useCallback(() => {
     setIsReceiptModalOpen(false);
     setIsPbmReceiptModalOpen(false);
+    setIsTefReceiptModalOpen(false);
+    setIsTefModalOpen(false);
     setCompletedSale(null);
     setCurrentNfce(null);
     setReceiptText('');
@@ -400,6 +419,7 @@ export default function PosPage() {
     setLoadedPreSale(null);
     setAuthorizedPbm(null);
     setLastPbmProtocol(null);
+    setLastTefNsu(null);
     setErrorMessage(null);
     setNoticeMessage(null);
   }, []);
@@ -446,10 +466,44 @@ export default function PosPage() {
     );
   }, []);
 
+  // Callback when TEF transaction is approved at page level
+  const handleTefApproved = useCallback(
+    async (result: TefPayResult) => {
+      setIsTefModalOpen(false);
+      const isCredit = result.operationType === 'CREDITO';
+      const method: PaymentMethod = isCredit ? 'CARTAO_CREDITO' : 'CARTAO_DEBITO';
+      const paymentItem: PaymentItem = {
+        method,
+        amount: result.amount,
+        tefTransactionUuid: result.transactionUuid,
+        tefNsu: result.nsu,
+        cardFiscalData: {
+          tpIntegra: 1,
+          cnpjCredenciadora: result.acquirerCnpj,
+          tBand: result.brandCodeSefaz,
+          cAut: result.authorizationCode,
+        },
+      };
+
+      setLastTefNsu(result.nsu);
+
+      if (result.amount >= totalCartAmount) {
+        await handleConfirmPayments([paymentItem]);
+      } else {
+        setIsPaymentModalOpen(true);
+      }
+    },
+    [totalCartAmount, handleConfirmPayments]
+  );
+
   // Cancel / Clear Cart (Esc)
   const handleCancelOrClear = useCallback(() => {
     if (isReceiptModalOpen) {
       handleNewSale();
+    } else if (isTefReceiptModalOpen) {
+      setIsTefReceiptModalOpen(false);
+    } else if (isTefModalOpen) {
+      setIsTefModalOpen(false);
     } else if (isPbmReceiptModalOpen) {
       setIsPbmReceiptModalOpen(false);
     } else if (isPbmModalOpen) {
@@ -473,6 +527,8 @@ export default function PosPage() {
     }
   }, [
     isReceiptModalOpen,
+    isTefReceiptModalOpen,
+    isTefModalOpen,
     isPbmReceiptModalOpen,
     isPbmModalOpen,
     isPaymentModalOpen,
@@ -524,7 +580,11 @@ export default function PosPage() {
         isPaymentModalOpen ||
         isReceiptModalOpen ||
         isCashSessionModalOpen ||
-        isMovementModalOpen
+        isMovementModalOpen ||
+        isPbmModalOpen ||
+        isPbmReceiptModalOpen ||
+        isTefModalOpen ||
+        isTefReceiptModalOpen
       ) {
         return;
       }
@@ -638,6 +698,29 @@ export default function PosPage() {
             <span className="font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               {authorizedPbm ? `Convênio: ${authorizedPbm.authorizationProtocol}` : 'Convênio PBM'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="pos-tef-button"
+            title="[F8] Pagamento com Cartão TEF"
+            disabled={!isSessionOpen}
+            onClick={() => {
+              if (items.length === 0) {
+                setErrorMessage('O carrinho está vazio. Adicione itens para pagar com TEF.');
+                return;
+              }
+              setIsTefModalOpen(true);
+            }}
+            className="flex items-center bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 shadow-xs transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <kbd className="bg-slate-950 text-white px-1.5 py-0.5 rounded font-mono font-bold mr-1.5 shadow-inner">
+              F8
+            </kbd>
+            <span className="font-semibold flex items-center gap-1">
+              <CreditCard className="w-3.5 h-3.5 text-blue-400" />
+              TEF PinPad
             </span>
           </button>
 
@@ -884,8 +967,23 @@ export default function PosPage() {
           nfceInvoice={currentNfce}
           pbmProtocol={lastPbmProtocol || undefined}
           onOpenPbmReceipt={() => setIsPbmReceiptModalOpen(true)}
+          tefReceiptNsu={lastTefNsu || undefined}
+          onOpenTefReceipt={() => setIsTefReceiptModalOpen(true)}
         />
       )}
+
+      <TefPinpadModal
+        isOpen={isTefModalOpen}
+        onClose={() => setIsTefModalOpen(false)}
+        amount={totalCartAmount}
+        onPaymentApproved={handleTefApproved}
+      />
+
+      <TefReceiptModal
+        isOpen={isTefReceiptModalOpen}
+        onClose={() => setIsTefReceiptModalOpen(false)}
+        nsu={lastTefNsu || undefined}
+      />
 
       <PbmModal
         isOpen={isPbmModalOpen}

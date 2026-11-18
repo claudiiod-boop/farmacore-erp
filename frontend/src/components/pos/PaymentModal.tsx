@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { PaymentItem, PaymentMethod } from '../../services/api';
 import { formatBrl } from '../ProductSearch';
+import TefPinpadModal from '../tef/TefPinpadModal';
+import type { TefPayResult } from '../../types/tef';
 
 export interface PaymentModalProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ export default function PaymentModal({
   const [amountInput, setAmountInput] = useState<string>('');
   const [copiedPix, setCopiedPix] = useState(false);
   const [emitNfce, setEmitNfce] = useState(true);
+  const [isTefModalOpen, setIsTefModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Initialize or reset state when modal opens
@@ -164,6 +167,33 @@ export default function PaymentModal({
     setAmountInput(newRemaining > 0 ? newRemaining.toFixed(2) : '');
   };
 
+  // Callback when TEF PinPad transaction is approved
+  const handleTefApproved = (result: TefPayResult) => {
+    setIsTefModalOpen(false);
+    const isCredit = result.operationType === 'CREDITO';
+    const method: PaymentMethod = isCredit ? 'CARTAO_CREDITO' : 'CARTAO_DEBITO';
+
+    const newItem: PaymentItem = {
+      method,
+      amount: result.amount,
+      tefTransactionUuid: result.transactionUuid,
+      tefNsu: result.nsu,
+      cardFiscalData: {
+        tpIntegra: 1,
+        cnpjCredenciadora: result.acquirerCnpj,
+        tBand: result.brandCodeSefaz,
+        cAut: result.authorizationCode,
+      },
+    };
+
+    const nextPayments = [...payments, newItem];
+    setPayments(nextPayments);
+
+    const newPaid = +(totalPaid + result.amount).toFixed(2);
+    const newRemaining = Math.max(0, +(totalAmount - newPaid).toFixed(2));
+    setAmountInput(newRemaining > 0 ? newRemaining.toFixed(2) : '');
+  };
+
   // Copy pix key
   const handleCopyPix = async () => {
     try {
@@ -188,6 +218,14 @@ export default function PaymentModal({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTefModalOpen) return;
+
+      if (e.key === 'F8') {
+        e.preventDefault();
+        setIsTefModalOpen(true);
+        return;
+      }
+
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -208,7 +246,7 @@ export default function PaymentModal({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, canFinalize, onClose, onConfirmPayments, payments, emitNfce]);
+  }, [isOpen, isTefModalOpen, canFinalize, onClose, onConfirmPayments, payments, emitNfce]);
 
   if (!isOpen) return null;
 
@@ -302,9 +340,20 @@ export default function PaymentModal({
         <div className="p-6 space-y-5">
           {/* Abas das Formas de Pagamento */}
           <div>
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2">
-              Forma de Pagamento
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                Forma de Pagamento
+              </label>
+              <button
+                type="button"
+                data-testid="pay-with-tef-btn"
+                onClick={() => setIsTefModalOpen(true)}
+                className="flex items-center space-x-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-bold transition shadow-xs cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>[F8] Pagar com TEF (PinPad)</span>
+              </button>
+            </div>
             <div className="grid grid-cols-4 gap-2">
               {PAYMENT_METHODS.map((pm) => {
                 const Icon = pm.icon;
@@ -532,6 +581,11 @@ export default function PaymentModal({
                         <span className="text-[10px] font-mono text-slate-400">
                           ({p.method})
                         </span>
+                        {p.tefNsu && (
+                          <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
+                            TEF NSU: {p.tefNsu}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center space-x-3">
@@ -602,6 +656,14 @@ export default function PaymentModal({
           </button>
         </div>
       </div>
+
+      <TefPinpadModal
+        isOpen={isTefModalOpen}
+        onClose={() => setIsTefModalOpen(false)}
+        amount={remaining > 0 ? remaining : totalAmount}
+        onPaymentApproved={handleTefApproved}
+        initialOperationType={activeMethod === 'CARTAO_CREDITO' ? 'CREDITO' : 'DEBITO'}
+      />
     </div>
   );
 }

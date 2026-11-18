@@ -8,6 +8,7 @@ import {
   Copy,
   Check,
   AlertTriangle,
+  CreditCard,
 } from 'lucide-react';
 import { Sale, NfceInvoiceDetails } from '../../services/api';
 import { formatBrl } from '../ProductSearch';
@@ -23,6 +24,8 @@ export interface SaleReceiptModalProps {
   nfceInvoice?: NfceInvoiceDetails | null;
   pbmProtocol?: string;
   onOpenPbmReceipt?: () => void;
+  tefReceiptNsu?: string;
+  onOpenTefReceipt?: () => void;
 }
 
 export function formatDateTime(dateStr?: string): string {
@@ -127,6 +130,8 @@ export default function SaleReceiptModal({
   nfceInvoice,
   pbmProtocol,
   onOpenPbmReceipt,
+  tefReceiptNsu,
+  onOpenTefReceipt,
 }: SaleReceiptModalProps) {
   const [copiedKey, setCopiedKey] = useState(false);
 
@@ -569,6 +574,18 @@ export default function SaleReceiptModal({
           </button>
 
           <div className="flex items-center space-x-2">
+            {Boolean(tefReceiptNsu && onOpenTefReceipt) && (
+              <button
+                type="button"
+                data-testid="print-tef-receipt-btn"
+                onClick={onOpenTefReceipt}
+                className="px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold text-xs rounded-lg transition flex items-center shadow-sm"
+              >
+                <CreditCard className="w-4 h-4 mr-1.5" />
+                Comprovante TEF (Cartão)
+              </button>
+            )}
+
             {Boolean(pbmProtocol && onOpenPbmReceipt) && (
               <button
                 type="button"
