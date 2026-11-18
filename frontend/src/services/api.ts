@@ -1149,6 +1149,16 @@ export const tefApi = {
 
 // ===================== FINANCIAL & BLIND CASH CLOSURE API =====================
 
+function normalizeClosure(raw: any): BlindCashClosure {
+  if (!raw) return raw;
+  return {
+    ...raw,
+    systemTotal: raw.systemTotal ?? raw.totalSystem ?? 0,
+    declaredTotal: raw.declaredTotal ?? raw.totalDeclared ?? 0,
+    closedAt: raw.closedAt ?? raw.declaredAt ?? raw.createdAt,
+  };
+}
+
 export async function declareBlindClosure(input: DeclareBlindClosureInput): Promise<BlindCashClosure> {
   const base = getBaseUrl();
   const url = `${base}/api/financial/cash-closures`;
@@ -1161,7 +1171,8 @@ export async function declareBlindClosure(input: DeclareBlindClosureInput): Prom
     const body = await response.json().catch(() => null);
     throw new Error(body?.message || body?.error || `Falha ao declarar fechamento cego de caixa: ${response.statusText}`);
   }
-  return response.json();
+  const raw = await response.json();
+  return normalizeClosure(raw);
 }
 
 export async function getClosureBySession(sessionId: number): Promise<BlindCashClosure> {
@@ -1172,7 +1183,8 @@ export async function getClosureBySession(sessionId: number): Promise<BlindCashC
     const body = await response.json().catch(() => null);
     throw new Error(body?.message || body?.error || `Fechamento de caixa não encontrado: ${response.statusText}`);
   }
-  return response.json();
+  const raw = await response.json();
+  return normalizeClosure(raw);
 }
 
 export async function getClosureById(closureId: number): Promise<BlindCashClosure> {
@@ -1183,7 +1195,8 @@ export async function getClosureById(closureId: number): Promise<BlindCashClosur
     const body = await response.json().catch(() => null);
     throw new Error(body?.message || body?.error || `Fechamento de caixa não encontrado: ${response.statusText}`);
   }
-  return response.json();
+  const raw = await response.json();
+  return normalizeClosure(raw);
 }
 
 export async function reviewClosure(closureId: number, input: ReviewClosureInput): Promise<BlindCashClosure> {
@@ -1198,7 +1211,8 @@ export async function reviewClosure(closureId: number, input: ReviewClosureInput
     const body = await response.json().catch(() => null);
     throw new Error(body?.message || body?.error || `Falha ao homologar fechamento: ${response.statusText}`);
   }
-  return response.json();
+  const raw = await response.json();
+  return normalizeClosure(raw);
 }
 
 export async function getClosureReceipt(closureId: number): Promise<{ textReceipt: string; fullEscPos: string }> {
@@ -1230,7 +1244,11 @@ export async function listClosures(filters?: CashClosureFilters): Promise<{ clos
     const body = await response.json().catch(() => null);
     throw new Error(body?.message || body?.error || `Falha ao listar fechamentos de caixa: ${response.statusText}`);
   }
-  return response.json();
+  const raw = await response.json();
+  return {
+    closures: (raw.closures || []).map(normalizeClosure),
+    total: raw.total ?? (raw.closures || []).length,
+  };
 }
 
 export async function getTefForecast(filters?: {
@@ -1310,7 +1328,12 @@ export async function getDreReport(startDate?: string, endDate?: string): Promis
     const body = await response.json().catch(() => null);
     throw new Error(body?.message || body?.error || `Falha ao carregar DRE: ${response.statusText}`);
   }
-  return response.json();
+  const raw = await response.json();
+  return {
+    ...raw,
+    operatingResult: raw.operatingResult ?? raw.netOperatingProfit ?? 0,
+    operatingMarginPercent: raw.operatingMarginPercent ?? raw.netMarginPercent ?? 0,
+  };
 }
 
 export async function getAbcCurveReport(
@@ -1330,7 +1353,27 @@ export async function getAbcCurveReport(
     const body = await response.json().catch(() => null);
     throw new Error(body?.message || body?.error || `Falha ao carregar Curva ABC: ${response.statusText}`);
   }
-  return response.json();
+  const raw = await response.json();
+  const items = (raw.items || []).map((item: any, idx: number) => ({
+    ...item,
+    rank: item.rank ?? idx + 1,
+    cumulativeSharePercent: item.cumulativeSharePercent ?? item.cumulativeRevenuePercent ?? 0,
+  }));
+  return {
+    ...raw,
+    totalItemsSold: raw.totalItemsSold ?? items.reduce((acc: number, i: any) => acc + (i.quantitySold || 0), 0),
+    classCounts: raw.classCounts ?? {
+      A: raw.classACount ?? items.filter((i: any) => i.abcClass === 'A').length,
+      B: raw.classBCount ?? items.filter((i: any) => i.abcClass === 'B').length,
+      C: raw.classCCount ?? items.filter((i: any) => i.abcClass === 'C').length,
+    },
+    classRevenues: raw.classRevenues ?? {
+      A: items.filter((i: any) => i.abcClass === 'A').reduce((acc: number, i: any) => acc + (i.grossRevenue || 0), 0),
+      B: items.filter((i: any) => i.abcClass === 'B').reduce((acc: number, i: any) => acc + (i.grossRevenue || 0), 0),
+      C: items.filter((i: any) => i.abcClass === 'C').reduce((acc: number, i: any) => acc + (i.grossRevenue || 0), 0),
+    },
+    items,
+  };
 }
 
 export const financialApi = {
