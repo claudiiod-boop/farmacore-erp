@@ -1,4 +1,6 @@
-export type StationMode = 'COUNTER' | 'POS' | 'PURCHASES' | 'SNGPC';
+export type StationMode = 'COUNTER' | 'POS' | 'PURCHASES' | 'SNGPC' | 'FINANCIAL';
+
+export * from './financial';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';

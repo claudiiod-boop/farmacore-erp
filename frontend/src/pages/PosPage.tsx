@@ -24,9 +24,11 @@ import PbmModal from '../components/pbm/PbmModal';
 import PbmReceiptModal from '../components/pbm/PbmReceiptModal';
 import TefPinpadModal from '../components/tef/TefPinpadModal';
 import TefReceiptModal from '../components/tef/TefReceiptModal';
+import BlindClosureModal from '../components/pos/BlindClosureModal';
+import ClosureReviewModal from '../components/pos/ClosureReviewModal';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { formatBrl } from '../components/ProductSearch';
-import type { PbmAuthorizationResult, TefPayResult } from '../types';
+import type { PbmAuthorizationResult, TefPayResult, BlindCashClosure } from '../types';
 import {
   api,
   CashSession,
@@ -68,6 +70,11 @@ export default function PosPage() {
   const [authorizedPbm, setAuthorizedPbm] = useState<PbmAuthorizationResult | null>(null);
   const [lastPbmProtocol, setLastPbmProtocol] = useState<string | null>(null);
   const [lastTefNsu, setLastTefNsu] = useState<string | null>(null);
+
+  // Blind Cash Closure State
+  const [isBlindClosureModalOpen, setIsBlindClosureModalOpen] = useState(false);
+  const [completedClosure, setCompletedClosure] = useState<BlindCashClosure | null>(null);
+  const [isClosureReviewModalOpen, setIsClosureReviewModalOpen] = useState(false);
 
   // Completed Sale & Receipt State
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
@@ -148,6 +155,23 @@ export default function PosPage() {
       setIsSubmittingSession(false);
     }
   }, [isSessionOpen, currentSession, items.length]);
+
+  // Callback ao concluir a declaração cega de valores
+  const handleBlindClosureSuccess = useCallback((closure: BlindCashClosure) => {
+    setIsBlindClosureModalOpen(false);
+    setCurrentSession((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: 'CLOSED',
+            closedAt: closure.closedAt,
+          }
+        : null
+    );
+    setCompletedClosure(closure);
+    setNoticeMessage(`Fechamento cego #${closure.id} registrado com sucesso. Caixa encerrado.`);
+    setIsClosureReviewModalOpen(true);
+  }, []);
 
   // Close Session Confirmation
   const handleConfirmCloseSession = useCallback(async () => {
@@ -498,7 +522,11 @@ export default function PosPage() {
 
   // Cancel / Clear Cart (Esc)
   const handleCancelOrClear = useCallback(() => {
-    if (isReceiptModalOpen) {
+    if (isBlindClosureModalOpen) {
+      setIsBlindClosureModalOpen(false);
+    } else if (isClosureReviewModalOpen) {
+      setIsClosureReviewModalOpen(false);
+    } else if (isReceiptModalOpen) {
       handleNewSale();
     } else if (isTefReceiptModalOpen) {
       setIsTefReceiptModalOpen(false);
@@ -608,7 +636,9 @@ export default function PosPage() {
         isPaymentModalOpen ||
         isReceiptModalOpen ||
         isCashSessionModalOpen ||
-        isMovementModalOpen
+        isMovementModalOpen ||
+        isBlindClosureModalOpen ||
+        isClosureReviewModalOpen
       ) {
         return;
       }
@@ -739,17 +769,36 @@ export default function PosPage() {
           </button>
 
           {isSessionOpen && (
-            <button
-              type="button"
-              title="[F12] Fechar Caixa"
-              onClick={handleTriggerCloseSession}
-              className="flex items-center bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 shadow-xs transition"
-            >
-              <kbd className="bg-slate-950 text-white px-1.5 py-0.5 rounded font-mono font-bold mr-1.5 shadow-inner">
-                F12
-              </kbd>
-              <span className="font-semibold">Fechar Caixa</span>
-            </button>
+            <>
+              <button
+                type="button"
+                data-testid="pos-blind-closure-button"
+                title="Fechamento Cego de Caixa"
+                onClick={() => {
+                  if (items.length > 0) {
+                    setErrorMessage('Não é possível fechar o caixa com itens no carrinho. Finalize ou limpe a venda atual.');
+                    return;
+                  }
+                  setIsBlindClosureModalOpen(true);
+                }}
+                className="flex items-center bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-600 px-3 py-1.5 rounded-lg shadow-xs transition cursor-pointer font-bold"
+              >
+                <Lock className="w-3.5 h-3.5 mr-1 text-amber-400" />
+                <span>Fechamento Cego</span>
+              </button>
+
+              <button
+                type="button"
+                title="[F12] Fechar Caixa"
+                onClick={handleTriggerCloseSession}
+                className="flex items-center bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 shadow-xs transition"
+              >
+                <kbd className="bg-slate-950 text-white px-1.5 py-0.5 rounded font-mono font-bold mr-1.5 shadow-inner">
+                  F12
+                </kbd>
+                <span className="font-semibold">Fechar Caixa</span>
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -1033,6 +1082,27 @@ export default function PosPage() {
         operatorName={currentSession?.operatorName ?? ''}
         onConfirmMovement={handleConfirmMovement}
         isLoading={isSubmittingMovement}
+      />
+
+      <BlindClosureModal
+        isOpen={isBlindClosureModalOpen}
+        sessionId={currentSession?.id ?? 0}
+        operatorName={currentSession?.operatorName ?? ''}
+        onClose={() => setIsBlindClosureModalOpen(false)}
+        onSuccess={handleBlindClosureSuccess}
+      />
+
+      <ClosureReviewModal
+        isOpen={isClosureReviewModalOpen}
+        closure={completedClosure}
+        onClose={() => {
+          setIsClosureReviewModalOpen(false);
+          setCompletedClosure(null);
+        }}
+        onReviewed={(reviewed) => {
+          setCompletedClosure(reviewed);
+          setNoticeMessage(`Fechamento #${reviewed.id} homologado com status: ${reviewed.status}.`);
+        }}
       />
     </div>
   );

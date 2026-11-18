@@ -3,12 +3,13 @@ import CounterPage from './pages/CounterPage';
 import PosPage from './pages/PosPage';
 import PurchasesPage from './pages/PurchasesPage';
 import SngpcPage from './pages/SngpcPage';
+import FinancialDashboardPage from './pages/FinancialDashboardPage';
 import PbmModal from './components/pbm/PbmModal';
 import { useStationMode } from './hooks/useStationMode';
-import { ArrowLeftRight, Monitor, Store, Package, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { ArrowLeftRight, Monitor, Store, Package, ShieldAlert, ShieldCheck, DollarSign } from 'lucide-react';
 
 export default function App() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F4, F6, and Ctrl+Shift+S)
@@ -33,6 +34,11 @@ export default function App() {
       if (e.key === 'F4') {
         e.preventDefault();
         setMode('SNGPC');
+        return;
+      }
+      if (e.key === 'F5') {
+        e.preventDefault();
+        setMode('FINANCIAL');
         return;
       }
 
@@ -93,17 +99,22 @@ export default function App() {
                   <Package className="w-3.5 h-3.5 text-amber-400" />
                   <span>Posto: Compras</span>
                 </>
-              ) : (
+              ) : isSngpc ? (
                 <>
                   <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
                   <span>Posto: SNGPC</span>
+                </>
+              ) : (
+                <>
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Posto: Financeiro</span>
                 </>
               )}
               <ArrowLeftRight className="w-3 h-3 ml-1 text-slate-400" />
             </button>
           </div>
 
-          {/* Navigation Station Selector Buttons [F1]..[F4] */}
+          {/* Navigation Station Selector Buttons [F1]..[F5] */}
           <nav className="flex items-center space-x-1.5" aria-label="Estações de Trabalho">
             <button
               type="button"
@@ -156,6 +167,19 @@ export default function App() {
               <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
               <span>[F4] SNGPC</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setMode('FINANCIAL')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isFinancial
+                  ? 'bg-emerald-950 text-emerald-300 border-emerald-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              <span>[F5] Financeiro</span>
+            </button>
           </nav>
         </div>
 
@@ -183,6 +207,8 @@ export default function App() {
               Compras |{' '}
               <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F4</kbd>{' '}
               SNGPC |{' '}
+              <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F5</kbd>{' '}
+              Financeiro |{' '}
               <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F6</kbd>{' '}
               Convênio
             </span>
@@ -196,6 +222,7 @@ export default function App() {
         {isPos && <PosPage />}
         {isPurchases && <PurchasesPage />}
         {isSngpc && <SngpcPage />}
+        {isFinancial && <FinancialDashboardPage />}
       </div>
 
       {/* Global PBM Modal */}

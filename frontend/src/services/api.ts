@@ -31,6 +31,16 @@ import type {
   TefTransaction,
   TefReceiptResult,
   TefListFilters,
+  BlindCashClosure,
+  DeclareBlindClosureInput,
+  ReviewClosureInput,
+  CashClosureFilters,
+  TefReceivablesForecastSummary,
+  TefReconciliationTransaction,
+  TefSettlementInput,
+  TefReconciliationSummary,
+  DreReport,
+  AbcCurveReport,
 } from '../types';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
@@ -1139,6 +1149,206 @@ export const tefApi = {
   },
 };
 
+// ===================== FINANCIAL & BLIND CASH CLOSURE API =====================
+
+export async function declareBlindClosure(input: DeclareBlindClosureInput): Promise<BlindCashClosure> {
+  const base = getBaseUrl();
+  const url = `${base}/api/financial/cash-closures`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao declarar fechamento cego de caixa: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getClosureBySession(sessionId: number): Promise<BlindCashClosure> {
+  const base = getBaseUrl();
+  const url = `${base}/api/financial/cash-closures/by-session/${sessionId}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Fechamento de caixa não encontrado: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getClosureById(closureId: number): Promise<BlindCashClosure> {
+  const base = getBaseUrl();
+  const url = `${base}/api/financial/cash-closures/${closureId}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Fechamento de caixa não encontrado: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function reviewClosure(closureId: number, input: ReviewClosureInput): Promise<BlindCashClosure> {
+  const base = getBaseUrl();
+  const url = `${base}/api/financial/cash-closures/${closureId}/review`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao homologar fechamento: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getClosureReceipt(closureId: number): Promise<{ textReceipt: string; fullEscPos: string }> {
+  const base = getBaseUrl();
+  const url = `${base}/api/financial/cash-closures/${closureId}/receipt`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao emitir comprovante térmico: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function listClosures(filters?: CashClosureFilters): Promise<{ closures: BlindCashClosure[]; total: number }> {
+  const base = getBaseUrl();
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.differenceStatus) params.append('differenceStatus', filters.differenceStatus);
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.operatorName) params.append('operatorName', filters.operatorName);
+  if (filters?.limit) params.append('limit', String(filters.limit));
+  if (filters?.offset) params.append('offset', String(filters.offset));
+
+  const qs = params.toString();
+  const url = `${base}/api/financial/cash-closures${qs ? `?${qs}` : ''}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao listar fechamentos de caixa: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getTefForecast(filters?: {
+  startDate?: string;
+  endDate?: string;
+  acquirerName?: string;
+  operationType?: string;
+}): Promise<TefReceivablesForecastSummary> {
+  const base = getBaseUrl();
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.acquirerName) params.append('acquirerName', filters.acquirerName);
+  if (filters?.operationType) params.append('operationType', filters.operationType);
+
+  const qs = params.toString();
+  const url = `${base}/api/financial/tef/forecast${qs ? `?${qs}` : ''}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao buscar previsão TEF: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function settleTefTransaction(input: TefSettlementInput): Promise<TefReconciliationTransaction> {
+  const base = getBaseUrl();
+  const url = `${base}/api/financial/tef/settle`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao liquidar transação TEF: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function listTefReconciliation(filters?: {
+  settlementStatus?: string;
+  acquirerName?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ transactions: TefReconciliationTransaction[]; summary: TefReconciliationSummary }> {
+  const base = getBaseUrl();
+  const params = new URLSearchParams();
+  if (filters?.settlementStatus) params.append('settlementStatus', filters.settlementStatus);
+  if (filters?.acquirerName) params.append('acquirerName', filters.acquirerName);
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.limit) params.append('limit', String(filters.limit));
+  if (filters?.offset) params.append('offset', String(filters.offset));
+
+  const qs = params.toString();
+  const url = `${base}/api/financial/tef/transactions${qs ? `?${qs}` : ''}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao listar conciliações TEF: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getDreReport(startDate?: string, endDate?: string): Promise<DreReport> {
+  const base = getBaseUrl();
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  const qs = params.toString();
+  const url = `${base}/api/financial/dre${qs ? `?${qs}` : ''}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao carregar DRE: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getAbcCurveReport(
+  startDate?: string,
+  endDate?: string,
+  category?: string
+): Promise<AbcCurveReport> {
+  const base = getBaseUrl();
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (category) params.append('category', category);
+  const qs = params.toString();
+  const url = `${base}/api/financial/abc-curve${qs ? `?${qs}` : ''}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao carregar Curva ABC: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export const financialApi = {
+  declareBlindClosure,
+  getClosureBySession,
+  getClosureById,
+  reviewClosure,
+  getClosureReceipt,
+  listClosures,
+  getTefForecast,
+  settleTefTransaction,
+  listTefReconciliation,
+  getDreReport,
+  getAbcCurveReport,
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -1160,14 +1370,27 @@ export const api = {
   getFiscalProfile,
   updateFiscalProfile,
   cancelNfce,
+  declareBlindClosure,
+  getClosureBySession,
+  getClosureById,
+  reviewClosure,
+  getClosureReceipt,
+  listClosures,
+  getTefForecast,
+  settleTefTransaction,
+  listTefReconciliation,
+  getDreReport,
+  getAbcCurveReport,
   purchases: purchasesApi,
   sngpc: sngpcApi,
   pbm: pbmApi,
   tef: tefApi,
+  financial: financialApi,
   purchasesApi,
   sngpcApi,
   pbmApi,
   tefApi,
+  financialApi,
 };
 
 export default api;
