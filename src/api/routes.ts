@@ -18,6 +18,44 @@ import { SngpcService } from '../modules/sngpc/sngpc.service';
 import { SngpcMovementType } from '../modules/sngpc/types';
 import { PbmService } from '../modules/pbm/pbm.service';
 import { TefService } from '../modules/tef/tef.service';
+import { BlindCashClosureService } from '../modules/financial/cash-closure.service';
+import { TefReconciliationService } from '../modules/financial/tef-reconciliation.service';
+import { FinancialReportsService } from '../modules/financial/financial-reports.service';
+import { formatCashClosureReceipt } from '../modules/financial/closure-receipt-formatter';
+import type {
+  DeclareBlindClosureParams,
+  ReviewClosureParams,
+  CashClosureFilters,
+  ForecastFilters,
+  SettleTransactionParams,
+  ReconciliationFilters,
+  StoreInfo,
+} from '../modules/financial/types';
+
+const declareBlindClosureSchema = z.object({
+  sessionId: z.number().int().positive('sessionId deve ser um número inteiro positivo'),
+  operatorName: z.string().trim().min(1, 'operatorName é obrigatório'),
+  declaredCash: z.number().min(0, 'declaredCash deve ser >= 0'),
+  declaredCredit: z.number().min(0, 'declaredCredit deve ser >= 0'),
+  declaredDebit: z.number().min(0, 'declaredDebit deve ser >= 0'),
+  declaredPix: z.number().min(0, 'declaredPix deve ser >= 0'),
+  declaredPbm: z.number().min(0, 'declaredPbm deve ser >= 0'),
+  operatorNotes: z.string().optional().nullable(),
+});
+
+const reviewClosureSchema = z.object({
+  managerName: z.string().trim().min(1, 'managerName é obrigatório'),
+  approved: z.boolean(),
+  managerNotes: z.string().optional().nullable(),
+});
+
+const settleTransactionSchema = z.object({
+  nsu: z.string().trim().min(1, 'nsu é obrigatório'),
+  settledAmount: z.number().min(0, 'settledAmount deve ser >= 0'),
+  settledFee: z.number().min(0).optional(),
+  bankAccount: z.string().optional().nullable(),
+  settledAt: z.string().optional().nullable(),
+});
 
 const previewXmlSchema = z.object({
   xmlContent: z.string().trim().min(1, 'xmlContent é obrigatório'),
@@ -149,6 +187,9 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
   posService.setPbmService(pbmService);
   const tefService = new TefService(db);
   posService.setTefService(tefService);
+  const blindCashClosureService = new BlindCashClosureService(db);
+  const tefReconciliationService = new TefReconciliationService(db);
+  const financialReportsService = new FinancialReportsService(db);
 
   // Health check
   app.get('/health', async () => {
@@ -1646,4 +1687,233 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
       });
     }
   });
+
+  // ===================== FINANCIAL & BLIND CASH CLOSURE =====================
+
+  // 1. Declarar fechamento cego de caixa
+  app.post<{ Body: DeclareBlindClosureParams }>('/api/financial/cash-closure/declare', async (req, reply) => {
+    const parseResult = declareBlindClosureSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros inválidos para fechamento cego de caixa',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const closure = blindCashClosureService.declareBlindClosure(parseResult.data);
+      return reply.status(201).send(closure);
+    } catch (err: any) {
+      if (err.message === 'SESSION_NOT_FOUND') {
+        return reply.status(404).send({ error: 'SESSION_NOT_FOUND', message: 'Sessão de caixa não encontrada' });
+      }
+      if (err.message === 'SESSION_ALREADY_CLOSED') {
+        return reply.status(409).send({ error: 'SESSION_ALREADY_CLOSED', message: 'Sessão de caixa já foi encerrada' });
+      }
+      if (err.message === 'CLOSURE_ALREADY_EXISTS') {
+        return reply.status(409).send({ error: 'CLOSURE_ALREADY_EXISTS', message: 'Sessão de caixa já possui fechamento declarado' });
+      }
+      return reply.status(400).send({
+        error: 'CASH_CLOSURE_FAILED',
+        message: err.message || 'Erro ao declarar fechamento de caixa',
+      });
+    }
+  });
+
+  // 2. Obter fechamento pelo ID da sessao
+  app.get<{ Params: { sessionId: string } }>('/api/financial/cash-closure/session/:sessionId', async (req, reply) => {
+    const sessionId = Number(req.params.sessionId);
+    if (isNaN(sessionId) || sessionId <= 0) {
+      return reply.status(400).send({ error: 'INVALID_SESSION_ID', message: 'sessionId deve ser um número válido' });
+    }
+
+    const closure = blindCashClosureService.getClosureBySessionId(sessionId);
+    if (!closure) {
+      return reply.status(404).send({ error: 'CLOSURE_NOT_FOUND', message: 'Fechamento de caixa não encontrado para esta sessão' });
+    }
+
+    return reply.status(200).send(closure);
+  });
+
+  // 3. Obter fechamento pelo ID
+  app.get<{ Params: { closureId: string } }>('/api/financial/cash-closure/:closureId', async (req, reply) => {
+    const closureId = Number(req.params.closureId);
+    if (isNaN(closureId) || closureId <= 0) {
+      return reply.status(400).send({ error: 'INVALID_CLOSURE_ID', message: 'closureId deve ser um número válido' });
+    }
+
+    const closure = blindCashClosureService.getClosureById(closureId) || blindCashClosureService.getClosureBySessionId(closureId);
+    if (!closure) {
+      return reply.status(404).send({ error: 'CLOSURE_NOT_FOUND', message: 'Fechamento de caixa não encontrado' });
+    }
+
+    return reply.status(200).send(closure);
+  });
+
+  // 4. Homologação Gerencial do Fechamento
+  app.post<{ Params: { closureId: string }; Body: ReviewClosureParams }>(
+    '/api/financial/cash-closure/:closureId/review',
+    async (req, reply) => {
+      const closureId = Number(req.params.closureId);
+      if (isNaN(closureId) || closureId <= 0) {
+        return reply.status(400).send({ error: 'INVALID_CLOSURE_ID', message: 'closureId deve ser um número válido' });
+      }
+
+      const parseResult = reviewClosureSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'INVALID_PARAMETERS',
+          message: parseResult.error.issues[0]?.message || 'Parâmetros inválidos para homologação do fechamento',
+        });
+      }
+
+      try {
+        const reviewed = blindCashClosureService.reviewClosure(closureId, parseResult.data);
+        return reply.status(200).send(reviewed);
+      } catch (err: any) {
+        if (err.message === 'CLOSURE_NOT_FOUND') {
+          return reply.status(404).send({ error: 'CLOSURE_NOT_FOUND', message: 'Fechamento de caixa não encontrado' });
+        }
+        if (err.message === 'CLOSURE_ALREADY_REVIEWED') {
+          return reply.status(409).send({ error: 'CLOSURE_ALREADY_REVIEWED', message: 'Fechamento de caixa já foi homologado anteriormente' });
+        }
+        return reply.status(400).send({
+          error: 'CLOSURE_REVIEW_FAILED',
+          message: err.message || 'Erro ao homologar fechamento de caixa',
+        });
+      }
+    }
+  );
+
+  // 5. Comprovante Térmico de Fechamento de Caixa (ESC/POS 48 Colunas)
+  app.get<{ Params: { closureId: string }; Querystring: StoreInfo }>(
+    '/api/financial/cash-closure/:closureId/receipt',
+    async (req, reply) => {
+      const closureId = Number(req.params.closureId);
+      if (isNaN(closureId) || closureId <= 0) {
+        return reply.status(400).send({ error: 'INVALID_CLOSURE_ID', message: 'closureId deve ser um número válido' });
+      }
+
+      const closure = blindCashClosureService.getClosureById(closureId);
+      if (!closure) {
+        return reply.status(404).send({ error: 'CLOSURE_NOT_FOUND', message: 'Fechamento de caixa não encontrado' });
+      }
+
+      const sessionRow = db
+        .prepare<{ id: number; operator_name: string; initial_cash: number; current_cash: number; status: 'OPEN' | 'CLOSED'; opened_at: string; closed_at: string | null }>(
+          'SELECT * FROM cash_sessions WHERE id = ?'
+        )
+        .get(closure.cashSessionId);
+
+      if (!sessionRow) {
+        return reply.status(404).send({ error: 'SESSION_NOT_FOUND', message: 'Sessão de caixa não encontrada' });
+      }
+
+      const session = {
+        id: sessionRow.id,
+        operatorName: sessionRow.operator_name,
+        initialCash: Number(sessionRow.initial_cash),
+        currentCash: Number(sessionRow.current_cash),
+        status: sessionRow.status,
+        openedAt: sessionRow.opened_at,
+        closedAt: sessionRow.closed_at,
+      };
+
+      const receipt = formatCashClosureReceipt(closure, session, req.query);
+      return reply.status(200).send(receipt);
+    }
+  );
+
+  // 6. Listar Fechamentos de Caixa com filtros e paginação
+  app.get<{ Querystring: CashClosureFilters }>('/api/financial/cash-closures', async (req, reply) => {
+    const result = blindCashClosureService.listClosures(req.query);
+    return reply.status(200).send(result);
+  });
+
+  // ===================== CONCILIAÇÃO FINANCEIRA TEF =====================
+
+  // 7. Previsão de recebíveis futuros por adquirente e data
+  app.get<{ Querystring: ForecastFilters }>('/api/financial/reconciliation/forecast', async (req, reply) => {
+    const forecast = tefReconciliationService.getReceivablesForecast(req.query);
+    return reply.status(200).send(forecast);
+  });
+
+  // 8. Baixa e conciliação bancária de transação TEF
+  app.post<{ Body: SettleTransactionParams & { nsu: string } }>(
+    '/api/financial/reconciliation/settle',
+    async (req, reply) => {
+      const parseResult = settleTransactionSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'INVALID_PARAMETERS',
+          message: parseResult.error.issues[0]?.message || 'Parâmetros inválidos para liquidação TEF',
+        });
+      }
+
+      try {
+        const { nsu, ...settleParams } = parseResult.data;
+        const settled = tefReconciliationService.settleTransaction(nsu, settleParams);
+        return reply.status(200).send(settled);
+      } catch (err: any) {
+        if (err.message === 'TRANSACTION_NOT_FOUND') {
+          return reply.status(404).send({ error: 'TRANSACTION_NOT_FOUND', message: 'Transação TEF não encontrada' });
+        }
+        if (err.message === 'TRANSACTION_ALREADY_SETTLED') {
+          return reply.status(409).send({ error: 'TRANSACTION_ALREADY_SETTLED', message: 'Transação já foi liquidada anteriormente' });
+        }
+        if (err.message === 'CANNOT_SETTLE_UNCONFIRMED_TRANSACTION') {
+          return reply.status(400).send({ error: 'CANNOT_SETTLE_UNCONFIRMED_TRANSACTION', message: 'Apenas transações confirmadas podem ser liquidadas' });
+        }
+        return reply.status(400).send({
+          error: 'SETTLEMENT_FAILED',
+          message: err.message || 'Erro ao liquidar transação TEF',
+        });
+      }
+    }
+  );
+
+  // 9. Listar transações para conciliação e sumário de liquidações
+  app.get<{ Querystring: ReconciliationFilters }>(
+    '/api/financial/reconciliation/transactions',
+    async (req, reply) => {
+      const result = tefReconciliationService.listReconciliation(req.query);
+      return reply.status(200).send(result);
+    }
+  );
+
+  // ===================== RELATÓRIOS DRE & CURVA ABC =====================
+
+  // 10. DRE Gerencial
+  app.get<{ Querystring: { startDate?: string; endDate?: string } }>(
+    '/api/financial/reports/dre',
+    async (req, reply) => {
+      const now = new Date();
+      const firstDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      const startDate = req.query?.startDate || firstDay;
+      const endDate = req.query?.endDate || today;
+
+      const report = financialReportsService.generateDre(startDate, endDate);
+      return reply.status(200).send(report);
+    }
+  );
+
+  // 11. Curva ABC 80/20 & Categorias Farmacêuticas
+  app.get<{ Querystring: { startDate?: string; endDate?: string; category?: string } }>(
+    '/api/financial/reports/abc-curve',
+    async (req, reply) => {
+      const now = new Date();
+      const firstDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      const startDate = req.query?.startDate || firstDay;
+      const endDate = req.query?.endDate || today;
+      const category = req.query?.category;
+
+      const report = financialReportsService.generateAbcCurve(startDate, endDate, category);
+      return reply.status(200).send(report);
+    }
+  );
 }
