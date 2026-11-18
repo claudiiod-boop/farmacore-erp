@@ -122,8 +122,8 @@ export interface ReceivablesForecastSummary {
 export interface SettleTransactionParams {
   settledAmount: number;
   settledFee?: number;
-  bankAccount?: string;
-  settledAt?: string;
+  bankAccount?: string | null;
+  settledAt?: string | null;
 }
 
 export interface ReconciliationFilters {
