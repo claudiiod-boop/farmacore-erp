@@ -266,16 +266,16 @@ Expected: PASS.
 - Full test suite run (`npm test`)
 - TypeScript check (`npx tsc --noEmit` & `npm run build:web`)
 
-- [ ] **Step 1: Run complete test suite**
+- [x] **Step 1: Run complete test suite**
 
 Run: `cmd.exe /c "npm test"`
 Expected: 100% dos testes passando (Fases 1 a 6 + Fase 7).
 
-- [ ] **Step 2: Run web build and typecheck**
+- [x] **Step 2: Run web build and typecheck**
 
 Run: `cmd.exe /c "npm run build:web && npx tsc --noEmit"`
 Expected: Build concluído com sucesso e 0 erros de TypeScript.
 
-- [ ] **Step 3: Git commit with semantic message**
+- [x] **Step 3: Git commit with semantic message**
 
 Run: `cmd.exe /c "git status"`
