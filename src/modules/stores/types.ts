@@ -103,6 +103,7 @@ export interface NetworkStockItem {
   reservedQuantity: number;
   availableQuantity: number;
   earliestExpiry?: string | null;
+  batchCount?: number;
 
   // Compatibility aliases
   store_id?: number;
@@ -116,4 +117,5 @@ export interface NetworkStockItem {
   reserved_quantity?: number;
   available_quantity?: number;
   earliest_expiry?: string | null;
+  batch_count?: number;
 }
