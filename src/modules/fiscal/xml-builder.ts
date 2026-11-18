@@ -22,9 +22,17 @@ export interface NfceItemInput {
   tax: CalculatedItemTax;
 }
 
+export interface NfceCardInput {
+  tpIntegra: 1 | 2;
+  cnpj: string;
+  tBand: string;
+  cAut: string;
+}
+
 export interface NfcePaymentInput {
   method: string; // 'DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'PIX'
   amount: number;
+  card?: NfceCardInput;
 }
 
 export interface NfceXmlParams {
@@ -322,6 +330,15 @@ export function buildNfceXml(params: NfceXmlParams): string {
     xml += `<detPag>`;
     xml += `<tPag>${tPag}</tPag>`;
     xml += `<vPag>${payment.amount.toFixed(2)}</vPag>`;
+    if (payment.card) {
+      const cleanCardCnpj = payment.card.cnpj.replace(/\D/g, '').padStart(14, '0');
+      xml += `<card>`;
+      xml += `<tpIntegra>${payment.card.tpIntegra}</tpIntegra>`;
+      xml += `<CNPJ>${cleanCardCnpj}</CNPJ>`;
+      xml += `<tBand>${payment.card.tBand}</tBand>`;
+      xml += `<cAut>${escapeXml(payment.card.cAut)}</cAut>`;
+      xml += `</card>`;
+    }
     xml += `</detPag>`;
   });
   if (changeAmount && changeAmount > 0) {

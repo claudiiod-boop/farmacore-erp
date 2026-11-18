@@ -160,35 +160,10 @@ Expected: PASS.
   - Vinculação de `tef_transaction_id` e `tef_nsu` em `sale_payments`.
   - No checkout: confirmação das transações TEF vinculadas à venda, ou desfazimento automático (`undo`) se o checkout falhar.
 
-- [ ] **Step 1: Write failing tests for NFC-e `<card>` group & POS TEF integration**
-
-1. Create `tests/modules/fiscal/xml-builder-card.test.ts`:
-```ts
-describe('NFC-e XML Builder - Card Group Integration', () => {
-  it('should include <card> group with tpIntegra 1, sanitized 14-digit CNPJ, tBand and cAut when payment has card data', () => {});
-  it('should omit <card> group for non-card payments', () => {});
-});
-```
-2. Create `tests/modules/pos/pos-tef-integration.test.ts`:
-```ts
-describe('POS Checkout with TEF Integration', () => {
-  it('should complete checkout with TEF payment, link transaction and confirm automatically', async () => {});
-  it('should record tef_transaction_id in sale_payments', async () => {});
-  it('should automatically undo TEF transaction if checkout transaction fails', async () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/modules/fiscal/xml-builder-card.test.ts tests/modules/pos/pos-tef-integration.test.ts"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement NFC-e `<card>` builder and POS TEF integration**
-
-1. Atualizar `src/modules/fiscal/types.ts` e `xml-builder.ts`.
-2. Atualizar `src/modules/pos/types.ts` e `pos.service.ts`.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for NFC-e `<card>` group & POS TEF integration**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement NFC-e `<card>` builder and POS TEF integration**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/fiscal/xml-builder-card.test.ts tests/modules/pos/pos-tef-integration.test.ts"`
 Expected: PASS.

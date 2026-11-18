@@ -4,6 +4,7 @@ import { PreSaleService } from '../counter/pre-sale.service';
 import { PrescriptionDetails } from '../counter/types';
 import { SngpcService } from '../sngpc/sngpc.service';
 import { PbmService } from '../pbm/pbm.service';
+import { TefService } from '../tef/tef.service';
 import {
   AdditionalCheckoutItem,
   CashMovement,
@@ -68,6 +69,8 @@ interface SalePaymentRow {
   sale_id: number | bigint;
   method: string;
   amount: number;
+  tef_transaction_id?: number | bigint | null;
+  tef_nsu?: string | null;
   created_at: string;
 }
 
@@ -159,6 +162,8 @@ function mapSalePaymentRow(row: SalePaymentRow): PaymentItemDetails {
     saleId: Number(row.sale_id),
     method: row.method as PaymentMethod,
     amount: Number(row.amount),
+    tefTransactionId: row.tef_transaction_id != null ? Number(row.tef_transaction_id) : null,
+    tefNsu: row.tef_nsu ?? null,
     createdAt: row.created_at,
   };
 }
@@ -166,20 +171,27 @@ function mapSalePaymentRow(row: SalePaymentRow): PaymentItemDetails {
 export class PosService {
   private sngpcService: SngpcService;
   private pbmService?: PbmService;
+  private tefService?: TefService;
 
   constructor(
     private db: Database,
     private preSaleService: PreSaleService,
     private inventoryService: InventoryService,
     sngpcService?: SngpcService,
-    pbmService?: PbmService
+    pbmService?: PbmService,
+    tefService?: TefService
   ) {
     this.sngpcService = sngpcService ?? new SngpcService(db);
     this.pbmService = pbmService;
+    this.tefService = tefService;
   }
 
   setPbmService(service: PbmService): void {
     this.pbmService = service;
+  }
+
+  setTefService(service: TefService): void {
+    this.tefService = service;
   }
 
   openCashSession(operatorName: string, initialCash: number): CashSession {
@@ -468,7 +480,47 @@ export class PosService {
   }
 
   checkout(params: CheckoutParams): SaleDetails & Promise<SaleDetails> {
-    if (params.cashSessionId !== undefined && params.cashSessionId !== null) {
+    const tefNsuSet = new Set<string>();
+    if (params.tefNsuList) {
+      for (const nsu of params.tefNsuList) {
+        if (nsu) tefNsuSet.add(nsu);
+      }
+    }
+    if (params.payments) {
+      for (const p of params.payments) {
+        if (p.tefNsu) {
+          tefNsuSet.add(p.tefNsu);
+        } else if (p.tefTransactionUuid) {
+          const row = this.db
+            .prepare<{ nsu: string }>('SELECT nsu FROM tef_transactions WHERE transaction_uuid = ?')
+            .get(p.tefTransactionUuid);
+          if (row?.nsu) {
+            tefNsuSet.add(row.nsu);
+          }
+        }
+      }
+    }
+    const tefNsus = Array.from(tefNsuSet);
+
+    const handleTefUndo = async (reason: string = 'FALHA_CHECKOUT_PDV') => {
+      if (this.tefService && tefNsus.length > 0) {
+        for (const nsu of tefNsus) {
+          try {
+            const tx = this.tefService.getTransactionByNsu(nsu);
+            if (tx && tx.status === 'AUTHORIZED') {
+              await this.tefService.undo({ nsu, reason });
+            }
+          } catch {
+            // Ignora falhas individuais em undo secundário
+          }
+        }
+      }
+    };
+
+    let saleDetails: SaleDetails;
+
+    try {
+      if (params.cashSessionId !== undefined && params.cashSessionId !== null) {
       const sessionRow = this.db
         .prepare<CashSessionRow>('SELECT * FROM cash_sessions WHERE id = ?')
         .get(params.cashSessionId);
@@ -720,12 +772,60 @@ export class PosService {
       }
 
       const insertPaymentStmt = this.db.prepare(`
-        INSERT INTO sale_payments (sale_id, method, amount)
-        VALUES (?, ?, ?)
+        INSERT INTO sale_payments (
+          sale_id,
+          method,
+          amount,
+          tef_transaction_id,
+          tef_nsu
+        ) VALUES (?, ?, ?, ?, ?)
       `);
 
       for (const p of params.payments) {
-        insertPaymentStmt.run(saleId, p.method, p.amount);
+        let tefTransactionId: number | null = null;
+        let tefNsu: string | null = p.tefNsu || null;
+
+        if (p.tefTransactionUuid || p.tefNsu) {
+          let txRow: any = null;
+          if (p.tefTransactionUuid) {
+            txRow = this.db
+              .prepare('SELECT id, nsu FROM tef_transactions WHERE transaction_uuid = ?')
+              .get(p.tefTransactionUuid);
+          }
+          if (!txRow && p.tefNsu) {
+            txRow = this.db
+              .prepare('SELECT id, nsu FROM tef_transactions WHERE nsu = ?')
+              .get(p.tefNsu);
+          }
+
+          if (txRow) {
+            tefTransactionId = Number(txRow.id);
+            tefNsu = txRow.nsu;
+          }
+        }
+
+        const pResult = insertPaymentStmt.run(
+          saleId,
+          p.method,
+          p.amount,
+          tefTransactionId,
+          tefNsu
+        );
+        const paymentId = Number(pResult.lastInsertRowid);
+
+        if (tefTransactionId) {
+          this.db
+            .prepare('UPDATE tef_transactions SET sale_id = ?, payment_id = ? WHERE id = ?')
+            .run(saleId, paymentId, tefTransactionId);
+        }
+      }
+
+      if (params.tefNsuList && params.tefNsuList.length > 0) {
+        for (const nsu of params.tefNsuList) {
+          this.db
+            .prepare('UPDATE tef_transactions SET sale_id = ? WHERE nsu = ? AND sale_id IS NULL')
+            .run(saleId, nsu);
+        }
       }
 
       if (params.cashSessionId !== undefined && params.cashSessionId !== null) {
@@ -752,21 +852,45 @@ export class PosService {
       return saleDetails;
     });
 
-    const saleDetails = checkoutTx();
+    saleDetails = checkoutTx();
+  } catch (err) {
+    if (this.tefService && tefNsus.length > 0) {
+      const undoPromise = handleTefUndo('FALHA_CHECKOUT_PDV').then(() => {
+        throw err;
+      });
+      return undoPromise as any;
+    }
+    throw err;
+  }
+
+    let postCheckoutPromise = Promise.resolve(saleDetails);
 
     if (params.pbmProtocol && this.pbmService) {
-      const confirmPromise = this.pbmService
-        .confirm({
-          authorizationProtocol: params.pbmProtocol,
+      const pbmProtocol = params.pbmProtocol;
+      postCheckoutPromise = postCheckoutPromise.then(() =>
+        this.pbmService!.confirm({
+          authorizationProtocol: pbmProtocol,
           saleId: saleDetails.sale.id,
-        })
-        .then(() => saleDetails);
-
-      return Object.assign(confirmPromise, saleDetails) as SaleDetails & Promise<SaleDetails>;
+        }).then(() => saleDetails)
+      );
     }
 
-    const resolved = Promise.resolve(saleDetails);
-    return Object.assign(resolved, saleDetails) as SaleDetails & Promise<SaleDetails>;
+    if (this.tefService && tefNsus.length > 0) {
+      postCheckoutPromise = postCheckoutPromise.then(async () => {
+        for (const nsu of tefNsus) {
+          const tx = this.tefService!.getTransactionByNsu(nsu);
+          if (tx && tx.status === 'AUTHORIZED') {
+            await this.tefService!.confirm({
+              nsu,
+              saleId: saleDetails.sale.id,
+            });
+          }
+        }
+        return saleDetails;
+      });
+    }
+
+    return Object.assign(postCheckoutPromise, saleDetails) as SaleDetails & Promise<SaleDetails>;
   }
 
   finalizeSaleFromPreSale(
@@ -819,7 +943,7 @@ export class PosService {
 
     const paymentRows = this.db
       .prepare<SalePaymentRow>(`
-        SELECT id, sale_id, method, amount, created_at
+        SELECT id, sale_id, method, amount, tef_transaction_id, tef_nsu, created_at
         FROM sale_payments
         WHERE sale_id = ?
         ORDER BY id ASC

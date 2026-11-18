@@ -96,3 +96,11 @@ export interface CalculatedSaleTaxes {
   vCOFINS: number;
   items: CalculatedItemTax[];
 }
+
+export interface NfceCardInput {
+  tpIntegra: 1 | 2;
+  cnpj: string;
+  tBand: string;
+  cAut: string;
+}
+
