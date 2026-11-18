@@ -145,3 +145,14 @@ export interface TefProvider {
   undo(params: TefUndoParams): Promise<TefUndoResult>;
   cancel(params: TefCancelParams): Promise<TefCancelResult>;
 }
+
+export interface StoreInfo {
+  name: string;
+  cnpj: string;
+  ie?: string;
+  address: string;
+  pharmacistName?: string;
+  pharmacistCrf?: string;
+  pharmacistUf?: string;
+}
+

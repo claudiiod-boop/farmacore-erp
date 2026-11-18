@@ -111,30 +111,10 @@ Expected: PASS.
   - `formatTefCancellationReceipt(transaction: TefTransaction, storeInfo: StoreInfo): { customerReceipt: string; merchantReceipt: string; fullEscPos: string }`
   - Formatação em 48 colunas com separadores, dados da adquirente, bandeira, cartão mascarado, NSU, autorização, valor e corte ESC/POS `\x1b\x69`.
 
-- [ ] **Step 1: Write failing tests for `tef-receipt-formatter.ts`**
-
-Create `tests/modules/tef/tef-receipt-formatter.test.ts`:
-```ts
-describe('TEF Receipt Formatter (48 Columns ESC/POS)', () => {
-  it('should format 1st copy (Cliente) with masked card, NSU, auth code, and amount', () => {});
-  it('should format 2nd copy (Estabelecimento) with NFC-e reference and store control', () => {});
-  it('should format cancellation/reversal slip with cancellation NSU and timestamp', () => {});
-  it('should respect exact 48 columns limit per line without line overflow', () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/modules/tef/tef-receipt-formatter.test.ts"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement `src/modules/tef/tef-receipt-formatter.ts`**
-
-1. Helper de alinhamento e largura máxima de 48 colunas.
-2. Formatação da Via do Cliente e Via do Estabelecimento.
-3. Formatação da Via de Estorno/Cancelamento.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for `tef-receipt-formatter.ts`**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement `src/modules/tef/tef-receipt-formatter.ts`**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/tef/tef-receipt-formatter.test.ts"`
 Expected: PASS.
