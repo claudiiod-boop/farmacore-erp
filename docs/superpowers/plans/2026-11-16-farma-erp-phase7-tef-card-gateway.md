@@ -133,31 +133,10 @@ Expected: PASS.
   - Persistência atômica no SQLite da tabela `tef_transactions`.
   - Bloqueio de confirmação em transações canceladas/desfeitas e idempotência.
 
-- [ ] **Step 1: Write failing tests for `TefService`**
-
-Create `tests/modules/tef/tef-service.test.ts`:
-```ts
-describe('TefService Lifecycle', () => {
-  it('should authorize TEF transaction and save with status AUTHORIZED', async () => {});
-  it('should confirm transaction linking to saleId and updating status to CONFIRMED', async () => {});
-  it('should undo authorized transaction updating status to REVERSED', async () => {});
-  it('should cancel confirmed transaction generating cancellation NSU and receipt', async () => {});
-  it('should reject confirming already confirmed or reversed transaction', async () => {});
-  it('should generate printable 48-column receipts for transaction', async () => {});
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cmd.exe /c "npx vitest run tests/modules/tef/tef-service.test.ts"`
-Expected: FAIL.
-
-- [ ] **Step 3: Implement `src/modules/tef/tef.service.ts`**
-
-1. Inicialização de provedores e injeção do `Database`.
-2. Métodos `pay`, `confirm`, `undo`, `cancel`, `listTransactions`, `getReceiptText`.
-
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 1: Write failing tests for `TefService`**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement `src/modules/tef/tef.service.ts`**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/tef/tef-service.test.ts"`
 Expected: PASS.
