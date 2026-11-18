@@ -73,6 +73,7 @@ export interface TefPayParams {
   installmentType?: TefInstallmentType;
   saleId?: number;
   mockScenario?: 'SUCCESS' | 'WRONG_PIN' | 'INSUFFICIENT_FUNDS' | 'TIMEOUT' | 'USER_CANCELLED';
+  brandName?: string;
 }
 
 export interface TefPayResult {

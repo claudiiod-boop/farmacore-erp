@@ -66,7 +66,7 @@ Expected: PASS.
   - `TefMockProvider`: simulador com gatilhos via `mockScenario` e via centavos (.01 sucesso, .02 senha incorreta, .03 saldo insuficiente, .04 cancelamento cliente, .05 timeout).
   - Sanitização de CNPJ para 14 dígitos e De-Para de bandeiras/vouchers SEFAZ.
 
-- [ ] **Step 1: Write failing tests for `TefMockProvider`**
+- [x] **Step 1: Write failing tests for `TefMockProvider`**
 
 Create `tests/modules/tef/tef-mock-provider.test.ts`:
 ```ts
@@ -82,17 +82,17 @@ describe('TefMockProvider (PinPad & Adquirer Simulator)', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/tef/tef-mock-provider.test.ts"`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement `TefMockProvider` and provider interface**
+- [x] **Step 3: Implement `TefMockProvider` and provider interface**
 
 1. Implement `src/modules/tef/providers/tef-provider.interface.ts`.
 2. Implement `src/modules/tef/providers/tef-mock-provider.ts`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/modules/tef/tef-mock-provider.test.ts"`
 Expected: PASS.
