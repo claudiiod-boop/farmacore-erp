@@ -58,6 +58,11 @@ export interface TefTransaction {
   netAmount?: number | null;
   expectedSettlementDate?: string | null;
   batchNumber?: string | null;
+  settlementStatus?: 'PENDING' | 'SETTLED' | 'DIVERGENT';
+  settledAmount?: number | null;
+  settledFee?: number | null;
+  settledAt?: string | null;
+  bankAccount?: string | null;
   createdAt: string;
   confirmedAt?: string | null;
   reversedAt?: string | null;

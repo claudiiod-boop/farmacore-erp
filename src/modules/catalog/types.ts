@@ -1,3 +1,5 @@
+import type { PharmaceuticalCategory } from '../financial/types';
+
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType = 'ISENTO' | 'ANTIMICROBIANO' | 'C1' | 'C2' | 'B1' | 'B2' | 'A1' | 'A2' | 'A3';
 
@@ -12,6 +14,7 @@ export interface Product {
   pmc: number;
   pf: number;
   price: number;
+  category?: PharmaceuticalCategory;
   isActive: boolean;
   createdAt: string;
 }
@@ -26,4 +29,5 @@ export interface CreateProductDTO {
   pmc: number;
   pf: number;
   price: number;
+  category?: PharmaceuticalCategory;
 }
