@@ -529,6 +529,17 @@ export class TefService {
   }
 
   /**
+   * Retorna a lista de configurações de todos os provedores TEF cadastrados.
+   */
+  public listConfigs(onlyActive = false): TefConfig[] {
+    const query = onlyActive
+      ? 'SELECT * FROM tef_configs WHERE is_active = 1 ORDER BY id ASC'
+      : 'SELECT * FROM tef_configs ORDER BY id ASC';
+    const rows = this.db.prepare(query).all() as any[];
+    return rows.map((r) => this.mapConfigRow(r));
+  }
+
+  /**
    * Retorna a configuração de um provedor TEF.
    */
   public getConfig(providerId: string): TefConfig | null {

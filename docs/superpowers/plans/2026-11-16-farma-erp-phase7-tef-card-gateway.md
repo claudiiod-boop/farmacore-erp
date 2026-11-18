@@ -181,7 +181,7 @@ Expected: PASS.
 - Produces:
   - Endpoints REST Fastify `/api/tef/providers`, `/api/tef/pay`, `/api/tef/confirm`, `/api/tef/undo`, `/api/tef/cancel`, `/api/tef/transactions`, `/api/tef/transactions/:nsu/receipt`, `/api/tef/config`.
 
-- [ ] **Step 1: Write failing tests for TEF REST routes**
+- [x] **Step 1: Write failing tests for TEF REST routes**
 
 Create `tests/api/routes.tef.test.ts`:
 ```ts
@@ -195,17 +195,17 @@ describe('Fastify TEF Routes (/api/tef/*)', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cmd.exe /c "npx vitest run tests/api/routes.tef.test.ts"`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement TEF REST routes in Fastify**
+- [x] **Step 3: Implement TEF REST routes in Fastify**
 
 1. Adicionar rotas com validação Zod.
 2. Injetar `TefService` em `routes.ts`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cmd.exe /c "npx vitest run tests/api/routes.tef.test.ts"`
 Expected: PASS.

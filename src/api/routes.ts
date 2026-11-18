@@ -17,6 +17,7 @@ import { NfeParseError } from '../modules/purchases/nfe-parser';
 import { SngpcService } from '../modules/sngpc/sngpc.service';
 import { SngpcMovementType } from '../modules/sngpc/types';
 import { PbmService } from '../modules/pbm/pbm.service';
+import { TefService } from '../modules/tef/tef.service';
 
 const previewXmlSchema = z.object({
   xmlContent: z.string().trim().min(1, 'xmlContent é obrigatório'),
@@ -91,6 +92,51 @@ const pbmConfigUpdateSchema = z.object({
   credentialsJson: z.string().nullable().optional(),
 });
 
+const tefPaySchema = z.object({
+  amount: z.number().positive('amount deve ser maior que zero'),
+  operationType: z.enum(['DEBITO', 'CREDITO', 'VOUCHER', 'PIX_TEF']),
+  installments: z.number().int().min(1, 'installments deve ser ao menos 1').optional(),
+  installmentType: z.enum(['A_VISTA', 'PARCELADO_LOJA', 'PARCELADO_ADM']).optional(),
+  terminalId: z.string().trim().optional(),
+  providerId: z.string().trim().optional(),
+  saleId: z.number().int().positive().optional(),
+  brandName: z.string().trim().optional(),
+  mockScenario: z
+    .enum(['SUCCESS', 'APPROVED', 'WRONG_PIN', 'INSUFFICIENT_FUNDS', 'TIMEOUT', 'PINPAD_TIMEOUT', 'USER_CANCELLED'])
+    .optional()
+    .transform((v) => {
+      if (v === 'APPROVED') return 'SUCCESS';
+      if (v === 'PINPAD_TIMEOUT') return 'TIMEOUT';
+      return v as 'SUCCESS' | 'WRONG_PIN' | 'INSUFFICIENT_FUNDS' | 'TIMEOUT' | 'USER_CANCELLED' | undefined;
+    }),
+});
+
+const tefConfirmSchema = z.object({
+  nsu: z.string().trim().min(1, 'nsu é obrigatório'),
+  saleId: z.number().int().positive('saleId deve ser um número inteiro positivo'),
+  fiscalKeyNfce: z.string().trim().optional(),
+});
+
+const tefUndoSchema = z.object({
+  nsu: z.string().trim().min(1, 'nsu é obrigatório'),
+  reason: z.string().trim().min(1, 'reason é obrigatório'),
+});
+
+const tefCancelSchema = z.object({
+  nsu: z.string().trim().min(1, 'nsu é obrigatório'),
+  reason: z.string().trim().min(1, 'reason é obrigatório'),
+});
+
+const tefConfigUpdateSchema = z.object({
+  terminalId: z.string().trim().optional(),
+  merchantId: z.string().trim().nullable().optional(),
+  ipAddress: z.string().trim().optional(),
+  port: z.number().int().positive().optional(),
+  isActive: z.union([z.number().int().min(0).max(1), z.boolean().transform((v) => (v ? 1 : 0))]).optional(),
+  environment: z.enum(['PRODUCAO', 'HOMOLOGACAO', 'MOCK']).optional(),
+  credentialsJson: z.string().nullable().optional(),
+});
+
 export async function registerRoutes(app: FastifyInstance, db: Database): Promise<void> {
   const catalogService = new CatalogService(db);
   const inventoryService = new InventoryService(db);
@@ -101,6 +147,8 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
   const fiscalService = new FiscalService(db);
   const pbmService = new PbmService(db);
   posService.setPbmService(pbmService);
+  const tefService = new TefService(db);
+  posService.setTefService(tefService);
 
   // Health check
   app.get('/health', async () => {
@@ -1299,6 +1347,302 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
       return reply.status(400).send({
         error: 'PBM_CONFIG_UPDATE_FAILED',
         message: err.message || 'Erro ao atualizar configuração PBM',
+      });
+    }
+  });
+
+  // ===================== TEF (TRANSFERÊNCIA ELETRÔNICA DE FUNDOS) =====================
+  app.get<{ Querystring: { onlyActive?: string } }>('/api/tef/providers', async (req, reply) => {
+    const onlyActive = req.query.onlyActive === 'true' || req.query.onlyActive === '1';
+    const providers = tefService.listConfigs(onlyActive);
+    return reply.status(200).send(providers);
+  });
+
+  app.post<{ Body: unknown }>('/api/tef/pay', async (req, reply) => {
+    const parseResult = tefPaySchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de pagamento TEF inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await tefService.pay(parseResult.data);
+      if (!result.success) {
+        return reply.status(400).send({
+          error: 'TEF_PAYMENT_REJECTED',
+          message: result.errorMessage || 'Pagamento recusado pela adquirente ou PinPad',
+          details: result,
+        });
+      }
+      return reply.status(200).send(result);
+    } catch (err: any) {
+      return reply.status(400).send({
+        error: 'TEF_PAYMENT_ERROR',
+        message: err.message || 'Erro inesperado no processamento do pagamento TEF',
+      });
+    }
+  });
+
+  app.post<{ Body: unknown }>('/api/tef/confirm', async (req, reply) => {
+    const parseResult = tefConfirmSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de confirmação TEF inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await tefService.confirm(parseResult.data);
+      if (!result.success) {
+        return reply.status(400).send({
+          error: 'TEF_CONFIRMATION_FAILED',
+          message: result.errorMessage || 'Falha na confirmação da transação TEF',
+          details: result,
+        });
+      }
+      return reply.status(200).send(result);
+    } catch (err: any) {
+      if (err.message && err.message.includes('não encontrada')) {
+        return reply.status(404).send({
+          error: 'TEF_TRANSACTION_NOT_FOUND',
+          message: err.message,
+        });
+      }
+      return reply.status(400).send({
+        error: 'TEF_CONFIRMATION_ERROR',
+        message: err.message || 'Erro inesperado na confirmação TEF',
+      });
+    }
+  });
+
+  app.post<{ Body: unknown }>('/api/tef/undo', async (req, reply) => {
+    const parseResult = tefUndoSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de desfazimento TEF inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await tefService.undo(parseResult.data);
+      if (!result.success) {
+        return reply.status(400).send({
+          error: 'TEF_UNDO_FAILED',
+          message: result.errorMessage || 'Falha no desfazimento da transação TEF',
+          details: result,
+        });
+      }
+      return reply.status(200).send(result);
+    } catch (err: any) {
+      if (err.message && err.message.includes('não encontrada')) {
+        return reply.status(404).send({
+          error: 'TEF_TRANSACTION_NOT_FOUND',
+          message: err.message,
+        });
+      }
+      return reply.status(400).send({
+        error: 'TEF_UNDO_ERROR',
+        message: err.message || 'Erro inesperado no desfazimento TEF',
+      });
+    }
+  });
+
+  app.post<{ Body: unknown }>('/api/tef/cancel', async (req, reply) => {
+    const parseResult = tefCancelSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de cancelamento TEF inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await tefService.cancel(parseResult.data);
+      if (!result.success) {
+        return reply.status(400).send({
+          error: 'TEF_CANCELLATION_FAILED',
+          message: result.errorMessage || 'Falha no cancelamento da transação TEF',
+          details: result,
+        });
+      }
+      return reply.status(200).send(result);
+    } catch (err: any) {
+      if (err.message && err.message.includes('não encontrada')) {
+        return reply.status(404).send({
+          error: 'TEF_TRANSACTION_NOT_FOUND',
+          message: err.message,
+        });
+      }
+      return reply.status(400).send({
+        error: 'TEF_CANCELLATION_ERROR',
+        message: err.message || 'Erro inesperado no cancelamento TEF',
+      });
+    }
+  });
+
+  app.get<{
+    Querystring: {
+      startDate?: string;
+      endDate?: string;
+      status?: string;
+      operationType?: string;
+      brandName?: string;
+      acquirerName?: string;
+      saleId?: string;
+      terminalId?: string;
+      nsu?: string;
+      limit?: string;
+      offset?: string;
+    };
+  }>('/api/tef/transactions', async (req, reply) => {
+    const {
+      startDate,
+      endDate,
+      status,
+      operationType,
+      brandName,
+      acquirerName,
+      saleId,
+      terminalId,
+      nsu,
+      limit,
+      offset,
+    } = req.query;
+
+    const result = tefService.listTransactions({
+      startDate,
+      endDate,
+      status,
+      operationType,
+      brandName,
+      acquirerName,
+      saleId: saleId ? Number(saleId) : undefined,
+      terminalId,
+      nsu,
+      limit: limit ? Number(limit) : undefined,
+      offset: offset ? Number(offset) : undefined,
+    });
+
+    return reply.status(200).send(result);
+  });
+
+  app.get<{ Params: { nsu: string } }>(
+    '/api/tef/transactions/:nsu/receipt',
+    async (req, reply) => {
+      const { nsu } = req.params;
+      if (!nsu) {
+        return reply.status(400).send({
+          error: 'INVALID_PARAMETERS',
+          message: 'NSU é obrigatório',
+        });
+      }
+
+      try {
+        const receipt = tefService.getReceiptText(nsu);
+        return reply.status(200).send(receipt);
+      } catch (err: any) {
+        if (err.message && err.message.includes('não encontrada')) {
+          return reply.status(404).send({
+            error: 'TEF_TRANSACTION_NOT_FOUND',
+            message: err.message,
+          });
+        }
+        return reply.status(400).send({
+          error: 'TEF_RECEIPT_ERROR',
+          message: err.message || 'Erro ao gerar comprovante TEF',
+        });
+      }
+    }
+  );
+
+  app.get('/api/tef/config', async (_req, reply) => {
+    const configs = tefService.listConfigs();
+    return reply.status(200).send(configs);
+  });
+
+  app.get<{ Params: { providerId: string } }>(
+    '/api/tef/config/:providerId',
+    async (req, reply) => {
+      const config = tefService.getConfig(req.params.providerId);
+      if (!config) {
+        return reply.status(404).send({
+          error: 'TEF_CONFIG_NOT_FOUND',
+          message: `Configuração do provedor TEF '${req.params.providerId}' não encontrada`,
+        });
+      }
+      return reply.status(200).send(config);
+    }
+  );
+
+  app.put<{ Params: { providerId: string }; Body: unknown }>(
+    '/api/tef/config/:providerId',
+    async (req, reply) => {
+      const parseResult = tefConfigUpdateSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'INVALID_PARAMETERS',
+          message: parseResult.error.issues[0]?.message || 'Parâmetros de configuração TEF inválidos',
+          issues: parseResult.error.issues,
+        });
+      }
+
+      try {
+        const updated = tefService.updateConfig(req.params.providerId, parseResult.data);
+        return reply.status(200).send(updated);
+      } catch (err: any) {
+        if (err.message && err.message.includes('não encontrada')) {
+          return reply.status(404).send({
+            error: 'TEF_CONFIG_NOT_FOUND',
+            message: err.message,
+          });
+        }
+        return reply.status(400).send({
+          error: 'TEF_CONFIG_UPDATE_FAILED',
+          message: err.message || 'Erro ao atualizar configuração TEF',
+        });
+      }
+    }
+  );
+
+  app.put<{ Body: { providerId?: string; [key: string]: any } }>('/api/tef/config', async (req, reply) => {
+    const providerId = req.body?.providerId;
+    if (!providerId || typeof providerId !== 'string') {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: 'providerId é obrigatório para atualização de configuração TEF',
+      });
+    }
+
+    const parseResult = tefConfigUpdateSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_PARAMETERS',
+        message: parseResult.error.issues[0]?.message || 'Parâmetros de configuração TEF inválidos',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    try {
+      const updated = tefService.updateConfig(providerId, parseResult.data);
+      return reply.status(200).send(updated);
+    } catch (err: any) {
+      if (err.message && err.message.includes('não encontrada')) {
+        return reply.status(404).send({
+          error: 'TEF_CONFIG_NOT_FOUND',
+          message: err.message,
+        });
+      }
+      return reply.status(400).send({
+        error: 'TEF_CONFIG_UPDATE_FAILED',
+        message: err.message || 'Erro ao atualizar configuração TEF',
       });
     }
   });
