@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import BlindClosureModal from '../../src/components/pos/BlindClosureModal';
-import { api, BlindCashClosure } from '../../src/services/api';
+import { api } from '../../src/services/api';
+import type { BlindCashClosure } from '../../src/types';
 
 const mockClosure: BlindCashClosure = {
   id: 10,

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import FinancialDashboardPage from '../../src/pages/FinancialDashboardPage';
-import { api, BlindCashClosure, DreReport, AbcCurveReport } from '../../src/services/api';
+import { api } from '../../src/services/api';
+import type { BlindCashClosure, DreReport, AbcCurveReport } from '../../src/types';
 
 const mockClosures: BlindCashClosure[] = [
   {

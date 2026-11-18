@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { X, CheckCircle2, XCircle, Printer, AlertTriangle, ShieldCheck, FileText, ChevronRight } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Printer, ShieldCheck } from 'lucide-react';
 import { formatBrl } from '../ProductSearch';
-import { api, BlindCashClosure } from '../../services/api';
+import { api } from '../../services/api';
+import type { BlindCashClosure } from '../../types';
 
 interface ClosureReviewModalProps {
   isOpen: boolean;

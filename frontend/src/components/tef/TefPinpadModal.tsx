@@ -1,18 +1,15 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   CreditCard,
   Lock,
   Wifi,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   X,
   RefreshCw,
   ArrowRight,
   ShieldCheck,
-  Smartphone,
   Check,
-  AlertCircle,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { formatBrl } from '../ProductSearch';

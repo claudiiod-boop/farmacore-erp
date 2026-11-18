@@ -6,32 +6,23 @@ import {
   PieChart,
   Lock,
   Calendar,
-  Filter,
   CheckCircle2,
-  AlertTriangle,
   XCircle,
-  ShieldCheck,
   RefreshCw,
-  Search,
-  Printer,
-  ChevronRight,
-  ArrowUpRight,
-  ArrowDownRight,
-  Layers,
 } from 'lucide-react';
 import { formatBrl } from '../components/ProductSearch';
 import ClosureReviewModal from '../components/pos/ClosureReviewModal';
-import {
-  api,
+import { api } from '../services/api';
+import type {
   BlindCashClosure,
-  CashClosureStatus,
-  CashClosureDifferenceStatus,
   TefReceivablesForecastSummary,
+  TefReceivablesForecastItem,
   TefReconciliationTransaction,
   TefReconciliationSummary,
   DreReport,
   AbcCurveReport,
-} from '../services/api';
+  AbcCurveItem,
+} from '../types';
 
 type FinancialTab = 'CLOSURES' | 'TEF' | 'DRE' | 'ABC';
 
@@ -557,7 +548,7 @@ export default function FinancialDashboardPage() {
                   <span>Cronograma de Repasses Bancários (Previsão por Data & Adquirente)</span>
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {tefForecast.items.map((item, idx) => (
+                  {tefForecast.items.map((item: TefReceivablesForecastItem, idx: number) => (
                     <div
                       key={idx}
                       className="bg-slate-900/80 p-3 rounded-lg border border-slate-800 text-xs space-y-1.5"
@@ -1047,7 +1038,7 @@ export default function FinancialDashboardPage() {
                         </td>
                       </tr>
                     ) : (
-                      abcReport.items.map((item) => (
+                      abcReport.items.map((item: AbcCurveItem) => (
                         <tr key={item.productId} className="hover:bg-slate-900/60 transition font-sans">
                           <td className="px-4 py-3 text-center font-bold text-white">#{item.rank}</td>
                           <td className="px-4 py-3">

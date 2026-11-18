@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Lock, AlertTriangle, DollarSign, CreditCard, QrCode, FileText, CheckCircle2 } from 'lucide-react';
 import { formatBrl } from '../ProductSearch';
-import { api, BlindCashClosure } from '../../services/api';
+import { api } from '../../services/api';
+import type { BlindCashClosure } from '../../types';
 
 interface BlindClosureModalProps {
   isOpen: boolean;

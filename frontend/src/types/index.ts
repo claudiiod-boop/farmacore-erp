@@ -1,4 +1,5 @@
 export type StationMode = 'COUNTER' | 'POS' | 'PURCHASES' | 'SNGPC' | 'FINANCIAL';
+export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX' | 'CONVENIO_PBM';
 
 export * from './financial';
 

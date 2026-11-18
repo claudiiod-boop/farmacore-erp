@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Printer, X, FileText, AlertCircle, Copy, Check, CreditCard } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Printer, X, AlertCircle, Copy, Check, CreditCard } from 'lucide-react';
 import { api } from '../../services/api';
 import type { TefReceiptResult } from '../../types/tef';
 

@@ -28,7 +28,7 @@ import BlindClosureModal from '../components/pos/BlindClosureModal';
 import ClosureReviewModal from '../components/pos/ClosureReviewModal';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { formatBrl } from '../components/ProductSearch';
-import type { PbmAuthorizationResult, TefPayResult, BlindCashClosure } from '../types';
+import type { PbmAuthorizationResult, TefPayResult, BlindCashClosure, PaymentMethod } from '../types';
 import {
   api,
   CashSession,

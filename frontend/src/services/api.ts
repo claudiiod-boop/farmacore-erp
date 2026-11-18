@@ -15,10 +15,6 @@ import type {
   PbmCancelResult,
   PbmTransaction,
   PbmReceiptResult,
-  TefOperationType,
-  TefInstallmentType,
-  TefTransactionStatus,
-  TefMockScenario,
   TefPayParams,
   TefPayResult,
   TefConfirmParams,
@@ -42,6 +38,8 @@ import type {
   DreReport,
   AbcCurveReport,
 } from '../types';
+
+export * from '../types/financial';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
