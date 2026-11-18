@@ -85,6 +85,7 @@ export interface CashClosureFilters {
 
 export interface StoreInfo {
   storeName?: string;
+  name?: string;
   cnpj?: string;
   address?: string;
   city?: string;
