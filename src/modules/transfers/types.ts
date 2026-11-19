@@ -131,4 +131,11 @@ export interface TransferFilters {
   targetStoreId?: number;
   startDate?: string;
   endDate?: string;
+  limit?: number;
+  offset?: number;
+
+  source_store_id?: number;
+  target_store_id?: number;
+  start_date?: string;
+  end_date?: string;
 }
