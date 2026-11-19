@@ -139,3 +139,13 @@ export interface TransferFilters {
   start_date?: string;
   end_date?: string;
 }
+
+export interface FiscalTransferResult {
+  transferId: number;
+  nfeKey: string;
+  protocol: string;
+  cfop: string;
+  status: 'AUTORIZADA';
+  xml: string;
+}
+

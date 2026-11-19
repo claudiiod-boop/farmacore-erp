@@ -1,5 +1,6 @@
 import { getDatabase, Database } from '../../database/connection';
 import { StoreService } from '../stores/store.service';
+import { formatTransferSlip } from './transfer-slip-formatter';
 import type { Store } from '../stores/types';
 import type {
   Transfer,
@@ -648,4 +649,24 @@ export class TransferService {
 
     return { transfers, total };
   }
+
+  /**
+   * Emite o Romaneio de Transferência formatado para impressão térmica/documental (80 colunas e ESC/POS).
+   */
+  generateTransferSlip(transferId: number): { textSlip: string; fullEscPos: string } {
+    const transfer = this.getTransferById(transferId);
+    if (!transfer) {
+      throw new Error(`Transferência não encontrada: ID ${transferId}`);
+    }
+
+    const sourceStore = transfer.sourceStore || this.storeService.getStoreById(transfer.sourceStoreId);
+    const targetStore = transfer.targetStore || this.storeService.getStoreById(transfer.targetStoreId);
+
+    if (!sourceStore || !targetStore) {
+      throw new Error('Loja de origem ou destino não encontrada para o romaneio');
+    }
+
+    return formatTransferSlip(transfer, sourceStore, targetStore);
+  }
 }
+
