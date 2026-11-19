@@ -22,6 +22,8 @@ import { BlindCashClosureService } from '../modules/financial/cash-closure.servi
 import { TefReconciliationService } from '../modules/financial/tef-reconciliation.service';
 import { FinancialReportsService } from '../modules/financial/financial-reports.service';
 import { formatCashClosureReceipt } from '../modules/financial/closure-receipt-formatter';
+import { registerStoreRoutes } from '../modules/stores/store.routes';
+import { registerTransferRoutes } from '../modules/transfers/transfer.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -1994,4 +1996,8 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
     '/api/financial/abc-curve',
     handleGenerateAbcCurve
   );
+
+  // ===================== MULTI-STORE & TRANSFERS =====================
+  registerStoreRoutes(app, db);
+  registerTransferRoutes(app, db);
 }
