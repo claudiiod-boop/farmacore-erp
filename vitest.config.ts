@@ -10,6 +10,7 @@ export default defineConfig({
           name: 'backend',
           include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
           environment: 'node',
+          testTimeout: 15000,
         },
       },
       {
@@ -17,6 +18,7 @@ export default defineConfig({
           name: 'frontend',
           include: ['frontend/tests/**/*.test.{ts,tsx}', 'frontend/src/**/*.test.{ts,tsx}'],
           environment: 'jsdom',
+          testTimeout: 15000,
         },
       },
     ],

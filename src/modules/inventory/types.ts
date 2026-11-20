@@ -17,3 +17,6 @@ export interface AddBatchDTO {
   expirationDate: string;
   quantity: number;
 }
+
+export * from './audit-types';
+
