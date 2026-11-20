@@ -17,7 +17,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'FINANCIAL' ||
         stored === 'STORES' ||
         stored === 'INVENTORY' ||
-        stored === 'CREDIT'
+        stored === 'CREDIT' ||
+        stored === 'CRM'
       ) {
         return stored;
       }
@@ -53,6 +54,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isStores: mode === 'STORES',
     isInventory: mode === 'INVENTORY',
     isCredit: mode === 'CREDIT',
+    isCrm: mode === 'CRM',
   };
 }
 

@@ -76,10 +76,27 @@ import type {
   ReceivePaymentParams,
   PaymentReceiptResult,
   PromissoryNoteResponse,
+  LoyaltyProgram,
+  UpdateLoyaltyProgramInput,
+  LoyaltyWallet,
+  LoyaltyTransaction,
+  CashbackRedeemInput,
+  ExpireCashbackResult,
+  PromotionType,
+  PromotionWithProducts,
+  CreatePromotionInput,
+  UpdatePromotionInput,
+  CartItemInput,
+  CartEvaluationResult,
+  PatientTreatment,
+  UpcomingRefillItem,
+  CashbackStatementReceiptResult,
+  TreatmentSlipReceiptResult,
 } from '../types';
 
 export * from '../types/financial';
 export * from '../types/credit';
+export * from '../types/crm';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -2084,6 +2101,241 @@ export const creditApi = {
   },
 };
 
+export const crmApi = {
+  // Fidelidade & Cashback
+  getLoyaltyProgram: async (storeId?: number): Promise<LoyaltyProgram> => {
+    const base = getBaseUrl();
+    const query = storeId ? `?storeId=${storeId}` : '';
+    const res = await fetch(`${base}/api/crm/loyalty/program${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter programa de fidelidade');
+    }
+    return res.json();
+  },
+
+  updateLoyaltyProgram: async (data: UpdateLoyaltyProgramInput): Promise<LoyaltyProgram> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/loyalty/program`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao atualizar programa de fidelidade');
+    }
+    return res.json();
+  },
+
+  getWallet: async (customerId: number): Promise<LoyaltyWallet> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/loyalty/wallet/${customerId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Carteira de fidelidade do cliente #${customerId} não encontrada`);
+    }
+    return res.json();
+  },
+
+  getWalletStatement: async (customerId: number): Promise<CashbackStatementReceiptResult> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/loyalty/wallet/${customerId}/statement`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao obter extrato da carteira do cliente #${customerId}`);
+    }
+    return res.json();
+  },
+
+  redeemCashback: async (data: CashbackRedeemInput): Promise<LoyaltyTransaction> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/loyalty/redeem`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao resgatar cashback');
+    }
+    return res.json();
+  },
+
+  expireOverdueCashback: async (referenceDate?: string): Promise<ExpireCashbackResult> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/loyalty/expire`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(referenceDate ? { referenceDate } : {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao expirar cashback vencido');
+    }
+    return res.json();
+  },
+
+  // Promoções Combinadas
+  getPromotions: async (params?: {
+    activeOnly?: boolean;
+    type?: PromotionType;
+    search?: string;
+    storeId?: number;
+  }): Promise<PromotionWithProducts[]> => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (params?.activeOnly) query.append('activeOnly', 'true');
+    if (params?.type) query.append('type', params.type);
+    if (params?.search) query.append('search', params.search);
+    if (params?.storeId) query.append('storeId', String(params.storeId));
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/crm/promotions${qs}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar promoções');
+    }
+    return res.json();
+  },
+
+  getPromotionById: async (id: number): Promise<PromotionWithProducts> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/promotions/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Promoção #${id} não encontrada`);
+    }
+    return res.json();
+  },
+
+  createPromotion: async (data: CreatePromotionInput): Promise<PromotionWithProducts> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/promotions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar promoção');
+    }
+    return res.json();
+  },
+
+  updatePromotion: async (id: number, data: UpdatePromotionInput): Promise<PromotionWithProducts> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/promotions/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao atualizar promoção #${id}`);
+    }
+    return res.json();
+  },
+
+  deletePromotion: async (id: number): Promise<{ message: string; id: number }> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/promotions/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao excluir promoção #${id}`);
+    }
+    return res.json();
+  },
+
+  evaluateCart: async (data: {
+    items: CartItemInput[];
+    customerId?: number;
+    storeId?: number;
+    referenceDate?: string;
+  }): Promise<CartEvaluationResult> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/promotions/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao avaliar carrinho com regras promocionais');
+    }
+    return res.json();
+  },
+
+  // Adesão a Tratamento Contínuo
+  getUpcomingRefills: async (params?: {
+    daysAhead?: number;
+    storeId?: number;
+    status?: string;
+  }): Promise<UpcomingRefillItem[]> => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (params?.daysAhead !== undefined) query.append('daysAhead', String(params.daysAhead));
+    if (params?.storeId !== undefined) query.append('storeId', String(params.storeId));
+    if (params?.status) query.append('status', params.status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/crm/treatments/upcoming${qs}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar tratamentos com recompra próxima');
+    }
+    return res.json();
+  },
+
+  getCustomerTreatments: async (customerId: number): Promise<PatientTreatment[]> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/treatments/customer/${customerId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao buscar tratamentos do cliente #${customerId}`);
+    }
+    return res.json();
+  },
+
+  markTreatmentContacted: async (treatmentId: number, notes?: string): Promise<PatientTreatment> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/treatments/${treatmentId}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao registrar contato do tratamento #${treatmentId}`);
+    }
+    return res.json();
+  },
+
+  discontinueTreatment: async (treatmentId: number, reason?: string): Promise<PatientTreatment> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/treatments/${treatmentId}/discontinue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao descontinuar tratamento #${treatmentId}`);
+    }
+    return res.json();
+  },
+
+  getTreatmentSlip: async (treatmentId: number): Promise<TreatmentSlipReceiptResult> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/crm/treatments/${treatmentId}/slip`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao gerar filipeta térmica do tratamento #${treatmentId}`);
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -2156,6 +2408,8 @@ export const api = {
   financialApi,
   credit: creditApi,
   creditApi,
+  crm: crmApi,
+  crmApi,
 };
 
 export default api;

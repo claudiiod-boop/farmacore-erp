@@ -460,9 +460,9 @@ export function formatTreatmentRefillSlip(params: TreatmentRefillSlipParams): Fo
   if (t.notes) {
     lines.push(truncateOrFit(`Obs anterior: ${t.notes}`, width));
   }
-  lines.push('Data Contato: ___/___/______   Farmacêutico: _______');
-  lines.push('[ ] Contatado com sucesso - Recompra confirmada');
-  lines.push('[ ] Paciente interrompeu tratamento por prescrição');
+  lines.push('Data: ___/___/____  Farmacêutico: ______________');
+  lines.push('[ ] Contatado com sucesso - Recompra agendada');
+  lines.push('[ ] Interrompeu tratamento por prescrição médica');
   lines.push('[ ] Paciente sem resposta / Número ocupado');
   lines.push('Observações clínicas / Posologia:');
   lines.push('________________________________________________');

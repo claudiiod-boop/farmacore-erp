@@ -18,12 +18,14 @@ import {
   Search,
   UserCheck,
   UserX,
+  Sparkles,
 } from 'lucide-react';
 import { api, PaymentItem, PaymentMethod } from '../../services/api';
 import { formatBrl } from '../ProductSearch';
 import TefPinpadModal from '../tef/TefPinpadModal';
 import type { TefPayResult } from '../../types/tef';
 import type { Customer, CreditEligibilityResult } from '../../types/credit';
+import type { LoyaltyWallet } from '../../types/crm';
 
 export interface PaymentModalProps {
   isOpen: boolean;
@@ -72,6 +74,7 @@ export default function PaymentModal({
   const [isCheckingCredit, setIsCheckingCredit] = useState(false);
   const [creditError, setCreditError] = useState<string | null>(null);
   const [installments, setInstallments] = useState<number>(1);
+  const [loyaltyWallet, setLoyaltyWallet] = useState<LoyaltyWallet | null>(null);
 
   // Initialize or reset state when modal opens
   useEffect(() => {
@@ -91,12 +94,24 @@ export default function PaymentModal({
       setCreditCpf('');
       setSelectedCustomer(null);
       setEligibilityResult(null);
+      setLoyaltyWallet(null);
       setIsCheckingCredit(false);
       setCreditError(null);
       setInstallments(1);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen, totalAmount, pbmSubsidyAmount]);
+
+  // Load loyalty wallet whenever customer is selected
+  useEffect(() => {
+    if (selectedCustomer?.id) {
+      api.crm.getWallet(selectedCustomer.id)
+        .then((wallet) => setLoyaltyWallet(wallet))
+        .catch(() => setLoyaltyWallet(null));
+    } else {
+      setLoyaltyWallet(null);
+    }
+  }, [selectedCustomer]);
 
   // Calculations
   const totalPaid = useMemo(() => {
@@ -200,6 +215,17 @@ export default function PaymentModal({
   const handleExactValue = () => {
     const val = remaining > 0 ? remaining : totalAmount;
     setAmountInput(val.toFixed(2));
+  };
+
+  const handleQuickRedeemCashback = () => {
+    if (!loyaltyWallet) return;
+    const balance = loyaltyWallet.currentBalance ?? loyaltyWallet.current_balance ?? 0;
+    if (balance <= 0) return;
+    const maxRedeem = Math.min(balance, remaining > 0 ? remaining : totalAmount);
+    if (maxRedeem > 0) {
+      setAmountInput(maxRedeem.toFixed(2));
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
   };
 
   const handleAddQuickCash = (increment: number) => {
@@ -414,6 +440,44 @@ export default function PaymentModal({
 
         {/* Corpo: Abas de Métodos e Entrada de Valores */}
         <div className="p-6 space-y-5">
+          {/* Card Informativo de Cashback e Resgate Rápido */}
+          {selectedCustomer && loyaltyWallet && (loyaltyWallet.currentBalance ?? loyaltyWallet.current_balance ?? 0) > 0 && (
+            <div
+              data-testid="cashback-wallet-card"
+              className="p-3 bg-emerald-50 border border-emerald-300 rounded-lg flex items-center justify-between text-emerald-900 text-xs shadow-xs"
+            >
+              <div className="flex items-center space-x-2.5">
+                <div className="p-1.5 bg-emerald-100 rounded-md">
+                  <Sparkles className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div>
+                  <p className="font-bold flex items-center gap-1.5 text-emerald-950">
+                    <span>Clube Fidelidade FarmaCore</span>
+                    <span className="text-[10px] bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded font-mono font-semibold">
+                      CPF: {selectedCustomer.cpf}
+                    </span>
+                  </p>
+                  <p className="text-emerald-800 text-[11px] mt-0.5">
+                    Cliente <strong>{selectedCustomer.name}</strong> possui{' '}
+                    <strong className="font-mono text-emerald-950 font-black">
+                      {formatBrl(loyaltyWallet.currentBalance ?? loyaltyWallet.current_balance ?? 0)}
+                    </strong>{' '}
+                    de saldo de cashback disponível para resgate.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                data-testid="quick-redeem-cashback-btn"
+                onClick={handleQuickRedeemCashback}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs transition cursor-pointer shadow-xs shrink-0 flex items-center space-x-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Resgatar Cashback</span>
+              </button>
+            </div>
+          )}
+
           {/* Abas das Formas de Pagamento */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -692,6 +756,18 @@ export default function PaymentModal({
                         </span>
                       </div>
                     </div>
+
+                    {loyaltyWallet && (
+                      <div className="flex items-center justify-between pt-1.5 border-t border-slate-200 text-xs">
+                        <span className="text-slate-600 font-medium flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Saldo Fidelidade / Cashback:</span>
+                        </span>
+                        <span className="font-mono font-bold text-emerald-700">
+                          {formatBrl(loyaltyWallet.currentBalance ?? loyaltyWallet.current_balance ?? 0)}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Parcelamento 1x a 6x */}
                     <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
