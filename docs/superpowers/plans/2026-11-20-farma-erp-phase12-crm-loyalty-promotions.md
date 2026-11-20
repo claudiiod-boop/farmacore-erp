@@ -37,11 +37,11 @@
   - Índices em `loyalty_transactions(wallet_id)`, `promotions(is_active, start_date, end_date)`, `promotion_products(product_id)`, `patient_treatments(expected_refill_date, status)`.
   - Tipos TypeScript em `src/modules/crm/types.ts`.
 
-- [ ] **Step 1: Escrever testes que falham para o Schema 011 e Tipos**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `011_crm_loyalty_promotions_treatments.sql` e `types.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para o Schema 011 e Tipos**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `011_crm_loyalty_promotions_treatments.sql` e `types.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -62,11 +62,11 @@
   - `getWalletStatement(customerId: number): { wallet: LoyaltyWallet; transactions: LoyaltyTransaction[] }`
   - `expireOverdueCashback(): { expiredCount: number; totalAmount: number }`
 
-- [ ] **Step 1: Escrever testes que falham para `loyalty.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/crm/loyalty.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `loyalty.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/crm/loyalty.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -90,11 +90,11 @@
     - Avalia 'BIRTHDAY_DISCOUNT' (Desconto de aniversariante do mês).
     - Retorna itens com preços finais, total de desconto promocional e nome das promoções aplicadas.
 
-- [ ] **Step 1: Escrever testes que falham para `promotion-engine.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/crm/promotion-engine.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `promotion-engine.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/crm/promotion-engine.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -114,11 +114,11 @@
   - `markAsContacted(treatmentId: number, notes?: string): PatientTreatment`
   - `recordRefill(treatmentId: number, newSaleId: number): PatientTreatment`
 
-- [ ] **Step 1: Escrever testes que falham para `treatment-adherence.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/crm/treatment-adherence.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `treatment-adherence.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/crm/treatment-adherence.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -147,11 +147,11 @@
     - `/api/crm/treatments/upcoming` (GET)
     - `/api/crm/treatments/:id/contact` (POST)
 
-- [ ] **Step 1: Escrever testes que falham para formatadores e rotas Fastify**
-- [ ] **Step 2: Executar teste para verificar que falham**
-- [ ] **Step 3: Implementar formatadores e rotas, conectar a `src/api/routes.ts`**
-- [ ] **Step 4: Executar teste para verificar que passam**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para formatadores e rotas Fastify**
+- [x] **Step 2: Executar teste para verificar que falham**
+- [x] **Step 3: Implementar formatadores e rotas, conectar a `src/api/routes.ts`**
+- [x] **Step 4: Executar teste para verificar que passam**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -176,11 +176,11 @@
   - No `PaymentModal` do PDV: exibição do saldo de cashback do cliente e botão "Resgatar Cashback".
   - Notificação de promoções aplicadas no carrinho.
 
-- [ ] **Step 1: Escrever testes para a página CRM e modais**
-- [ ] **Step 2: Executar teste para verificar que falham**
-- [ ] **Step 3: Implementar tipos, API adapter, componentes React e integração PDV**
-- [ ] **Step 4: Executar teste para verificar que passam e checar TypeScript frontend**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes para a página CRM e modais**
+- [x] **Step 2: Executar teste para verificar que falham**
+- [x] **Step 3: Implementar tipos, API adapter, componentes React e integração PDV**
+- [x] **Step 4: Executar teste para verificar que passam e checar TypeScript frontend**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -192,6 +192,8 @@
 - Verify: `npx.cmd tsc -p frontend/tsconfig.json --noEmit` (frontend)
 - Verify: `npm.cmd run build:web` (produção frontend)
 
-- [ ] **Step 1: Rodar auditoria completa de testes e checagem de tipos**
+- [x] **Step 1: Rodar auditoria completa de testes e checagem de tipos**
+- [x] **Step 2: Verificar integridade de ponta a ponta e build de produção**
+- [x] **Step 3: Despachar revisor da branch inteira e homologar**
 - [ ] **Step 2: Verificar integridade de ponta a ponta e build de produção**
 - [ ] **Step 3: Despachar revisor da branch inteira e homologar**
