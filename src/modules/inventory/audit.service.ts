@@ -7,6 +7,7 @@ import type {
   InventorySessionWithItems,
   CreateInventorySessionInput,
   AddCountInput,
+  ApplyAdjustmentsParams,
   InventorySessionFilters,
   InventoryType,
   InventoryStatus,
@@ -757,5 +758,249 @@ export class InventoryAuditService {
       throw new Error(`Falha ao recuperar sessão de inventário finalizada: ID ${sessionId}`);
     }
     return result;
+  }
+
+  /**
+   * Homologa e aplica ajustes físicos de estoque e movimentações regulatórias SNGPC (transição COUNTED -> APPLIED).
+   */
+  applyAdjustments(sessionId: number, params: ApplyAdjustmentsParams): InventorySessionWithItems {
+    // 1. Valida se a sessão existe
+    const session = this.db
+      .prepare('SELECT * FROM inventory_sessions WHERE id = ?')
+      .get(sessionId) as InventorySessionRow | undefined;
+
+    if (!session) {
+      throw new Error(`Sessão de inventário não encontrada: ID ${sessionId}`);
+    }
+
+    // 2. Valida status
+    if (session.status === 'OPEN') {
+      throw new Error('Sessão ainda está aberta para contagem. Finalize a contagem antes de aplicar os ajustes');
+    }
+    if (session.status === 'APPLIED') {
+      throw new Error('Sessão de inventário já foi aplicada anteriormente');
+    }
+    if (session.status === 'CANCELLED') {
+      throw new Error('Sessão de inventário cancelada não pode ser aplicada');
+    }
+    if (session.status !== 'COUNTED') {
+      throw new Error(`Sessão de inventário não pode ser aplicada no status atual: ${session.status}`);
+    }
+
+    // 3. Valida responsável pela aplicação
+    const appliedBy = (params.appliedBy ?? params.applied_by)?.trim();
+    if (!appliedBy) {
+      throw new Error('Responsável pela aplicação (appliedBy) é obrigatório');
+    }
+
+    // 4. Carrega itens e produtos associados
+    const items = this.db
+      .prepare(`
+        SELECT 
+          i.*,
+          p.name AS product_name,
+          p.ean AS product_ean,
+          p.control_type,
+          p.ms_registration,
+          p.category
+        FROM inventory_items i
+        JOIN products p ON p.id = i.product_id
+        WHERE i.session_id = ?
+        ORDER BY i.id ASC
+      `)
+      .all(sessionId) as Array<InventoryItemRow & { ms_registration: string }>;
+
+    // 5. Verifica se há divergência em produtos controlados (Portaria 344/98 e antimicrobianos)
+    const CONTROLLED_TYPES = ['ANTIMICROBIANO', 'C1', 'C2', 'B1', 'B2', 'A1', 'A2', 'A3'];
+    const hasControlledDivergence = items.some(
+      item => item.difference_quantity !== 0 && CONTROLLED_TYPES.includes(item.control_type || '')
+    );
+
+    const responsiblePharmacistCrf = (
+      params.responsiblePharmacistCrf ?? params.responsible_pharmacist_crf
+    )?.trim() || null;
+    const responsiblePharmacistUf = (
+      params.responsiblePharmacistUf ?? params.responsible_pharmacist_uf
+    )?.trim() || null;
+
+    if (hasControlledDivergence) {
+      if (!responsiblePharmacistCrf || !responsiblePharmacistUf) {
+        throw new Error(
+          'CRF e UF do Farmacêutico Responsável Técnico são obrigatórios para homologar ajustes de medicamentos controlados (Portaria 344/98)'
+        );
+      }
+    }
+
+    const itemReasons = params.itemReasons ?? params.item_reasons;
+
+    // 6. Transação atômica: atualização física de lotes, integração SNGPC e fechamento da sessão
+    const tx = this.db.transaction(() => {
+      // Atualiza motivos e notas dos itens, se informados
+      if (itemReasons) {
+        const updateReasonWithNotesStmt = this.db.prepare(`
+          UPDATE inventory_items
+          SET adjustment_reason = ?,
+              notes = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND session_id = ?
+        `);
+        const updateReasonOnlyStmt = this.db.prepare(`
+          UPDATE inventory_items
+          SET adjustment_reason = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND session_id = ?
+        `);
+
+        for (const [key, val] of Object.entries(itemReasons)) {
+          const itId = Number(key);
+          if (!isNaN(itId) && val) {
+            if (val.notes !== undefined) {
+              updateReasonWithNotesStmt.run(val.reason, val.notes, itId, sessionId);
+            } else {
+              updateReasonOnlyStmt.run(val.reason, itId, sessionId);
+            }
+          }
+        }
+      }
+
+      const updateBatchStmt = this.db.prepare(`
+        UPDATE batches SET quantity = ? WHERE id = ?
+      `);
+
+      const insertBatchStmt = this.db.prepare(`
+        INSERT INTO batches (
+          store_id, product_id, batch_number, expiration_date, manufacturing_date, quantity, reserved_quantity
+        ) VALUES (?, ?, ?, ?, ?, ?, 0)
+      `);
+
+      const updateItemBatchIdStmt = this.db.prepare(`
+        UPDATE inventory_items SET batch_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `);
+
+      const insertSngpcStmt = this.db.prepare(`
+        INSERT INTO sngpc_movements (
+          movement_type, product_id, batch_id, quantity, reference_type, reference_id, movement_date, ms_registration, is_transmitted
+        ) VALUES (?, ?, ?, ?, 'INVENTORY_ADJUSTMENT', ?, ?, ?, 0)
+      `);
+
+      const updateItemSngpcAdjustedStmt = this.db.prepare(`
+        UPDATE inventory_items SET sngpc_adjusted = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `);
+
+      for (const item of items) {
+        const diffQty = Number(item.difference_quantity || 0);
+        if (diffQty !== 0) {
+          let resolvedBatchId: number;
+          const countedQty = Number(item.counted_quantity || 0);
+
+          if (item.batch_id != null) {
+            resolvedBatchId = Number(item.batch_id);
+            updateBatchStmt.run(countedQty, resolvedBatchId);
+          } else {
+            // Lote novo/desconhecido encontrado na contagem física
+            const insertBatchRes = insertBatchStmt.run(
+              session.store_id,
+              item.product_id,
+              item.batch_number,
+              item.expiration_date,
+              item.manufacturing_date,
+              countedQty
+            );
+            resolvedBatchId = Number(insertBatchRes.lastInsertRowid);
+            updateItemBatchIdStmt.run(resolvedBatchId, item.id);
+          }
+
+          // Conformidade regulatória SNGPC para medicamentos controlados
+          const isControlled = CONTROLLED_TYPES.includes(item.control_type || '');
+          if (isControlled) {
+            const movementType = diffQty < 0 ? 'PERDA' : 'ENTRADA';
+            const absQty = Math.abs(diffQty);
+            const msReg = item.ms_registration || '0000000000000';
+            const movementDate = this.getCurrentDate();
+
+            insertSngpcStmt.run(
+              movementType,
+              item.product_id,
+              resolvedBatchId,
+              absQty,
+              sessionId,
+              movementDate,
+              msReg
+            );
+
+            updateItemSngpcAdjustedStmt.run(item.id);
+          }
+        }
+      }
+
+      // Atualiza o cabeçalho da sessão para APPLIED
+      this.db
+        .prepare(`
+          UPDATE inventory_sessions
+          SET status = 'APPLIED',
+              applied_by = ?,
+              responsible_pharmacist_crf = ?,
+              responsible_pharmacist_uf = ?,
+              closed_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `)
+        .run(appliedBy, responsiblePharmacistCrf, responsiblePharmacistUf, sessionId);
+    });
+
+    tx();
+
+    const appliedSession = this.getSessionById(sessionId);
+    if (!appliedSession) {
+      throw new Error(`Falha ao recuperar sessão de inventário aplicada: ID ${sessionId}`);
+    }
+    return appliedSession;
+  }
+
+  /**
+   * Cancela uma sessão de inventário que esteja em OPEN ou COUNTED. Nenhum lote físico ou registro SNGPC é alterado.
+   */
+  cancelSession(sessionId: number, reason: string): InventorySessionWithItems {
+    const session = this.db
+      .prepare('SELECT id, status, notes FROM inventory_sessions WHERE id = ?')
+      .get(sessionId) as { id: number; status: InventoryStatus; notes: string | null } | undefined;
+
+    if (!session) {
+      throw new Error(`Sessão de inventário não encontrada: ID ${sessionId}`);
+    }
+
+    if (session.status === 'APPLIED') {
+      throw new Error('Sessão já aplicada não pode ser cancelada');
+    }
+    if (session.status === 'CANCELLED') {
+      throw new Error('Sessão já está cancelada');
+    }
+    if (session.status !== 'OPEN' && session.status !== 'COUNTED') {
+      throw new Error(`Sessão não pode ser cancelada no status: ${session.status}`);
+    }
+
+    const trimmedReason = reason?.trim();
+    if (!trimmedReason) {
+      throw new Error('Motivo do cancelamento é obrigatório');
+    }
+
+    const existingNotes = session.notes ? `${session.notes} | ` : '';
+    const updatedNotes = `${existingNotes}Cancelado: ${trimmedReason}`;
+
+    this.db
+      .prepare(`
+        UPDATE inventory_sessions
+        SET status = 'CANCELLED',
+            notes = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `)
+      .run(updatedNotes, sessionId);
+
+    const cancelledSession = this.getSessionById(sessionId);
+    if (!cancelledSession) {
+      throw new Error(`Falha ao recuperar sessão de inventário cancelada: ID ${sessionId}`);
+    }
+    return cancelledSession;
   }
 }
