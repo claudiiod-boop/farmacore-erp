@@ -28,6 +28,7 @@ const mockLoyaltyProgram: LoyaltyProgram = {
 
 const mockCustomer: Customer = {
   id: 10,
+  storeId: 1,
   name: 'Maria de Lourdes Silva',
   cpf: '12345678901',
   phone: '(11) 98765-4321',
@@ -228,12 +229,9 @@ describe('CrmPage & CRM Integrations (Posto [F10])', () => {
       totalPages: 1,
     });
     vi.spyOn(api.credit, 'checkCreditEligibility').mockResolvedValue({
-      customerId: 10,
       isEligible: true,
-      currentDebt: 0,
-      creditLimit: 500,
+      customer: mockCustomer,
       availableLimit: 500,
-      maxInstallments: 6,
     });
   });
 
