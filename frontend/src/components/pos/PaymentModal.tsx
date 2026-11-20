@@ -12,17 +12,27 @@ import {
   Loader2,
   ArrowRight,
   ShieldCheck,
+  Building2,
+  Receipt,
+  User,
+  Search,
+  UserCheck,
+  UserX,
 } from 'lucide-react';
-import { PaymentItem, PaymentMethod } from '../../services/api';
+import { api, PaymentItem, PaymentMethod } from '../../services/api';
 import { formatBrl } from '../ProductSearch';
 import TefPinpadModal from '../tef/TefPinpadModal';
 import type { TefPayResult } from '../../types/tef';
+import type { Customer, CreditEligibilityResult } from '../../types/credit';
 
 export interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   totalAmount: number;
-  onConfirmPayments: (payments: PaymentItem[], options?: { emitNfce?: boolean }) => Promise<void> | void;
+  onConfirmPayments: (
+    payments: PaymentItem[],
+    options?: { emitNfce?: boolean; customerId?: number; installments?: number }
+  ) => Promise<void> | void;
   isLoading?: boolean;
   pbmSubsidyAmount?: number;
   pbmProtocol?: string;
@@ -34,6 +44,8 @@ const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: React.Component
   { id: 'CARTAO_DEBITO', label: 'Cartão Débito', icon: CreditCard },
   { id: 'PIX', label: 'Pix', icon: QrCode },
   { id: 'CONVENIO_PBM', label: 'Convênio PBM', icon: ShieldCheck },
+  { id: 'CONVENIO', label: 'Convênio Empresa', icon: Building2 },
+  { id: 'CREDIARIO', label: 'Crediário Próprio', icon: Receipt },
 ];
 
 export default function PaymentModal({
@@ -53,6 +65,14 @@ export default function PaymentModal({
   const [isTefModalOpen, setIsTefModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Credit / Convênio state
+  const [creditCpf, setCreditCpf] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [eligibilityResult, setEligibilityResult] = useState<CreditEligibilityResult | null>(null);
+  const [isCheckingCredit, setIsCheckingCredit] = useState(false);
+  const [creditError, setCreditError] = useState<string | null>(null);
+  const [installments, setInstallments] = useState<number>(1);
+
   // Initialize or reset state when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -68,6 +88,12 @@ export default function PaymentModal({
       setActiveMethod('DINHEIRO');
       setCopiedPix(false);
       setEmitNfce(true);
+      setCreditCpf('');
+      setSelectedCustomer(null);
+      setEligibilityResult(null);
+      setIsCheckingCredit(false);
+      setCreditError(null);
+      setInstallments(1);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen, totalAmount, pbmSubsidyAmount]);
@@ -128,6 +154,48 @@ export default function PaymentModal({
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
+  const isCreditMethod = activeMethod === 'CONVENIO' || activeMethod === 'CREDIARIO';
+
+  const handleCheckCredit = async (cpfToSearch?: string) => {
+    const raw = (cpfToSearch || creditCpf).replace(/\D/g, '');
+    if (!raw) {
+      setCreditError('Informe um CPF válido para consulta.');
+      return;
+    }
+    setIsCheckingCredit(true);
+    setCreditError(null);
+    try {
+      const customer = await api.credit.getCustomerByCpf(raw);
+      setSelectedCustomer(customer);
+      const parsedAmount = parseFloat(amountInput) || remaining || totalAmount;
+      const elig = await api.credit.checkCreditEligibility(customer.id, parsedAmount);
+      setEligibilityResult(elig);
+      if (!elig.isEligible) {
+        setCreditError(elig.reason || 'Cliente com restrição de crédito.');
+      }
+    } catch (err: any) {
+      setSelectedCustomer(null);
+      setEligibilityResult(null);
+      setCreditError(err.message || 'Cliente não encontrado pelo CPF informado');
+    } finally {
+      setIsCheckingCredit(false);
+    }
+  };
+
+  const isCreditBlocked = useMemo(() => {
+    if (!isCreditMethod) return false;
+    if (!selectedCustomer) return true;
+    if (selectedCustomer.status === 'BLOCKED_OVERDUE') return true;
+    if (eligibilityResult && !eligibilityResult.isEligible) return true;
+    const parsedAmount = parseFloat(amountInput) || 0;
+    const available =
+      eligibilityResult?.availableLimit ??
+      ((selectedCustomer.creditLimit ?? selectedCustomer.credit_limit ?? 0) -
+        (selectedCustomer.currentDebt ?? selectedCustomer.current_debt ?? 0));
+    if (parsedAmount > available) return true;
+    return false;
+  }, [isCreditMethod, selectedCustomer, eligibilityResult, amountInput]);
+
   // Quick cash buttons
   const handleExactValue = () => {
     const val = remaining > 0 ? remaining : totalAmount;
@@ -144,6 +212,7 @@ export default function PaymentModal({
   const handleAddPayment = () => {
     const parsed = parseFloat(amountInput);
     if (isNaN(parsed) || parsed <= 0) return;
+    if (isCreditMethod && isCreditBlocked) return;
 
     const roundedAmount = +(parsed.toFixed(2));
     const nextPayments = [...payments, { method: activeMethod, amount: roundedAmount }];
@@ -210,7 +279,11 @@ export default function PaymentModal({
   // Submit
   const handleConfirm = () => {
     if (!canFinalize) return;
-    onConfirmPayments(payments, { emitNfce });
+    onConfirmPayments(payments, {
+      emitNfce,
+      customerId: selectedCustomer?.id,
+      installments: isCreditMethod ? installments : undefined,
+    });
   };
 
   // Keyboard navigation
@@ -354,7 +427,7 @@ export default function PaymentModal({
                 <span>[F8] Pagar com TEF (PinPad)</span>
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
               {PAYMENT_METHODS.map((pm) => {
                 const Icon = pm.icon;
                 const isSelected = activeMethod === pm.id;
@@ -363,14 +436,14 @@ export default function PaymentModal({
                     key={pm.id}
                     type="button"
                     onClick={() => handleSelectMethod(pm.id)}
-                    className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-lg border text-xs font-bold transition ${
+                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border text-[11px] font-bold transition cursor-pointer text-center ${
                       isSelected
                         ? 'bg-blue-50 border-blue-600 text-blue-700 shadow-xs ring-1 ring-blue-600'
                         : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <Icon className={`w-5 h-5 mb-1 ${isSelected ? 'text-blue-600' : 'text-slate-500'}`} />
-                    <span>{pm.label}</span>
+                    <Icon className={`w-4 h-4 mb-1 ${isSelected ? 'text-blue-600' : 'text-slate-500'}`} />
+                    <span className="leading-tight">{pm.label}</span>
                   </button>
                 );
               })}
@@ -500,6 +573,148 @@ export default function PaymentModal({
               </div>
             )}
 
+            {/* Configuração de Convênio e Crediário Próprio */}
+            {isCreditMethod && (
+              <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-indigo-600" />
+                    <span>Validação de Crédito & Limite do Cliente</span>
+                  </span>
+                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {activeMethod === 'CONVENIO' ? 'Convênio Empresa' : 'Crediário Próprio'}
+                  </span>
+                </div>
+
+                {/* Input de CPF e Busca */}
+                <div className="flex items-center space-x-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      data-testid="credit-cpf-input"
+                      value={creditCpf}
+                      onChange={(e) => setCreditCpf(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCheckCredit();
+                        }
+                      }}
+                      placeholder="CPF do cliente titular (somente números)..."
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono outline-hidden focus:border-indigo-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    data-testid="check-credit-btn"
+                    onClick={() => handleCheckCredit()}
+                    disabled={isCheckingCredit}
+                    className="flex items-center space-x-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                  >
+                    {isCheckingCredit ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Search className="w-3.5 h-3.5" />
+                    )}
+                    <span>Consultar Elegibilidade</span>
+                  </button>
+                </div>
+
+                {creditError && (
+                  <div
+                    data-testid="credit-error-banner"
+                    className="p-3 bg-rose-50 border border-rose-300 rounded-lg text-rose-800 text-xs flex items-start space-x-2"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Restrição de Crédito:</p>
+                      <p className="text-rose-700 mt-0.5">{creditError}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detalhes do Cliente e Limites */}
+                {selectedCustomer && (
+                  <div
+                    data-testid="customer-credit-info"
+                    className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-slate-900 block">{selectedCustomer.name}</span>
+                        <span className="text-slate-500 font-mono text-[11px]">CPF: {selectedCustomer.cpf}</span>
+                      </div>
+                      <div>
+                        {selectedCustomer.status === 'ACTIVE' ? (
+                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            <UserCheck className="w-3 h-3" />
+                            <span>ATIVO</span>
+                          </span>
+                        ) : (
+                          <span
+                            data-testid="blocked-customer-badge"
+                            className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300"
+                          >
+                            <UserX className="w-3 h-3" />
+                            <span>BLOQUEADO POR ATRASO</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+                      <div>
+                        <span className="text-[11px] text-slate-500 font-semibold block">Limite Disponível:</span>
+                        <span
+                          data-testid="available-limit-display"
+                          className="font-black text-sm text-emerald-600"
+                        >
+                          {formatBrl(
+                            eligibilityResult?.availableLimit ??
+                              Math.max(
+                                0,
+                                (selectedCustomer.creditLimit ?? selectedCustomer.credit_limit ?? 0) -
+                                  (selectedCustomer.currentDebt ?? selectedCustomer.current_debt ?? 0)
+                              )
+                          )}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-slate-500 font-semibold block">Dívida Atual:</span>
+                        <span
+                          data-testid="current-debt-display"
+                          className="font-black text-sm text-rose-600"
+                        >
+                          {formatBrl(selectedCustomer.currentDebt ?? selectedCustomer.current_debt ?? 0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Parcelamento 1x a 6x */}
+                    <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-700">Parcelamento no Carnê:</label>
+                      <select
+                        data-testid="installments-select"
+                        value={installments}
+                        onChange={(e) => setInstallments(Number(e.target.value))}
+                        className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold bg-white outline-hidden focus:ring-1 focus:ring-indigo-500"
+                      >
+                        {[1, 2, 3, 4, 5, 6].map((n) => {
+                          const amt = parseFloat(amountInput) || remaining || totalAmount;
+                          const perInstallment = amt > 0 ? (amt / n).toFixed(2) : '0,00';
+                          return (
+                            <option key={n} value={n}>
+                              {n}x de R$ {perInstallment} {n === 1 ? '(À vista no carnê)' : 'mensais'}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Campo de Entrada de Valor e Botão Adicionar */}
             <div className="flex items-end space-x-3">
               <div className="flex-1">
@@ -540,9 +755,10 @@ export default function PaymentModal({
 
               <button
                 type="button"
+                data-testid="add-payment-btn"
                 onClick={handleAddPayment}
-                disabled={!amountInput || parseFloat(amountInput) <= 0}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg transition flex items-center shadow-sm"
+                disabled={!amountInput || parseFloat(amountInput) <= 0 || (isCreditMethod && isCreditBlocked)}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg transition flex items-center shadow-sm cursor-pointer"
               >
                 <span>Adicionar Pagamento</span>
                 <ArrowRight className="w-4 h-4 ml-1.5" />

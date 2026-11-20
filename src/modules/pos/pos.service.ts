@@ -5,6 +5,7 @@ import { PrescriptionDetails } from '../counter/types';
 import { SngpcService } from '../sngpc/sngpc.service';
 import { PbmService } from '../pbm/pbm.service';
 import { TefService } from '../tef/tef.service';
+import { ReceivableService } from '../credit/receivable.service';
 import {
   AdditionalCheckoutItem,
   CashMovement,
@@ -172,6 +173,7 @@ export class PosService {
   private sngpcService: SngpcService;
   private pbmService?: PbmService;
   private tefService?: TefService;
+  private receivableService?: ReceivableService;
 
   constructor(
     private db: Database,
@@ -179,11 +181,13 @@ export class PosService {
     private inventoryService: InventoryService,
     sngpcService?: SngpcService,
     pbmService?: PbmService,
-    tefService?: TefService
+    tefService?: TefService,
+    receivableService?: ReceivableService
   ) {
     this.sngpcService = sngpcService ?? new SngpcService(db);
     this.pbmService = pbmService;
     this.tefService = tefService;
+    this.receivableService = receivableService ?? new ReceivableService(db);
   }
 
   setPbmService(service: PbmService): void {
@@ -192,6 +196,10 @@ export class PosService {
 
   setTefService(service: TefService): void {
     this.tefService = service;
+  }
+
+  setReceivableService(service: ReceivableService): void {
+    this.receivableService = service;
   }
 
   openCashSession(operatorName: string, initialCash: number): CashSession {
@@ -300,6 +308,8 @@ export class PosService {
       CARTAO_DEBITO: 0,
       PIX: 0,
       CONVENIO_PBM: 0,
+      CONVENIO: 0,
+      CREDIARIO: 0,
     };
 
     const paymentRows = this.db
@@ -643,6 +653,8 @@ export class PosService {
       'CARTAO_DEBITO',
       'PIX',
       'CONVENIO_PBM',
+      'CONVENIO',
+      'CREDIARIO',
     ];
 
     for (const p of params.payments) {
@@ -842,6 +854,23 @@ export class PosService {
             .prepare('UPDATE cash_sessions SET current_cash = current_cash + ? WHERE id = ?')
             .run(netCash, params.cashSessionId);
         }
+      }
+
+      // Generate receivables for CONVENIO or CREDIARIO if customerId is provided
+      const creditPayments = params.payments.filter(
+        (p) => p.method === 'CONVENIO' || p.method === 'CREDIARIO'
+      );
+      if (creditPayments.length > 0 && params.customerId) {
+        const creditTotal = Number(
+          creditPayments.reduce((acc, p) => acc + p.amount, 0).toFixed(2)
+        );
+        const receivableService = this.receivableService ?? new ReceivableService(this.db);
+        receivableService.createReceivablesForSale({
+          customerId: params.customerId,
+          saleId,
+          totalAmount: creditTotal,
+          installmentsCount: params.installments && params.installments > 0 ? params.installments : 1,
+        });
       }
 
       const saleDetails = this.getSaleById(saleId);

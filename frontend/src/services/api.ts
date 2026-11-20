@@ -60,9 +60,26 @@ import type {
   InventorySessionFilters,
   InventoryBalanceReport,
   InventoryReportResult,
+  CorporateAgreement,
+  CreateAgreementInput,
+  UpdateAgreementInput,
+  Customer,
+  CreateCustomerInput,
+  UpdateCustomerInput,
+  CustomerDependent,
+  CreateDependentInput,
+  CustomerListResponse,
+  CreditEligibilityResult,
+  CustomerReceivable,
+  AgreementInvoice,
+  GenerateInvoiceParams,
+  ReceivePaymentParams,
+  PaymentReceiptResult,
+  PromissoryNoteResponse,
 } from '../types';
 
 export * from '../types/financial';
+export * from '../types/credit';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -272,7 +289,14 @@ export interface NfceInvoiceDetails {
   danfeText?: string;
 }
 
-export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX' | 'CONVENIO_PBM';
+export type PaymentMethod =
+  | 'DINHEIRO'
+  | 'CARTAO_CREDITO'
+  | 'CARTAO_DEBITO'
+  | 'PIX'
+  | 'CONVENIO_PBM'
+  | 'CONVENIO'
+  | 'CREDIARIO';
 
 export interface PaymentItem {
   method: PaymentMethod;
@@ -371,6 +395,8 @@ export interface CheckoutDTO {
   payments: PaymentItem[];
   pbmProtocol?: string;
   tefNsuList?: string[];
+  customerId?: number;
+  installments?: number;
 }
 
 export interface CheckoutResponse {
@@ -1810,6 +1836,254 @@ export const transfersApi = {
   emitTransferNfe,
 };
 
+export const creditApi = {
+  // Convênios Corporativos
+  getAgreements: async (activeOnly?: boolean): Promise<CorporateAgreement[]> => {
+    const base = getBaseUrl();
+    const query = activeOnly ? '?activeOnly=true' : '';
+    const res = await fetch(`${base}/api/credit/agreements${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar convênios');
+    }
+    return res.json();
+  },
+
+  getAgreementById: async (id: number): Promise<CorporateAgreement> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/agreements/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Convênio #${id} não encontrado`);
+    }
+    return res.json();
+  },
+
+  createAgreement: async (data: CreateAgreementInput): Promise<CorporateAgreement> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/agreements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar convênio');
+    }
+    return res.json();
+  },
+
+  updateAgreement: async (id: number, data: UpdateAgreementInput): Promise<CorporateAgreement> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/agreements/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao atualizar convênio #${id}`);
+    }
+    return res.json();
+  },
+
+  // Faturas de Convênio
+  generateInvoice: async (agreementId: number, params: GenerateInvoiceParams): Promise<AgreementInvoice> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/agreements/${agreementId}/invoices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao fechar fatura de convênio');
+    }
+    return res.json();
+  },
+
+  getAgreementInvoices: async (agreementId: number): Promise<AgreementInvoice[]> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/agreements/${agreementId}/invoices`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar faturas');
+    }
+    return res.json();
+  },
+
+  getInvoiceById: async (id: number): Promise<AgreementInvoice> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/invoices/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Fatura #${id} não encontrada`);
+    }
+    return res.json();
+  },
+
+  getPayrollReport: async (invoiceId: number): Promise<{ invoiceId: number; textReport: string; fullEscPos?: string }> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/invoices/${invoiceId}/payroll-report`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir extrato de folha de pagamento');
+    }
+    return res.json();
+  },
+
+  // Clientes & Dependentes
+  getCustomers: async (params?: { search?: string; agreementId?: number; status?: string; page?: number; limit?: number }): Promise<CustomerListResponse> => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (params?.search) query.append('search', params.search);
+    if (params?.agreementId) query.append('agreementId', String(params.agreementId));
+    if (params?.status) query.append('status', params.status);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/credit/customers${qs}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar clientes');
+    }
+    return res.json();
+  },
+
+  getCustomerById: async (id: number): Promise<Customer> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/customers/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Cliente #${id} não encontrado`);
+    }
+    return res.json();
+  },
+
+  getCustomerByCpf: async (cpf: string): Promise<Customer> => {
+    const base = getBaseUrl();
+    const cleanCpf = cpf.replace(/\D/g, '');
+    const res = await fetch(`${base}/api/credit/customers/by-cpf/${cleanCpf}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Cliente com CPF ${cpf} não encontrado`);
+    }
+    return res.json();
+  },
+
+  createCustomer: async (data: CreateCustomerInput): Promise<Customer> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar cliente');
+    }
+    return res.json();
+  },
+
+  updateCustomer: async (id: number, data: UpdateCustomerInput): Promise<Customer> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/customers/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao atualizar cliente #${id}`);
+    }
+    return res.json();
+  },
+
+  addDependent: async (customerId: number, data: CreateDependentInput): Promise<CustomerDependent> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/customers/${customerId}/dependents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao adicionar dependente');
+    }
+    return res.json();
+  },
+
+  removeDependent: async (dependentId: number): Promise<{ success: boolean }> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/customers/dependents/${dependentId}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao remover dependente');
+    }
+    return res.json();
+  },
+
+  checkCreditEligibility: async (customerId: number, purchaseAmount: number): Promise<CreditEligibilityResult> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/customers/${customerId}/check-eligibility`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ purchaseAmount }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao consultar elegibilidade');
+    }
+    return res.json();
+  },
+
+  // Recebíveis & Quitação de Carnê
+  getReceivables: async (params?: { customerId?: number; agreementId?: number; status?: string; overdueOnly?: boolean; startDate?: string; endDate?: string }): Promise<CustomerReceivable[]> => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (params?.customerId) query.append('customerId', String(params.customerId));
+    if (params?.agreementId) query.append('agreementId', String(params.agreementId));
+    if (params?.status) query.append('status', params.status);
+    if (params?.overdueOnly) query.append('overdueOnly', 'true');
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/credit/receivables${qs}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar parcelas de crediário');
+    }
+    return res.json();
+  },
+
+  settleReceivables: async (data: ReceivePaymentParams): Promise<PaymentReceiptResult> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/credit/receivables/pay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao quitar parcelas');
+    }
+    return res.json();
+  },
+
+  getPromissoryNote: async (saleId: number, dependentId?: number): Promise<PromissoryNoteResponse> => {
+    const base = getBaseUrl();
+    const query = dependentId ? `?dependentId=${dependentId}` : '';
+    const res = await fetch(`${base}/api/credit/receivables/sale/${saleId}/promissory${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao emitir nota promissória da venda #${saleId}`);
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -1880,6 +2154,8 @@ export const api = {
   pbmApi,
   tefApi,
   financialApi,
+  credit: creditApi,
+  creditApi,
 };
 
 export default api;

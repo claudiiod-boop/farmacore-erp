@@ -1,10 +1,26 @@
-export type StationMode = 'COUNTER' | 'POS' | 'PURCHASES' | 'SNGPC' | 'FINANCIAL' | 'STORES' | 'INVENTORY';
-export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX' | 'CONVENIO_PBM';
+export type StationMode =
+  | 'COUNTER'
+  | 'POS'
+  | 'PURCHASES'
+  | 'SNGPC'
+  | 'FINANCIAL'
+  | 'STORES'
+  | 'INVENTORY'
+  | 'CREDIT';
+export type PaymentMethod =
+  | 'DINHEIRO'
+  | 'CARTAO_CREDITO'
+  | 'CARTAO_DEBITO'
+  | 'PIX'
+  | 'CONVENIO_PBM'
+  | 'CONVENIO'
+  | 'CREDIARIO';
 
 export * from './financial';
 export * from './stores';
 export * from './transfers';
 export * from './inventory';
+export * from './credit';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';

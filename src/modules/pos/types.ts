@@ -1,7 +1,14 @@
 import { PrescriptionDetails } from '../counter/types';
 import type { NfceCardInput } from '../fiscal/xml-builder';
 
-export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX' | 'CONVENIO_PBM';
+export type PaymentMethod =
+  | 'DINHEIRO'
+  | 'CARTAO_CREDITO'
+  | 'CARTAO_DEBITO'
+  | 'PIX'
+  | 'CONVENIO_PBM'
+  | 'CONVENIO'
+  | 'CREDIARIO';
 
 export interface PaymentItem {
   method: PaymentMethod;
@@ -98,5 +105,7 @@ export interface CheckoutParams {
   payments: PaymentItem[];
   pbmProtocol?: string;
   tefNsuList?: string[];
+  customerId?: number;
+  installments?: number;
 }
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import PaymentModal from '../../src/components/pos/PaymentModal';
-import { PaymentItem } from '../../src/services/api';
+import { api, PaymentItem } from '../../src/services/api';
 
 describe('PaymentModal Component', () => {
   beforeEach(() => {
@@ -338,5 +338,119 @@ describe('PaymentModal Component', () => {
     // PinPad modal should be rendered
     expect(screen.getByText(/Pagamento TEF \/ PinPad/i)).toBeDefined();
     expect(screen.getByTestId('start-tef-button')).toBeDefined();
+  });
+
+  it('should render Convênio Empresa and Crediário Próprio payment options', () => {
+    render(
+      <PaymentModal
+        isOpen={true}
+        totalAmount={100.0}
+        onClose={vi.fn()}
+        onConfirmPayments={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /Convênio Empresa/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Crediário Próprio/i })).toBeDefined();
+  });
+
+  it('should require CPF search and allow installments when Crediário or Convênio is selected', async () => {
+    vi.spyOn(api.credit, 'getCustomerByCpf').mockResolvedValue({
+      id: 10,
+      storeId: 1,
+      name: 'Roberta Dias',
+      cpf: '12345678900',
+      creditLimit: 500,
+      currentDebt: 100,
+      status: 'ACTIVE',
+      allowDependents: true,
+    });
+    vi.spyOn(api.credit, 'checkCreditEligibility').mockResolvedValue({
+      isEligible: true,
+      customer: {
+        id: 10,
+        storeId: 1,
+        name: 'Roberta Dias',
+        cpf: '12345678900',
+        creditLimit: 500,
+        currentDebt: 100,
+        status: 'ACTIVE',
+        allowDependents: true,
+      },
+      availableLimit: 400,
+    });
+
+    render(
+      <PaymentModal
+        isOpen={true}
+        totalAmount={100.0}
+        onClose={vi.fn()}
+        onConfirmPayments={vi.fn()}
+      />
+    );
+
+    // Click Crediário Próprio
+    fireEvent.click(screen.getByRole('button', { name: /Crediário Próprio/i }));
+
+    const cpfInput = screen.getByTestId('credit-cpf-input');
+    expect(cpfInput).toBeDefined();
+
+    fireEvent.change(cpfInput, { target: { value: '12345678900' } });
+    fireEvent.click(screen.getByTestId('check-credit-btn'));
+
+    await screen.findByText('Roberta Dias');
+    expect(screen.getByTestId('available-limit-display')).toBeDefined();
+    expect(screen.getByTestId('installments-select')).toBeDefined();
+  });
+
+  it('should block adding payment when credit customer is BLOCKED_OVERDUE or ineligible', async () => {
+    vi.spyOn(api.credit, 'getCustomerByCpf').mockResolvedValue({
+      id: 20,
+      storeId: 1,
+      name: 'Mauro Silva',
+      cpf: '99988877766',
+      creditLimit: 500,
+      currentDebt: 500,
+      status: 'BLOCKED_OVERDUE',
+      allowDependents: false,
+    });
+    vi.spyOn(api.credit, 'checkCreditEligibility').mockResolvedValue({
+      isEligible: false,
+      customer: {
+        id: 20,
+        storeId: 1,
+        name: 'Mauro Silva',
+        cpf: '99988877766',
+        creditLimit: 500,
+        currentDebt: 500,
+        status: 'BLOCKED_OVERDUE',
+        allowDependents: false,
+      },
+      availableLimit: 0,
+      reason: 'Cliente com parcelas em atraso.',
+    });
+
+    render(
+      <PaymentModal
+        isOpen={true}
+        totalAmount={100.0}
+        onClose={vi.fn()}
+        onConfirmPayments={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Crediário Próprio/i }));
+
+    const cpfInput = screen.getByTestId('credit-cpf-input');
+    fireEvent.change(cpfInput, { target: { value: '99988877766' } });
+    fireEvent.click(screen.getByTestId('check-credit-btn'));
+
+    await screen.findByText('Mauro Silva');
+    expect(screen.getByTestId('blocked-customer-badge')).toBeDefined();
+    expect(screen.getByTestId('credit-error-banner')).toBeDefined();
+
+    // Add payment button should be disabled
+    const addBtn = screen.getByTestId('add-payment-btn');
+    expect(addBtn.hasAttribute('disabled')).toBe(true);
   });
 });

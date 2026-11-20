@@ -23,6 +23,8 @@ const mockSummary: CashSessionSummary = {
     CARTAO_DEBITO: 180.5,
     PIX: 120.0,
     CONVENIO_PBM: 0,
+    CONVENIO: 0,
+    CREDIARIO: 0,
   },
   totalSupplies: 100.0,
   totalSangrias: 50.0,

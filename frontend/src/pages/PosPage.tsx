@@ -336,7 +336,10 @@ export default function PosPage() {
 
   // Checkout Submission
   const handleConfirmPayments = useCallback(
-    async (payments: PaymentItem[], options?: { emitNfce?: boolean }) => {
+    async (
+      payments: PaymentItem[],
+      options?: { emitNfce?: boolean; customerId?: number; installments?: number }
+    ) => {
       if (isSubmitting || !currentSession) return;
       setIsSubmitting(true);
       setErrorMessage(null);
@@ -356,6 +359,8 @@ export default function PosPage() {
           additionalItems: additionalItems.length > 0 ? additionalItems : undefined,
           payments,
           pbmProtocol: authorizedPbm?.authorizationProtocol,
+          customerId: options?.customerId,
+          installments: options?.installments,
         };
 
         const res = await api.checkoutSale(dto);
