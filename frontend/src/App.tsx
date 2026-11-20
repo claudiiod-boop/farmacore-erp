@@ -5,6 +5,7 @@ import PurchasesPage from './pages/PurchasesPage';
 import SngpcPage from './pages/SngpcPage';
 import FinancialDashboardPage from './pages/FinancialDashboardPage';
 import MultiStorePage from './pages/MultiStorePage';
+import InventoryPage from './pages/InventoryPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -18,10 +19,11 @@ import {
   ShieldCheck,
   DollarSign,
   Building2,
+  ClipboardList,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -65,6 +67,13 @@ function AppContent() {
       if (e.key === 'F7') {
         e.preventDefault();
         setMode('STORES');
+        return;
+      }
+
+      // Inventário / Balanço shortcut F8
+      if (e.key === 'F8') {
+        e.preventDefault();
+        setMode('INVENTORY');
         return;
       }
 
@@ -128,10 +137,15 @@ function AppContent() {
                   <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Posto: Financeiro</span>
                 </>
-              ) : (
+              ) : isStores ? (
                 <>
                   <Building2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Posto: Rede & Filiais</span>
+                </>
+              ) : (
+                <>
+                  <ClipboardList className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Posto: Inventário</span>
                 </>
               )}
               <ArrowLeftRight className="w-3 h-3 ml-1 text-slate-400" />
@@ -218,6 +232,20 @@ function AppContent() {
               <Building2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>[F7] Filiais / Rede</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-inventory-button"
+              onClick={() => setMode('INVENTORY')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isInventory
+                  ? 'bg-emerald-950 text-emerald-300 border-emerald-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <ClipboardList className="w-3.5 h-3.5 text-emerald-400" />
+              <span>[F8] Inventário / Balanço</span>
+            </button>
           </nav>
         </div>
 
@@ -253,7 +281,9 @@ function AppContent() {
               <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F6</kbd>{' '}
               Convênio |{' '}
               <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F7</kbd>{' '}
-              Filiais
+              Filiais |{' '}
+              <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono font-bold">F8</kbd>{' '}
+              Inventário
             </span>
           </div>
         </div>
@@ -267,6 +297,7 @@ function AppContent() {
         {isSngpc && <SngpcPage />}
         {isFinancial && <FinancialDashboardPage />}
         {isStores && <MultiStorePage />}
+        {isInventory && <InventoryPage />}
       </div>
 
       {/* Global PBM Modal */}

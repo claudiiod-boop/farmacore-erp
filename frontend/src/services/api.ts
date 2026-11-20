@@ -51,6 +51,15 @@ import type {
   TransferFilters,
   FiscalTransferResult,
   TransferSlipResult,
+  InventorySession,
+  InventoryItem,
+  InventorySessionWithItems,
+  CreateInventorySessionInput,
+  AddCountInput,
+  ApplyAdjustmentsParams,
+  InventorySessionFilters,
+  InventoryBalanceReport,
+  InventoryReportResult,
 } from '../types';
 
 export * from '../types/financial';
@@ -1616,6 +1625,172 @@ export async function emitTransferNfe(id: number): Promise<FiscalTransferResult>
   return response.json();
 }
 
+// ===================== INVENTORY & BALANCE AUDIT API (FASE 10) =====================
+
+export async function getInventorySessions(
+  filters?: InventorySessionFilters
+): Promise<{ sessions: InventorySessionWithItems[]; total: number }> {
+  const base = getBaseUrl();
+  const params = new URLSearchParams();
+  const sId = filters?.storeId ?? filters?.store_id;
+  if (sId !== undefined) params.append('storeId', String(sId));
+  if (filters?.status) params.append('status', filters.status);
+  const iType = filters?.inventoryType ?? filters?.inventory_type;
+  if (iType) params.append('inventoryType', iType);
+  const sDate = filters?.startDate ?? filters?.start_date;
+  if (sDate) params.append('startDate', sDate);
+  const eDate = filters?.endDate ?? filters?.end_date;
+  if (eDate) params.append('endDate', eDate);
+  if (filters?.limit !== undefined) params.append('limit', String(filters.limit));
+  if (filters?.offset !== undefined) params.append('offset', String(filters.offset));
+
+  const qs = params.toString();
+  const url = `${base}/api/inventory/sessions${qs ? `?${qs}` : ''}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao listar sessões de inventário: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getInventorySessionById(id: number): Promise<InventorySessionWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/inventory/sessions/${id}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao buscar sessão de inventário #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function createInventorySession(data: CreateInventorySessionInput): Promise<InventorySessionWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/inventory/sessions`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao criar sessão de inventário: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function addInventoryCount(sessionId: number, data: AddCountInput): Promise<InventoryItem> {
+  const base = getBaseUrl();
+  const url = `${base}/api/inventory/sessions/${sessionId}/count`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao registrar contagem: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function recountInventoryItem(
+  sessionId: number,
+  itemId: number,
+  recountQuantity: number
+): Promise<InventoryItem> {
+  const base = getBaseUrl();
+  const url = `${base}/api/inventory/sessions/${sessionId}/items/${itemId}/recount`;
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recountQuantity }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao registrar recontagem do item #${itemId}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function finishInventoryCount(sessionId: number): Promise<InventorySessionWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/inventory/sessions/${sessionId}/finish-count`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao finalizar contagens da sessão #${sessionId}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function applyInventoryAdjustments(
+  sessionId: number,
+  data: ApplyAdjustmentsParams
+): Promise<InventorySessionWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/inventory/sessions/${sessionId}/apply`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao homologar inventário #${sessionId}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function cancelInventorySession(
+  sessionId: number,
+  reason: string
+): Promise<InventorySessionWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/inventory/sessions/${sessionId}/cancel`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao cancelar sessão #${sessionId}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getInventoryReport(
+  sessionId: number
+): Promise<InventoryReportResult> {
+  const base = getBaseUrl();
+  const url = `${base}/api/inventory/sessions/${sessionId}/report`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao buscar relatório de inventário #${sessionId}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export type { InventorySession, InventoryBalanceReport };
+
+export const inventoryApi = {
+  getInventorySessions,
+  getInventorySessionById,
+  createInventorySession,
+  addInventoryCount,
+  recountInventoryItem,
+  finishInventoryCount,
+  applyInventoryAdjustments,
+  cancelInventorySession,
+  getInventoryReport,
+};
+
 export const storesApi = {
   getStores,
   getStoreById,
@@ -1680,10 +1855,21 @@ export const api = {
   cancelTransfer,
   getTransferSlip,
   emitTransferNfe,
+  getInventorySessions,
+  getInventorySessionById,
+  createInventorySession,
+  addInventoryCount,
+  recountInventoryItem,
+  finishInventoryCount,
+  applyInventoryAdjustments,
+  cancelInventorySession,
+  getInventoryReport,
   stores: storesApi,
   transfers: transfersApi,
+  inventory: inventoryApi,
   storesApi,
   transfersApi,
+  inventoryApi,
   purchases: purchasesApi,
   sngpc: sngpcApi,
   pbm: pbmApi,

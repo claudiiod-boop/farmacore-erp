@@ -51,6 +51,7 @@ describe('App Global Navigation & Station Shortcuts', () => {
     expect(screen.getByRole('button', { name: /\[F3\]\s*Compras/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /\[F4\]\s*SNGPC/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /\[F7\]\s*Filiais/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /\[F8\]\s*Inventário/i })).toBeDefined();
     expect(screen.getByTestId('store-selector-dropdown')).toBeDefined();
   });
 
@@ -187,6 +188,23 @@ describe('App Global Navigation & Station Shortcuts', () => {
     await waitFor(() => {
       expect(screen.getByText(/Gestão Multi-Loja & Transferências em Rede/i)).toBeDefined();
       expect(mockStorage.getItem(STATION_MODE_STORAGE_KEY)).toBe('STORES');
+    });
+
+    // Press F8
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'F8',
+          code: 'F8',
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Módulo de Auditoria & Inventário Físico/i)).toBeDefined();
+      expect(mockStorage.getItem(STATION_MODE_STORAGE_KEY)).toBe('INVENTORY');
     });
 
     // Press F1

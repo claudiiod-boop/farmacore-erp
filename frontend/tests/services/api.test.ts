@@ -9,6 +9,7 @@ import {
   sngpcApi,
   storesApi,
   transfersApi,
+  inventoryApi,
 } from '../../src/services/api';
 
 describe('API Service', () => {
@@ -294,6 +295,142 @@ describe('API Service', () => {
       const res = await transfersApi.getTransferSlip(1);
       expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/transfers/1/slip');
       expect(res).toEqual(mockSlip);
+    });
+  });
+
+  describe('inventoryApi', () => {
+    it('should query /api/inventory/sessions and return sessions', async () => {
+      const mockSessions = { sessions: [{ id: 1, sessionCode: 'INV-001' }], total: 1 };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSessions,
+      } as unknown as Response);
+
+      const res = await inventoryApi.getInventorySessions({ status: 'OPEN', inventoryType: 'GERAL' });
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions?status=OPEN&inventoryType=GERAL');
+      expect(res).toEqual(mockSessions);
+    });
+
+    it('should get session by id', async () => {
+      const mockSession = { id: 1, sessionCode: 'INV-001' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSession,
+      } as unknown as Response);
+
+      const res = await inventoryApi.getInventorySessionById(1);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions/1');
+      expect(res).toEqual(mockSession);
+    });
+
+    it('should create inventory session', async () => {
+      const mockCreated = { id: 1, sessionCode: 'INV-001' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockCreated,
+      } as unknown as Response);
+
+      const payload = { storeId: 1, inventoryType: 'GERAL' as const, openedBy: 'Auditor' };
+      const res = await inventoryApi.createInventorySession(payload);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      expect(res).toEqual(mockCreated);
+    });
+
+    it('should add count item', async () => {
+      const mockItem = { id: 10, batchNumber: 'L1', quantity: 5 };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockItem,
+      } as unknown as Response);
+
+      const payload = { ean: '789000', batchNumber: 'L1', expirationDate: '2027-12-31', quantity: 5 };
+      const res = await inventoryApi.addInventoryCount(1, payload);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions/1/count', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      expect(res).toEqual(mockItem);
+    });
+
+    it('should recount item', async () => {
+      const mockItem = { id: 10, recountQuantity: 8 };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockItem,
+      } as unknown as Response);
+
+      const res = await inventoryApi.recountInventoryItem(1, 10, 8);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions/1/items/10/recount', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recountQuantity: 8 }),
+      });
+      expect(res).toEqual(mockItem);
+    });
+
+    it('should finish counting', async () => {
+      const mockSession = { id: 1, status: 'COUNTED' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSession,
+      } as unknown as Response);
+
+      const res = await inventoryApi.finishInventoryCount(1);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions/1/finish-count', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      expect(res).toEqual(mockSession);
+    });
+
+    it('should apply inventory adjustments', async () => {
+      const mockSession = { id: 1, status: 'APPLIED' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSession,
+      } as unknown as Response);
+
+      const payload = { appliedBy: 'Farmacêutico RT', responsiblePharmacistCrf: '12345' };
+      const res = await inventoryApi.applyInventoryAdjustments(1, payload);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions/1/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      expect(res).toEqual(mockSession);
+    });
+
+    it('should cancel inventory session', async () => {
+      const mockSession = { id: 1, status: 'CANCELLED' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSession,
+      } as unknown as Response);
+
+      const res = await inventoryApi.cancelInventorySession(1, 'Erro de digitação');
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions/1/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Erro de digitação' }),
+      });
+      expect(res).toEqual(mockSession);
+    });
+
+    it('should get inventory report', async () => {
+      const mockReport = { textSlip: 'Parecer', fullEscPos: '...', session: {}, store: {} };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockReport,
+      } as unknown as Response);
+
+      const res = await inventoryApi.getInventoryReport(1);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/inventory/sessions/1/report');
+      expect(res).toEqual(mockReport);
     });
   });
 });
