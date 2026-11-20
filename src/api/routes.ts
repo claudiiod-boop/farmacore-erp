@@ -25,6 +25,7 @@ import { formatCashClosureReceipt } from '../modules/financial/closure-receipt-f
 import { registerStoreRoutes } from '../modules/stores/store.routes';
 import { registerTransferRoutes } from '../modules/transfers/transfer.routes';
 import { registerInventoryRoutes } from '../modules/inventory/audit.routes';
+import { registerCreditRoutes } from '../modules/credit/credit.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2002,4 +2003,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
   registerStoreRoutes(app, db);
   registerTransferRoutes(app, db);
   registerInventoryRoutes(app, db);
+
+  // ===================== CREDIÁRIO & CONVÊNIOS CORPORATIVOS =====================
+  registerCreditRoutes(app, db);
 }
