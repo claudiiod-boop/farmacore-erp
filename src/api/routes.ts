@@ -24,6 +24,7 @@ import { FinancialReportsService } from '../modules/financial/financial-reports.
 import { formatCashClosureReceipt } from '../modules/financial/closure-receipt-formatter';
 import { registerStoreRoutes } from '../modules/stores/store.routes';
 import { registerTransferRoutes } from '../modules/transfers/transfer.routes';
+import { registerInventoryRoutes } from '../modules/inventory/audit.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2000,4 +2001,5 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
   // ===================== MULTI-STORE & TRANSFERS =====================
   registerStoreRoutes(app, db);
   registerTransferRoutes(app, db);
+  registerInventoryRoutes(app, db);
 }
