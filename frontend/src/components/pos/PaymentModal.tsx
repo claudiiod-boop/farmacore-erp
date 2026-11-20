@@ -279,10 +279,13 @@ export default function PaymentModal({
   // Submit
   const handleConfirm = () => {
     if (!canFinalize) return;
+    const hasCreditPayment = payments.some(
+      (p) => p.method === 'CONVENIO' || p.method === 'CREDIARIO'
+    );
     onConfirmPayments(payments, {
       emitNfce,
-      customerId: selectedCustomer?.id,
-      installments: isCreditMethod ? installments : undefined,
+      customerId: hasCreditPayment ? selectedCustomer?.id : undefined,
+      installments: hasCreditPayment ? (installments || 1) : undefined,
     });
   };
 

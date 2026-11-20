@@ -142,6 +142,8 @@ export class BlindCashClosureService {
       CARTAO_DEBITO: 0,
       PIX: 0,
       CONVENIO_PBM: 0,
+      CONVENIO: 0,
+      CREDIARIO: 0,
     };
 
     const paymentRows = this.db
