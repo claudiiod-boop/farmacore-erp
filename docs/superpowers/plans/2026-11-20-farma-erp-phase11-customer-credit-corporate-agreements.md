@@ -69,11 +69,11 @@
     - Vincula as parcelas à fatura criada.
     - Produz o resumo com total faturado, quantidade de colaboradores e extrato detalhado para o RH.
 
-- [ ] **Step 1: Escrever testes que falham para `agreement.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/credit/agreement.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `agreement.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/credit/agreement.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -98,11 +98,11 @@
     - Valida limite: se `currentDebt + purchaseAmount > creditLimit`, rejeita com `CREDIT_LIMIT_EXCEEDED` informando o saldo disponível.
     - Valida dependente se o comprador não for o titular.
 
-- [ ] **Step 1: Escrever testes que falham para `customer-credit.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/credit/customer-credit.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `customer-credit.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/credit/customer-credit.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -125,11 +125,11 @@
       - Se o cliente estava em `BLOCKED_OVERDUE` e quitou todas as parcelas vencidas, restaura o status para `ACTIVE`.
       - Registra entrada na sessão de caixa atual (`cash_movements` com `movement_type = 'RECEBIMENTO_CREDIARIO'`, `amount = totalPaid`).
 
-- [ ] **Step 1: Escrever testes que falham para `receivable.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/credit/receivable.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `receivable.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/credit/receivable.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -152,11 +152,11 @@
     - `/api/credit/customers` (GET, POST, GET /:id, GET /by-cpf/:cpf, PUT /:id, POST /:id/dependents, DELETE /dependents/:id, POST /:id/check-eligibility)
     - `/api/credit/receivables` (GET /customer/:customerId, POST /pay, GET /sale/:saleId/promissory)
 
-- [ ] **Step 1: Escrever testes que falham para formatadores e rotas Fastify**
-- [ ] **Step 2: Executar teste para verificar que falham**
-- [ ] **Step 3: Implementar formatadores e rotas, conectar a `src/api/routes.ts`**
-- [ ] **Step 4: Executar teste para verificar que passam (200, 201, 400, 404, 409)**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para formatadores e rotas Fastify**
+- [x] **Step 2: Executar teste para verificar que falham**
+- [x] **Step 3: Implementar formatadores e rotas, conectar a `src/api/routes.ts`**
+- [x] **Step 4: Executar teste para verificar que passam (200, 201, 400, 404, 409)**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -181,11 +181,11 @@
   - Ao concluir venda a prazo, abre automaticamente `PromissoryNoteModal` para impressão térmica com linha de assinatura.
   - Botão no Caixa para "Receber Crediário / Carnê" abrindo `DebtPaymentModal`.
 
-- [ ] **Step 1: Escrever testes para a página de crédito e modais**
-- [ ] **Step 2: Executar teste para verificar que falham**
-- [ ] **Step 3: Implementar tipos, API adapter, componentes React e integração PDV**
-- [ ] **Step 4: Executar teste para verificar que passam e checar TypeScript frontend**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes para a página de crédito e modais**
+- [x] **Step 2: Executar teste para verificar que falham**
+- [x] **Step 3: Implementar tipos, API adapter, componentes React e integração PDV**
+- [x] **Step 4: Executar teste para verificar que passam e checar TypeScript frontend**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -197,7 +197,9 @@
 - Verify: `npx.cmd tsc -p frontend/tsconfig.json --noEmit` (frontend)
 - Verify: `npm.cmd run build:web` (produção frontend)
 
-- [ ] **Step 1: Rodar auditoria completa de testes e checagem de tipos**
+- [x] **Step 1: Rodar auditoria completa de testes e checagem de tipos**
+- [x] **Step 2: Verificar integridade de ponta a ponta e build de produção**
+- [x] **Step 3: Despachar revisor da branch inteira e homologar**
 - [ ] **Step 2: Corrigir qualquer aviso ou inconsistência de regressão**
 - [ ] **Step 3: Garantir 100% de testes passando e build web limpo**
 - [ ] **Step 4: Git commit final da Fase 11 e instruções de push para o usuário**
