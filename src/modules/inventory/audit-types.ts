@@ -130,7 +130,8 @@ export interface CreateInventorySessionInput {
 }
 
 export interface AddCountInput {
-  productId: number;
+  productId?: number;
+  ean?: string;
   batchNumber: string;
   expirationDate: string;
   manufacturingDate?: string;

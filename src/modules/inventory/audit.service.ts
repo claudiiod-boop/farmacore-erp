@@ -6,6 +6,7 @@ import type {
   InventoryItem,
   InventorySessionWithItems,
   CreateInventorySessionInput,
+  AddCountInput,
   InventorySessionFilters,
   InventoryType,
   InventoryStatus,
@@ -463,5 +464,298 @@ export class InventoryAuditService {
     }
 
     return { sessions, total };
+  }
+
+  /**
+   * Registra a contagem física de um item/lote (contagem cega bip-a-bip ou valor absoluto).
+   */
+  addCount(sessionId: number, input: AddCountInput): InventoryItem {
+    // 1. Valida se a sessão existe e está aberta
+    const session = this.db
+      .prepare('SELECT id, status FROM inventory_sessions WHERE id = ?')
+      .get(sessionId) as { id: number; status: InventoryStatus } | undefined;
+
+    if (!session) {
+      throw new Error(`Sessão de inventário não encontrada: ID ${sessionId}`);
+    }
+    if (session.status !== 'OPEN') {
+      throw new Error('Sessão de inventário não está aberta para contagem');
+    }
+
+    // 2. Resolve o produto por productId ou EAN
+    const productId = input.productId ?? input.product_id;
+    const rawEan = (input.ean ?? (input as any).product_ean)?.trim();
+
+    let product: { id: number; name: string; ean: string; pf: number } | undefined;
+    if (productId) {
+      product = this.db
+        .prepare('SELECT id, name, ean, pf FROM products WHERE id = ?')
+        .get(Number(productId)) as any;
+    } else if (rawEan) {
+      product = this.db
+        .prepare('SELECT id, name, ean, pf FROM products WHERE ean = ?')
+        .get(rawEan) as any;
+    }
+
+    if (!product) {
+      throw new Error('Produto não encontrado');
+    }
+
+    // 3. Valida dados do lote e quantidade
+    const rawBatch = (input.batchNumber ?? input.batch_number)?.trim();
+    if (!rawBatch) {
+      throw new Error('Número do lote é obrigatório');
+    }
+
+    const expirationDate = (input.expirationDate ?? input.expiration_date)?.trim();
+    if (!expirationDate) {
+      throw new Error('Data de validade é obrigatória');
+    }
+
+    const quantity = Number(input.quantity);
+    if (isNaN(quantity) || quantity < 0) {
+      throw new Error('Quantidade inválida: deve ser maior ou igual a zero');
+    }
+
+    const manufacturingDate =
+      (input.manufacturingDate ?? input.manufacturing_date)?.trim() || expirationDate;
+    const isIncremental = Boolean(input.isIncremental ?? input.is_incremental);
+
+    // 4. Busca item existente na sessão para este produto e lote
+    const existingItem = this.db
+      .prepare('SELECT * FROM inventory_items WHERE session_id = ? AND product_id = ? AND batch_number = ?')
+      .get(sessionId, product.id, rawBatch) as InventoryItemRow | undefined;
+
+    if (existingItem) {
+      const newCounted = isIncremental
+        ? Number(existingItem.counted_quantity || 0) + quantity
+        : quantity;
+
+      const expectedQty = Number(existingItem.expected_quantity || 0);
+      const diffQty = newCounted - expectedQty;
+      const diffStatus: DifferenceStatus =
+        diffQty === 0 ? 'EXACT' : diffQty > 0 ? 'SURPLUS' : 'SHORTAGE';
+      const unitCost = Number(existingItem.unit_cost || 0);
+      const totalCostDiff = Number((diffQty * unitCost).toFixed(2));
+
+      this.db
+        .prepare(`
+          UPDATE inventory_items
+          SET counted_quantity = ?,
+              difference_quantity = ?,
+              difference_status = ?,
+              total_cost_difference = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `)
+        .run(newCounted, diffQty, diffStatus, totalCostDiff, existingItem.id);
+
+      const updatedRow = this.db
+        .prepare(`
+          SELECT i.*, p.name AS product_name, p.ean AS product_ean, p.control_type, p.category
+          FROM inventory_items i
+          LEFT JOIN products p ON p.id = i.product_id
+          WHERE i.id = ?
+        `)
+        .get(existingItem.id) as InventoryItemRow;
+
+      return mapInventoryItemRow(updatedRow);
+    } else {
+      // Item não existia no snapshot lógico (sobra física / lote novo encontrado na prateleira)
+      const unitCost = Number(input.unitCost ?? input.unit_cost ?? product.pf ?? 0.0);
+      const diffQty = quantity;
+      const diffStatus: DifferenceStatus = 'SURPLUS';
+      const totalCostDiff = Number((diffQty * unitCost).toFixed(2));
+
+      const insertRes = this.db
+        .prepare(`
+          INSERT INTO inventory_items (
+            session_id, product_id, batch_id, batch_number, expiration_date, manufacturing_date,
+            expected_quantity, counted_quantity, recount_quantity, difference_quantity, difference_status,
+            unit_cost, total_cost_difference, adjustment_reason, notes, sngpc_adjusted
+          ) VALUES (?, ?, NULL, ?, ?, ?, 0, ?, NULL, ?, ?, ?, ?, 'SOBRA_NAO_IDENTIFICADA', NULL, 0)
+        `)
+        .run(
+          sessionId,
+          product.id,
+          rawBatch,
+          expirationDate,
+          manufacturingDate,
+          quantity,
+          diffQty,
+          diffStatus,
+          unitCost,
+          totalCostDiff
+        );
+
+      const newItemId = Number(insertRes.lastInsertRowid);
+      const insertedRow = this.db
+        .prepare(`
+          SELECT i.*, p.name AS product_name, p.ean AS product_ean, p.control_type, p.category
+          FROM inventory_items i
+          LEFT JOIN products p ON p.id = i.product_id
+          WHERE i.id = ?
+        `)
+        .get(newItemId) as InventoryItemRow;
+
+      return mapInventoryItemRow(insertedRow);
+    }
+  }
+
+  /**
+   * Registra a recontagem de um item divergente. A recontagem passa a ser o valor oficial contado.
+   */
+  recountItem(sessionId: number, itemId: number, recountQuantity: number): InventoryItem {
+    const session = this.db
+      .prepare('SELECT id, status FROM inventory_sessions WHERE id = ?')
+      .get(sessionId) as { id: number; status: InventoryStatus } | undefined;
+
+    if (!session) {
+      throw new Error(`Sessão de inventário não encontrada: ID ${sessionId}`);
+    }
+    if (session.status !== 'OPEN' && session.status !== 'COUNTED') {
+      throw new Error('Sessão de inventário não permite recontagem: status deve ser OPEN ou COUNTED');
+    }
+
+    const item = this.db
+      .prepare('SELECT * FROM inventory_items WHERE id = ? AND session_id = ?')
+      .get(itemId, sessionId) as InventoryItemRow | undefined;
+
+    if (!item) {
+      throw new Error(`Item de inventário não encontrado nesta sessão: ID ${itemId}`);
+    }
+
+    const qty = Number(recountQuantity);
+    if (isNaN(qty) || qty < 0) {
+      throw new Error('Quantidade de recontagem inválida: deve ser maior ou igual a zero');
+    }
+
+    const expectedQty = Number(item.expected_quantity || 0);
+    const diffQty = qty - expectedQty;
+    const diffStatus: DifferenceStatus =
+      diffQty === 0 ? 'EXACT' : diffQty > 0 ? 'SURPLUS' : 'SHORTAGE';
+    const unitCost = Number(item.unit_cost || 0);
+    const totalCostDiff = Number((diffQty * unitCost).toFixed(2));
+
+    this.db
+      .prepare(`
+        UPDATE inventory_items
+        SET recount_quantity = ?,
+            counted_quantity = ?,
+            difference_quantity = ?,
+            difference_status = ?,
+            total_cost_difference = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `)
+      .run(qty, qty, diffQty, diffStatus, totalCostDiff, itemId);
+
+    const updatedRow = this.db
+      .prepare(`
+        SELECT i.*, p.name AS product_name, p.ean AS product_ean, p.control_type, p.category
+        FROM inventory_items i
+        LEFT JOIN products p ON p.id = i.product_id
+        WHERE i.id = ?
+      `)
+      .get(itemId) as InventoryItemRow;
+
+    return mapInventoryItemRow(updatedRow);
+  }
+
+  /**
+   * Finaliza a contagem cega da sessão (transição OPEN -> COUNTED) e calcula métricas de acurácia e divergências financeiras.
+   */
+  finishCounting(sessionId: number): InventorySessionWithItems {
+    const session = this.db
+      .prepare('SELECT id, status FROM inventory_sessions WHERE id = ?')
+      .get(sessionId) as { id: number; status: InventoryStatus } | undefined;
+
+    if (!session) {
+      throw new Error(`Sessão de inventário não encontrada: ID ${sessionId}`);
+    }
+    if (session.status !== 'OPEN') {
+      throw new Error('Sessão de inventário não está aberta para finalização de contagem');
+    }
+
+    const tx = this.db.transaction(() => {
+      const items = this.db
+        .prepare(`
+          SELECT product_id, counted_quantity, difference_quantity, difference_status, unit_cost
+          FROM inventory_items
+          WHERE session_id = ?
+        `)
+        .all(sessionId) as Array<{
+          product_id: number;
+          counted_quantity: number;
+          difference_quantity: number;
+          difference_status: DifferenceStatus;
+          unit_cost: number;
+        }>;
+
+      const countedProducts = new Set<number>();
+      let totalBatchesCounted = 0;
+      let exactCount = 0;
+      let totalSurplusCost = 0;
+      let totalShortageCost = 0;
+
+      for (const it of items) {
+        const countedQty = Number(it.counted_quantity || 0);
+        const diffQty = Number(it.difference_quantity || 0);
+        const unitCost = Number(it.unit_cost || 0);
+
+        if (countedQty > 0) {
+          countedProducts.add(it.product_id);
+          totalBatchesCounted += 1;
+        }
+
+        if (it.difference_status === 'EXACT') {
+          exactCount += 1;
+        } else if (it.difference_status === 'SURPLUS') {
+          totalSurplusCost += diffQty * unitCost;
+        } else if (it.difference_status === 'SHORTAGE') {
+          totalShortageCost += Math.abs(diffQty * unitCost);
+        }
+      }
+
+      const totalItems = items.length;
+      const accuracyRate =
+        totalItems === 0 ? 100.0 : Number(((exactCount / totalItems) * 100).toFixed(2));
+      const roundedSurplusCost = Number(totalSurplusCost.toFixed(2));
+      const roundedShortageCost = Number(totalShortageCost.toFixed(2));
+      const netFinancialDifference = Number(
+        (roundedSurplusCost - roundedShortageCost).toFixed(2)
+      );
+
+      this.db
+        .prepare(`
+          UPDATE inventory_sessions
+          SET status = 'COUNTED',
+              total_products_counted = ?,
+              total_batches_counted = ?,
+              accuracy_rate = ?,
+              total_surplus_cost = ?,
+              total_shortage_cost = ?,
+              net_financial_difference = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `)
+        .run(
+          countedProducts.size,
+          totalBatchesCounted,
+          accuracyRate,
+          roundedSurplusCost,
+          roundedShortageCost,
+          netFinancialDifference,
+          sessionId
+        );
+    });
+
+    tx();
+
+    const result = this.getSessionById(sessionId);
+    if (!result) {
+      throw new Error(`Falha ao recuperar sessão de inventário finalizada: ID ${sessionId}`);
+    }
+    return result;
   }
 }
