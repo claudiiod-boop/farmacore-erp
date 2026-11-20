@@ -395,8 +395,11 @@ export interface UpcomingRefillItem {
   customerId: number;
   customerName: string;
   customerPhone?: string | null;
+  customerEmail?: string | null;
   productId: number;
   productName: string;
+  dosage?: string | null;
+  productDosage?: string | null;
   dailyDose: number;
   unitsPerBox: number;
   boxesPurchased: number;
@@ -413,6 +416,18 @@ export interface UpcomingRefillsFilter {
   daysAhead?: number;
   storeId?: number;
   status?: TreatmentStatus;
+  referenceDate?: string | Date;
+}
+
+export interface RegisterTreatmentInput {
+  saleId?: number | null;
+  customerId: number;
+  items: TreatmentItemInput[];
+}
+
+export interface DiscontinueTreatmentInput {
+  treatmentId: number;
+  reason?: string;
 }
 
 export interface MarkContactedInput {
