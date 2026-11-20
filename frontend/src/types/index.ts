@@ -1,7 +1,9 @@
-export type StationMode = 'COUNTER' | 'POS' | 'PURCHASES' | 'SNGPC' | 'FINANCIAL';
+export type StationMode = 'COUNTER' | 'POS' | 'PURCHASES' | 'SNGPC' | 'FINANCIAL' | 'STORES';
 export type PaymentMethod = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX' | 'CONVENIO_PBM';
 
 export * from './financial';
+export * from './stores';
+export * from './transfers';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';

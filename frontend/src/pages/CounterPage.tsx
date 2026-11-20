@@ -6,6 +6,7 @@ import {
   AlertCircle,
   FileText,
   ShieldCheck,
+  Building2,
 } from 'lucide-react';
 import ProductSearch, { formatBrl } from '../components/ProductSearch';
 import BatchSelector from '../components/BatchSelector';
@@ -14,6 +15,7 @@ import PrescriptionModal from '../components/PrescriptionModal';
 import PreSaleTicket from '../components/PreSaleTicket';
 import PbmModal from '../components/pbm/PbmModal';
 import PbmReceiptModal from '../components/pbm/PbmReceiptModal';
+import NetworkStockModal from '../components/NetworkStockModal';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import type { PbmAuthorizationResult } from '../types';
 import {
@@ -55,6 +57,10 @@ export default function CounterPage() {
   const [isPbmReceiptModalOpen, setIsPbmReceiptModalOpen] = useState(false);
   const [authorizedPbm, setAuthorizedPbm] = useState<PbmAuthorizationResult | null>(null);
 
+  // Network Stock Modal State
+  const [isNetworkStockModalOpen, setIsNetworkStockModalOpen] = useState(false);
+  const [networkStockProduct, setNetworkStockProduct] = useState<Product | null>(null);
+
   // Status and feedback
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -95,6 +101,7 @@ export default function CounterPage() {
   // When a product is selected in ProductSearch
   const handleSelectProduct = useCallback(
     async (product: Product) => {
+      setNetworkStockProduct(product);
       setErrorMessage(null);
       setNoticeMessage(null);
       setIsLoadingBatches(true);
@@ -321,7 +328,8 @@ export default function CounterPage() {
     isPrescriptionModalOpen ||
     isBatchModalOpen ||
     isPbmModalOpen ||
-    isPbmReceiptModalOpen;
+    isPbmReceiptModalOpen ||
+    isNetworkStockModalOpen;
 
   // Global Keyboard Shortcuts
   useKeyboardShortcuts({
@@ -339,7 +347,9 @@ export default function CounterPage() {
       handleNewOrder();
     },
     Escape: () => {
-      if (isPbmReceiptModalOpen) {
+      if (isNetworkStockModalOpen) {
+        setIsNetworkStockModalOpen(false);
+      } else if (isPbmReceiptModalOpen) {
         setIsPbmReceiptModalOpen(false);
       } else if (isPbmModalOpen) {
         setIsPbmModalOpen(false);
@@ -430,6 +440,17 @@ export default function CounterPage() {
 
           <button
             type="button"
+            data-testid="counter-network-stock-button"
+            title="Consultar Estoque em Outras Lojas da Rede"
+            onClick={() => setIsNetworkStockModalOpen(true)}
+            className="flex items-center bg-emerald-800/90 hover:bg-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-600/50 shadow-sm transition text-white cursor-pointer"
+          >
+            <Building2 className="w-3.5 h-3.5 mr-1.5 text-emerald-300" />
+            <span className="font-semibold">[Rede] Consultar Estoque em Outras Lojas</span>
+          </button>
+
+          <button
+            type="button"
             title="[F9] Novo Atendimento"
             onClick={handleNewOrder}
             className="flex items-center bg-emerald-800/90 hover:bg-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-600/50 shadow-sm transition"
@@ -457,9 +478,20 @@ export default function CounterPage() {
         {/* Alertas de Notificação e Erro */}
         {errorMessage && (
           <div className="p-3 bg-red-50 border border-red-300 rounded-lg text-red-800 text-sm flex items-center justify-between shadow-sm animate-fade-in">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-wrap gap-y-1">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
               <span className="font-medium">{errorMessage}</span>
+              {networkStockProduct && (
+                <button
+                  type="button"
+                  data-testid="error-network-stock-button"
+                  onClick={() => setIsNetworkStockModalOpen(true)}
+                  className="ml-2 inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200 border border-emerald-300 px-2 py-0.5 rounded cursor-pointer transition"
+                >
+                  <Building2 className="w-3 h-3 mr-1 text-emerald-700" />
+                  [Rede] Consultar Estoque em Outras Lojas
+                </button>
+              )}
             </div>
             <button
               type="button"
@@ -655,6 +687,13 @@ export default function CounterPage() {
         isOpen={isPbmReceiptModalOpen}
         onClose={() => setIsPbmReceiptModalOpen(false)}
         protocol={authorizedPbm?.authorizationProtocol || undefined}
+      />
+
+      {/* Modal de Consulta de Estoque em Rede */}
+      <NetworkStockModal
+        isOpen={isNetworkStockModalOpen}
+        onClose={() => setIsNetworkStockModalOpen(false)}
+        product={networkStockProduct}
       />
     </div>
   );

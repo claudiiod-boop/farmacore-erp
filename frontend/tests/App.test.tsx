@@ -45,7 +45,7 @@ describe('App Root Component & Station Router', () => {
 
   it('should render the FarmaCore header and counter terminal title when mode is COUNTER (default)', () => {
     render(<App />);
-    expect(screen.getByText(/FarmaCore/i)).toBeDefined();
+    expect(screen.getAllByText(/FarmaCore/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Terminal de Balcão/i)).toBeDefined();
     expect(screen.getByText(/Posto:\s*Balcão/i)).toBeDefined();
   });

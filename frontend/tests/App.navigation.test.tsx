@@ -50,6 +50,8 @@ describe('App Global Navigation & Station Shortcuts', () => {
     expect(screen.getByRole('button', { name: /\[F2\]\s*Caixa/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /\[F3\]\s*Compras/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /\[F4\]\s*SNGPC/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /\[F7\]\s*Filiais/i })).toBeDefined();
+    expect(screen.getByTestId('store-selector-dropdown')).toBeDefined();
   });
 
   it('should navigate between stations when clicking topbar buttons', async () => {
@@ -89,6 +91,17 @@ describe('App Global Navigation & Station Shortcuts', () => {
     await waitFor(() => {
       expect(screen.getByText(/Frente de Caixa/i)).toBeDefined();
       expect(mockStorage.getItem(STATION_MODE_STORAGE_KEY)).toBe('POS');
+    });
+
+    // Click [F7] Filiais / Rede
+    const storesBtn = screen.getByRole('button', { name: /\[F7\]\s*Filiais/i });
+    await act(async () => {
+      fireEvent.click(storesBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Gestão Multi-Loja & Transferências em Rede/i)).toBeDefined();
+      expect(mockStorage.getItem(STATION_MODE_STORAGE_KEY)).toBe('STORES');
     });
 
     // Click [F1] Balcão
@@ -157,6 +170,23 @@ describe('App Global Navigation & Station Shortcuts', () => {
     await waitFor(() => {
       expect(screen.getByText(/Frente de Caixa/i)).toBeDefined();
       expect(mockStorage.getItem(STATION_MODE_STORAGE_KEY)).toBe('POS');
+    });
+
+    // Press F7
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'F7',
+          code: 'F7',
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Gestão Multi-Loja & Transferências em Rede/i)).toBeDefined();
+      expect(mockStorage.getItem(STATION_MODE_STORAGE_KEY)).toBe('STORES');
     });
 
     // Press F1

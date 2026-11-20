@@ -14,7 +14,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'POS' ||
         stored === 'PURCHASES' ||
         stored === 'SNGPC' ||
-        stored === 'FINANCIAL'
+        stored === 'FINANCIAL' ||
+        stored === 'STORES'
       ) {
         return stored;
       }
@@ -47,6 +48,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isPurchases: mode === 'PURCHASES',
     isSngpc: mode === 'SNGPC',
     isFinancial: mode === 'FINANCIAL',
+    isStores: mode === 'STORES',
   };
 }
 

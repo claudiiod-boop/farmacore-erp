@@ -445,4 +445,18 @@ describe('CounterPage Integration', () => {
       expect(screen.getByText(/Comprovante de Pré-Venda/i)).toBeDefined();
     });
   });
+
+  it('should render the network stock lookup button and open NetworkStockModal when clicked', async () => {
+    vi.spyOn(api, 'getNetworkProductStock').mockResolvedValue([]);
+    render(<CounterPage />);
+
+    const networkBtn = screen.getByTestId('counter-network-stock-button');
+    expect(networkBtn).toBeDefined();
+
+    fireEvent.click(networkBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('network-stock-modal')).toBeDefined();
+    });
+  });
 });

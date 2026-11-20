@@ -37,6 +37,20 @@ import type {
   TefReconciliationSummary,
   DreReport,
   AbcCurveReport,
+  Store,
+  CreateStoreInput,
+  UpdateStoreInput,
+  NetworkStockItem,
+  Transfer,
+  TransferStatus,
+  TransferItem,
+  TransferWithItems,
+  CreateTransferInput,
+  CarrierInfo,
+  ReceiveItemInput,
+  TransferFilters,
+  FiscalTransferResult,
+  TransferSlipResult,
 } from '../types';
 
 export * from '../types/financial';
@@ -1390,6 +1404,237 @@ export const financialApi = {
   getAbcCurveReport,
 };
 
+// ===================== MULTI-STORE & TRANSFERS API =====================
+
+export type {
+  Store,
+  CreateStoreInput,
+  UpdateStoreInput,
+  NetworkStockItem,
+  Transfer,
+  TransferStatus,
+  TransferItem,
+  TransferWithItems,
+  CreateTransferInput,
+  CarrierInfo,
+  ReceiveItemInput,
+  TransferFilters,
+  FiscalTransferResult,
+  TransferSlipResult,
+};
+
+export async function getStores(activeOnly?: boolean): Promise<Store[]> {
+  const base = getBaseUrl();
+  const url = `${base}/api/stores${activeOnly ? '?activeOnly=true' : ''}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao listar lojas: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getStoreById(id: number): Promise<Store> {
+  const base = getBaseUrl();
+  const url = `${base}/api/stores/${id}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao buscar loja #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function createStore(data: CreateStoreInput): Promise<Store> {
+  const base = getBaseUrl();
+  const url = `${base}/api/stores`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao criar loja: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function updateStore(id: number, data: UpdateStoreInput): Promise<Store> {
+  const base = getBaseUrl();
+  const url = `${base}/api/stores/${id}`;
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao atualizar loja #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getNetworkProductStock(productId: number): Promise<NetworkStockItem[]> {
+  const base = getBaseUrl();
+  const url = `${base}/api/stores/network-stock/${productId}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao consultar estoque em rede: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getTransfers(filters?: TransferFilters): Promise<{ transfers: TransferWithItems[]; total: number }> {
+  const base = getBaseUrl();
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  const src = filters?.sourceStoreId ?? (filters as any)?.source_store_id;
+  if (src !== undefined && src !== null) params.append('sourceStoreId', String(src));
+  const tgt = filters?.targetStoreId ?? (filters as any)?.target_store_id;
+  if (tgt !== undefined && tgt !== null) params.append('targetStoreId', String(tgt));
+  const sDate = filters?.startDate ?? (filters as any)?.start_date;
+  if (sDate) params.append('startDate', sDate);
+  const eDate = filters?.endDate ?? (filters as any)?.end_date;
+  if (eDate) params.append('endDate', eDate);
+  if (filters?.limit !== undefined) params.append('limit', String(filters.limit));
+  if (filters?.offset !== undefined) params.append('offset', String(filters.offset));
+
+  const qs = params.toString();
+  const url = `${base}/api/transfers${qs ? `?${qs}` : ''}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao listar transferências: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getTransferById(id: number): Promise<TransferWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/transfers/${id}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao buscar transferência #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function createTransfer(data: CreateTransferInput): Promise<TransferWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/transfers`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao criar transferência: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function dispatchTransfer(
+  id: number,
+  data: { dispatchedBy: string; carrierName?: string; trackingCode?: string }
+): Promise<TransferWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/transfers/${id}/dispatch`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao despachar transferência #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function receiveTransfer(
+  id: number,
+  data: { receivedBy: string; itemsConfirmed?: ReceiveItemInput[] }
+): Promise<TransferWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/transfers/${id}/receive`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao receber transferência #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function cancelTransfer(
+  id: number,
+  data: { reason: string }
+): Promise<TransferWithItems> {
+  const base = getBaseUrl();
+  const url = `${base}/api/transfers/${id}/cancel`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao cancelar transferência #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function getTransferSlip(id: number): Promise<TransferSlipResult> {
+  const base = getBaseUrl();
+  const url = `${base}/api/transfers/${id}/slip`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao buscar romaneio da transferência #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function emitTransferNfe(id: number): Promise<FiscalTransferResult> {
+  const base = getBaseUrl();
+  const url = `${base}/api/transfers/${id}/emit-nfe`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.error || `Falha ao emitir NF-e da transferência #${id}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export const storesApi = {
+  getStores,
+  getStoreById,
+  createStore,
+  updateStore,
+  getNetworkProductStock,
+};
+
+export const transfersApi = {
+  getTransfers,
+  getTransferById,
+  createTransfer,
+  dispatchTransfer,
+  receiveTransfer,
+  cancelTransfer,
+  getTransferSlip,
+  emitTransferNfe,
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -1422,6 +1667,23 @@ export const api = {
   listTefReconciliation,
   getDreReport,
   getAbcCurveReport,
+  getStores,
+  getStoreById,
+  createStore,
+  updateStore,
+  getNetworkProductStock,
+  getTransfers,
+  getTransferById,
+  createTransfer,
+  dispatchTransfer,
+  receiveTransfer,
+  cancelTransfer,
+  getTransferSlip,
+  emitTransferNfe,
+  stores: storesApi,
+  transfers: transfersApi,
+  storesApi,
+  transfersApi,
   purchases: purchasesApi,
   sngpc: sngpcApi,
   pbm: pbmApi,

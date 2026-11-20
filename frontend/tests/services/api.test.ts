@@ -7,6 +7,8 @@ import {
   setBaseUrl,
   purchasesApi,
   sngpcApi,
+  storesApi,
+  transfersApi,
 } from '../../src/services/api';
 
 describe('API Service', () => {
@@ -224,6 +226,74 @@ describe('API Service', () => {
       expect(result.hashXml).toBe('abcdef1234567890');
       expect(result.xmlContent).toBe('<mensagemSNGPC></mensagemSNGPC>');
       expect(result.transmission).toEqual(backendResponse.transmission);
+    });
+  });
+
+  describe('storesApi', () => {
+    it('should query /api/stores and return store list', async () => {
+      const mockStores = [{ id: 1, name: 'Loja Matriz' }];
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockStores,
+      } as unknown as Response);
+
+      const res = await storesApi.getStores();
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/stores');
+      expect(res).toEqual(mockStores);
+    });
+
+    it('should query /api/stores/network-stock/:productId and return network stock', async () => {
+      const mockStock = [{ storeId: 1, storeName: 'Matriz', availableQuantity: 50 }];
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockStock,
+      } as unknown as Response);
+
+      const res = await storesApi.getNetworkProductStock(10);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/stores/network-stock/10');
+      expect(res).toEqual(mockStock);
+    });
+  });
+
+  describe('transfersApi', () => {
+    it('should query /api/transfers and return transfers', async () => {
+      const mockTransfers = { transfers: [{ id: 1, transferNumber: 'TRF-001' }], total: 1 };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockTransfers,
+      } as unknown as Response);
+
+      const res = await transfersApi.getTransfers({ status: 'IN_TRANSIT' });
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/transfers?status=IN_TRANSIT');
+      expect(res).toEqual(mockTransfers);
+    });
+
+    it('should call dispatch transfer endpoint', async () => {
+      const mockDispatched = { id: 1, status: 'IN_TRANSIT' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockDispatched,
+      } as unknown as Response);
+
+      const res = await transfersApi.dispatchTransfer(1, { dispatchedBy: 'Operador' });
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/transfers/1/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dispatchedBy: 'Operador' }),
+      });
+      expect(res).toEqual(mockDispatched);
+    });
+
+    it('should query transfer slip endpoint', async () => {
+      const mockSlip = { textSlip: 'Romaneio', fullEscPos: '...' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSlip,
+      } as unknown as Response);
+
+      const res = await transfersApi.getTransferSlip(1);
+      expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/transfers/1/slip');
+      expect(res).toEqual(mockSlip);
     });
   });
 });

@@ -85,6 +85,16 @@ describe('useStationMode Hook', () => {
     expect(mockStorage.getItem(STATION_MODE_STORAGE_KEY)).toBe('COUNTER');
   });
 
+  it('should support STORES mode and persist to localStorage', () => {
+    mockStorage.setItem(STATION_MODE_STORAGE_KEY, 'STORES');
+
+    const { result } = renderHook(() => useStationMode());
+
+    expect(result.current.mode).toBe('STORES');
+    expect(result.current.isStores).toBe(true);
+    expect(result.current.isCounter).toBe(false);
+  });
+
   it('should fallback to default if stored value is invalid', () => {
     mockStorage.setItem(STATION_MODE_STORAGE_KEY, 'INVALID_VALUE');
 
