@@ -28,6 +28,7 @@ import { registerInventoryRoutes } from '../modules/inventory/audit.routes';
 import { registerCreditRoutes } from '../modules/credit/credit.routes';
 import { registerCrmRoutes } from '../modules/crm/crm.routes';
 import { registerDeliveryRoutes } from '../modules/delivery/delivery.routes';
+import { registerSanitaryRoutes } from '../modules/sanitary/sanitary.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2014,4 +2015,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== DELIVERY, ENTREGADORES & ROMANEIOS =====================
   registerDeliveryRoutes(app, db);
+
+  // ===================== VALIDADES, RECALL ANVISA & LAUDO VISA =====================
+  registerSanitaryRoutes(app, db);
 }
