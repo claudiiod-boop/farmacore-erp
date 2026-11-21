@@ -38,11 +38,11 @@
   - Índices de performance para busca por validade, resolução, lote e loja.
   - Tipos TypeScript em `src/modules/sanitary/types.ts`.
 
-- [ ] **Step 1: Escrever testes que falham para o Schema 013 e Tipos**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `013_expiry_recall_loss_management.sql` e `types.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para o Schema 013 e Tipos**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `013_expiry_recall_loss_management.sql` e `types.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -62,11 +62,11 @@
   - `suggestActionForBatch(batch: BatchDetails, supplierReturnDays?: number): BatchActionSuggestion`
     - Sugestão de ação baseada no tempo até o vencimento (`DISPOSE`, `PROMOTION`, `RETURN_TO_SUPPLIER`, `NORMAL`).
 
-- [ ] **Step 1: Escrever testes que falham para `expiry-management.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/sanitary/expiry-management.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `expiry-management.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/sanitary/expiry-management.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -88,11 +88,11 @@
     - Atualização para `COMPLETED` com registro do destino final (devolução ao fabricante ou incineração).
   - `listRecalls(filters?: RecallFilters): AnvisaRecallWithItems[]`
 
-- [ ] **Step 1: Escrever testes que falham para `anvisa-recall.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/sanitary/anvisa-recall.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `anvisa-recall.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/sanitary/anvisa-recall.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -116,11 +116,11 @@
   - `getLossById(id: number): InventoryLossWithItems | null`
   - `listLosses(filters?: LossFilters): InventoryLossWithItems[]`
 
-- [ ] **Step 1: Escrever testes que falham para `inventory-loss.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/sanitary/inventory-loss.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `inventory-loss.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/sanitary/inventory-loss.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -153,11 +153,11 @@
     - `/api/sanitary/losses/:id/disposal` (POST)
     - `/api/sanitary/losses/:id/laudo` (GET)
 
-- [ ] **Step 1: Escrever testes que falham para os formatadores e rotas sanitárias**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar formatadores e rotas Fastify**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para os formatadores e rotas sanitárias**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar formatadores e rotas Fastify**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -177,17 +177,17 @@
   - Aba 2: Recall Sanitário Anvisa com cadastro de resolução, lista de lotes bloqueados e modal de pacientes afetados (rastreabilidade reversa).
   - Aba 3: Baixas por Perdas e Descarte Sanitário com criação de baixa, aprovação atômica, registro de MTR/empresa de incineração e emissão de Laudo VISA.
 
-- [ ] **Step 1: Escrever testes que falham para `SanitaryPage.tsx`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar tipos, chamadas de API, página React e atalho F12**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `SanitaryPage.tsx`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar tipos, chamadas de API, página React e atalho F12**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
 ### Task 7: Auditoria Completa de Integração & Homologação Final da Fase 14
 
-- [ ] **Step 1: Executar suite completa de testes backend e frontend (`npm.cmd test`)**
-- [ ] **Step 2: Validar tipagem TypeScript (`npx.cmd tsc --noEmit` e `frontend/tsconfig.json`)**
-- [ ] **Step 3: Executar build de produção do frontend (`npm.cmd run build:web`)**
-- [ ] **Step 4: Commit de finalização e instruções de push para `origin/master`**
+- [x] **Step 1: Executar suite completa de testes backend e frontend (`npm.cmd test`)**
+- [x] **Step 2: Validar tipagem TypeScript (`npx.cmd tsc --noEmit` e `frontend/tsconfig.json`)**
+- [x] **Step 3: Executar build de produção do frontend (`npm.cmd run build:web`)**
+- [x] **Step 4: Commit de finalização e instruções de push para `origin/master`**

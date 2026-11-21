@@ -2863,7 +2863,7 @@ export const sanitaryApi = {
   },
 };
 
-const api = {
+export const api = {
   setBaseUrl,
   getBaseUrl,
   searchProducts,

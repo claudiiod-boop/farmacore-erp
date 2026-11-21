@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../contexts/StoreContext';
 import {
   Calendar,
@@ -9,7 +9,6 @@ import {
   Printer,
   Plus,
   CheckCircle2,
-  Trash2,
   RefreshCw,
   X,
   Phone,
@@ -38,8 +37,8 @@ export const SanitaryPage: React.FC<SanitaryPageProps> = ({ currentStoreId: prop
   let contextStoreId = 1;
   try {
     const storeCtx = useStore();
-    if (storeCtx && storeCtx.selectedStoreId) {
-      contextStoreId = storeCtx.selectedStoreId;
+    if (storeCtx && storeCtx.currentStore && storeCtx.currentStore.id) {
+      contextStoreId = storeCtx.currentStore.id;
     }
   } catch {
     // context not available, fallback
@@ -288,8 +287,15 @@ export const SanitaryPage: React.FC<SanitaryPageProps> = ({ currentStoreId: prop
             </h1>
             <p className="text-xs text-slate-400">
               Painel 30/60/90 Dias, Recall Compulsório Anvisa (RDC 658) e Baixas de Perdas com Laudo VISA (RDC 306)
+              {totalBatches > 0 && <span className="ml-2 text-slate-300 font-medium">({totalBatches} lotes monitorados)</span>}
             </p>
           </div>
+          {loading && (
+            <div className="flex items-center text-xs text-rose-400 gap-1.5 ml-4 font-semibold animate-pulse">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <span>Carregando...</span>
+            </div>
+          )}
         </div>
 
         {/* Global Tab Navigation */}
@@ -1154,6 +1160,17 @@ const NewRecallModal: React.FC<NewRecallModalProps> = ({ onClose, onSuccess }) =
               />
             </div>
 
+            <div>
+              <label className="block font-semibold text-slate-300 mb-1">Observações Adicionais</label>
+              <input
+                type="text"
+                placeholder="Ex: Publicado no DOU Seção 1..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+              />
+            </div>
+
             <div className="border-t border-slate-800 pt-3">
               <label className="block font-bold text-slate-300 mb-2">Lote a Interditar *</label>
               <div className="grid grid-cols-2 gap-3">
@@ -1442,6 +1459,54 @@ const NewLossModal: React.FC<NewLossModalProps> = ({ storeId, onClose, onSuccess
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mt-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Validade</label>
+                  <input
+                    type="date"
+                    value={expirationDate}
+                    onChange={(e) => setExpirationDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Custo Unit (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={unitCost}
+                    onChange={(e) => setUnitCost(Number(e.target.value))}
+                    min={0}
+                    required
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Preço Venda (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={unitSalePrice}
+                    onChange={(e) => setUnitSalePrice(Number(e.target.value))}
+                    min={0}
+                    required
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <label className="block text-slate-400 mb-1">Observações da Ocorrência</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Segregado na gaveta de avarias..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                />
               </div>
             </div>
           </div>
