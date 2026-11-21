@@ -296,7 +296,7 @@ describe('Credit REST API Routes (/api/credit/*)', () => {
         url: `/api/credit/agreements/${agreement.id}/invoices`,
         payload: {
           startDate: '2026-10-21',
-          endDate: '2026-11-20',
+          endDate: '2026-12-31',
           dueDate: '2026-12-05',
           notes: 'Fatura Mensal Ref 11/2026',
         },

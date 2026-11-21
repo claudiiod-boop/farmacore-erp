@@ -7,7 +7,8 @@ export type StationMode =
   | 'STORES'
   | 'INVENTORY'
   | 'CREDIT'
-  | 'CRM';
+  | 'CRM'
+  | 'DELIVERY';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -23,6 +24,7 @@ export * from './transfers';
 export * from './inventory';
 export * from './credit';
 export * from './crm';
+export * from './delivery';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';

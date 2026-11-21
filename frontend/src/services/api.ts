@@ -92,11 +92,34 @@ import type {
   UpcomingRefillItem,
   CashbackStatementReceiptResult,
   TreatmentSlipReceiptResult,
+  DeliveryOrder,
+  CreateDeliveryOrderInput,
+  UpdateOrderStatusInput,
+  DeliveryOrderFilters,
+  Courier,
+  CreateCourierInput,
+  UpdateCourierInput,
+  CourierFilters,
+  CourierStatus,
+  DeliveryZone,
+  CreateDeliveryZoneInput,
+  UpdateDeliveryZoneInput,
+  CalculateFeeInput,
+  CalculateFeeResult,
+  DeliveryDispatch,
+  DeliveryDispatchWithOrders,
+  CreateDispatchInput,
+  SettleDispatchParams,
+  SettlementResult,
+  OrderSlipResponse,
+  DispatchSlipResponse,
+  DispatchStatus,
 } from '../types';
 
 export * from '../types/financial';
 export * from '../types/credit';
 export * from '../types/crm';
+export * from '../types/delivery';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -2336,6 +2359,302 @@ export const crmApi = {
   },
 };
 
+export const deliveryApi = {
+  // Pedidos
+  getOrders: async (filters?: DeliveryOrderFilters): Promise<DeliveryOrder[]> => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters?.storeId) params.append('storeId', String(filters.storeId));
+    if (filters?.courierId) params.append('courierId', String(filters.courierId));
+    if (filters?.customerId) params.append('customerId', String(filters.customerId));
+    if (filters?.paymentMethod) params.append('paymentMethod', filters.paymentMethod);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.limit) params.append('limit', String(filters.limit));
+    if (filters?.offset) params.append('offset', String(filters.offset));
+    if (filters?.status) {
+      if (Array.isArray(filters.status)) {
+        filters.status.forEach((s) => params.append('status', s));
+      } else {
+        params.append('status', filters.status);
+      }
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/delivery/orders${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar pedidos de tele-entrega');
+    }
+    return res.json();
+  },
+
+  getOrderById: async (id: number): Promise<DeliveryOrder> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/orders/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao buscar pedido #${id}`);
+    }
+    return res.json();
+  },
+
+  createOrder: async (data: CreateDeliveryOrderInput): Promise<DeliveryOrder> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar pedido de tele-entrega');
+    }
+    return res.json();
+  },
+
+  updateOrderStatus: async (id: number, data: UpdateOrderStatusInput): Promise<DeliveryOrder> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao atualizar status do pedido #${id}`);
+    }
+    return res.json();
+  },
+
+  cancelOrder: async (id: number, reason?: string): Promise<DeliveryOrder> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/orders/${id}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao cancelar pedido #${id}`);
+    }
+    return res.json();
+  },
+
+  getOrderSlip: async (id: number): Promise<OrderSlipResponse> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/orders/${id}/slip`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao obter etiqueta do pedido #${id}`);
+    }
+    return res.json();
+  },
+
+  // Entregadores
+  getCouriers: async (filters?: CourierFilters): Promise<Courier[]> => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters?.storeId) params.append('storeId', String(filters.storeId));
+    if (filters?.activeOnly !== undefined) params.append('activeOnly', String(filters.activeOnly));
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.vehicleType) params.append('vehicleType', filters.vehicleType);
+    if (filters?.search) params.append('search', filters.search);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/delivery/couriers${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar entregadores');
+    }
+    return res.json();
+  },
+
+  getCourierById: async (id: number): Promise<Courier> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/couriers/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao buscar entregador #${id}`);
+    }
+    return res.json();
+  },
+
+  createCourier: async (data: CreateCourierInput): Promise<Courier> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/couriers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar entregador');
+    }
+    return res.json();
+  },
+
+  updateCourier: async (id: number, data: UpdateCourierInput): Promise<Courier> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/couriers/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao atualizar entregador #${id}`);
+    }
+    return res.json();
+  },
+
+  updateCourierStatus: async (id: number, status: CourierStatus): Promise<Courier> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/couriers/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao atualizar status do entregador #${id}`);
+    }
+    return res.json();
+  },
+
+  // Zonas
+  getZones: async (storeId?: number, activeOnly?: boolean): Promise<DeliveryZone[]> => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (activeOnly !== undefined) params.append('activeOnly', String(activeOnly));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/delivery/zones${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar zonas de entrega');
+    }
+    return res.json();
+  },
+
+  createZone: async (data: CreateDeliveryZoneInput): Promise<DeliveryZone> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/zones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar zona de entrega');
+    }
+    return res.json();
+  },
+
+  updateZone: async (id: number, data: UpdateDeliveryZoneInput): Promise<DeliveryZone> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/zones/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao atualizar zona de entrega #${id}`);
+    }
+    return res.json();
+  },
+
+  deleteZone: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/zones/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao excluir zona de entrega #${id}`);
+    }
+    return res.json();
+  },
+
+  calculateDeliveryFee: async (data: CalculateFeeInput): Promise<CalculateFeeResult> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/zones/calculate-fee`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao calcular taxa de entrega');
+    }
+    return res.json();
+  },
+
+  // Despachos & Acertos
+  getDispatches: async (filters?: { storeId?: number; courierId?: number; status?: DispatchStatus }): Promise<DeliveryDispatch[]> => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters?.storeId) params.append('storeId', String(filters.storeId));
+    if (filters?.courierId) params.append('courierId', String(filters.courierId));
+    if (filters?.status) params.append('status', filters.status);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/delivery/dispatches${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar romaneios de despacho');
+    }
+    return res.json();
+  },
+
+  getDispatchById: async (id: number): Promise<DeliveryDispatchWithOrders> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/dispatches/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao buscar romaneio #${id}`);
+    }
+    return res.json();
+  },
+
+  createDispatch: async (data: CreateDispatchInput): Promise<DeliveryDispatchWithOrders> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/dispatches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar romaneio de despacho');
+    }
+    return res.json();
+  },
+
+  getDispatchSlip: async (id: number): Promise<DispatchSlipResponse> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/dispatches/${id}/slip`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao obter comprovante do romaneio #${id}`);
+    }
+    return res.json();
+  },
+
+  settleDispatch: async (id: number, data: SettleDispatchParams): Promise<SettlementResult> => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/delivery/dispatches/${id}/settle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao liquidar romaneio #${id}`);
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -2410,6 +2729,8 @@ export const api = {
   creditApi,
   crm: crmApi,
   crmApi,
+  delivery: deliveryApi,
+  deliveryApi,
 };
 
 export default api;
