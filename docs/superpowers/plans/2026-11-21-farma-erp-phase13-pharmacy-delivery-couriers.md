@@ -38,11 +38,11 @@
   - Índices de performance para busca por status, entregador, despacho, cliente e bairros.
   - Tipos TypeScript em `src/modules/delivery/types.ts`.
 
-- [ ] **Step 1: Escrever testes que falham para o Schema 012 e Tipos**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `012_delivery_couriers_dispatches.sql` e `types.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para o Schema 012 e Tipos**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `012_delivery_couriers_dispatches.sql` e `types.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -66,11 +66,11 @@
   - `listDeliveryOrders(filters?: DeliveryOrderFilters): { orders: DeliveryOrderWithItems[]; total: number }`
   - `cancelDeliveryOrder(id: number, reason: string): DeliveryOrderWithItems`
 
-- [ ] **Step 1: Escrever testes que falham para `delivery-order.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/delivery/delivery-order.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `delivery-order.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/delivery/delivery-order.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -91,11 +91,11 @@
   - `listDeliveryZones(storeId?: number): DeliveryZone[]`
   - `calculateDeliveryFee(neighborhood: string, city: string, subtotal: number, storeId?: number): { fee: number; estimatedMinutes: number; isFree: boolean }`
 
-- [ ] **Step 1: Escrever testes que falham para `courier.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/delivery/courier.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `courier.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/delivery/courier.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -125,11 +125,11 @@
   - `getDispatchById(id: number): DeliveryDispatchWithOrders | null`
   - `listDispatches(filters?: DispatchFilters): DeliveryDispatchWithOrders[]`
 
-- [ ] **Step 1: Escrever testes que falham para `delivery-settlement.service.ts`**
-- [ ] **Step 2: Executar teste para verificar que falha**
-- [ ] **Step 3: Implementar `src/modules/delivery/delivery-settlement.service.ts`**
-- [ ] **Step 4: Executar teste para verificar que passa**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para `delivery-settlement.service.ts`**
+- [x] **Step 2: Executar teste para verificar que falha**
+- [x] **Step 3: Implementar `src/modules/delivery/delivery-settlement.service.ts`**
+- [x] **Step 4: Executar teste para verificar que passa**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -159,11 +159,11 @@
     - `/api/delivery/dispatches/:id/slip` (GET)
     - `/api/delivery/dispatches/:id/settle` (POST)
 
-- [ ] **Step 1: Escrever testes que falham para formatadores e rotas Fastify**
-- [ ] **Step 2: Executar teste para verificar que falham**
-- [ ] **Step 3: Implementar formatadores e rotas, conectar a `src/api/routes.ts`**
-- [ ] **Step 4: Executar teste para verificar que passam**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes que falham para formatadores e rotas Fastify**
+- [x] **Step 2: Executar teste para verificar que falham**
+- [x] **Step 3: Implementar formatadores e rotas, conectar a `src/api/routes.ts`**
+- [x] **Step 4: Executar teste para verificar que passam**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -192,11 +192,11 @@
     4. *Gestão de Entregadores & Zonas*: Cadastro de motoboys e tabela de taxas por bairro com frete grátis.
   - Modais operacionais com impressão de comprovantes térmicos.
 
-- [ ] **Step 1: Escrever testes para a página Delivery e modais**
-- [ ] **Step 2: Executar teste para verificar que falham**
-- [ ] **Step 3: Implementar tipos, API adapter, componentes React e integração App**
-- [ ] **Step 4: Executar teste para verificar que passam e checar TypeScript frontend**
-- [ ] **Step 5: Git commit com mensagem semântica**
+- [x] **Step 1: Escrever testes para a página Delivery e modais**
+- [x] **Step 2: Executar teste para verificar que falham**
+- [x] **Step 3: Implementar tipos, API adapter, componentes React e integração App**
+- [x] **Step 4: Executar teste para verificar que passam e checar TypeScript frontend**
+- [x] **Step 5: Git commit com mensagem semântica**
 
 ---
 
@@ -208,6 +208,8 @@
 - Verify: `npx.cmd tsc -p frontend/tsconfig.json --noEmit` (frontend)
 - Verify: `npm.cmd run build:web` (produção frontend)
 
-- [ ] **Step 1: Rodar auditoria completa de testes e checagem de tipos**
+- [x] **Step 1: Rodar auditoria completa de testes e checagem de tipos**
+- [x] **Step 2: Verificar integridade de ponta a ponta e build de produção**
+- [x] **Step 3: Despachar revisor da branch inteira e homologar**
 - [ ] **Step 2: Verificar integridade de ponta a ponta e build de produção**
 - [ ] **Step 3: Despachar revisor da branch inteira e homologar**
