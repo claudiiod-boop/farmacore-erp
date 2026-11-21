@@ -27,6 +27,7 @@ import { registerTransferRoutes } from '../modules/transfers/transfer.routes';
 import { registerInventoryRoutes } from '../modules/inventory/audit.routes';
 import { registerCreditRoutes } from '../modules/credit/credit.routes';
 import { registerCrmRoutes } from '../modules/crm/crm.routes';
+import { registerDeliveryRoutes } from '../modules/delivery/delivery.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2010,4 +2011,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== CRM, FIDELIDADE & PROMOÇÕES =====================
   registerCrmRoutes(app, db);
+
+  // ===================== DELIVERY, ENTREGADORES & ROMANEIOS =====================
+  registerDeliveryRoutes(app, db);
 }
