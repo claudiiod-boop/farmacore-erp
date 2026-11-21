@@ -8,7 +8,8 @@ export type StationMode =
   | 'INVENTORY'
   | 'CREDIT'
   | 'CRM'
-  | 'DELIVERY';
+  | 'DELIVERY'
+  | 'SANITARY';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'

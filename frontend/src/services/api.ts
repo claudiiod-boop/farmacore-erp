@@ -120,6 +120,7 @@ export * from '../types/financial';
 export * from '../types/credit';
 export * from '../types/crm';
 export * from '../types/delivery';
+export * from '../types/sanitary';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -2655,7 +2656,214 @@ export const deliveryApi = {
   },
 };
 
-export const api = {
+// ============================================================================
+// VIGILÂNCIA SANITÁRIA, VALIDADES & RECALL ANVISA (FASE 14)
+// ============================================================================
+
+export const sanitaryApi = {
+  // 1. Validades Preditivas
+  getExpiryMatrix: async (storeId?: number, referenceDate?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (referenceDate) params.append('referenceDate', referenceDate);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/sanitary/expiry/matrix${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar matriz de validades');
+    }
+    return res.json();
+  },
+
+  getExpiringBatches: async (filters: any = {}) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters.storeId) params.append('storeId', String(filters.storeId));
+    if (filters.category) params.append('category', filters.category);
+    if (filters.maxDays !== undefined) params.append('maxDays', String(filters.maxDays));
+    if (filters.search) params.append('search', filters.search);
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.limit) params.append('limit', String(filters.limit));
+    if (filters.referenceDate) params.append('referenceDate', filters.referenceDate);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/sanitary/expiry/batches${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar lotes a vencer');
+    }
+    return res.json();
+  },
+
+  getExpiryAuditSlip: async (storeId?: number, category?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (category) params.append('category', category);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/sanitary/expiry/audit-slip${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir lista de conferência');
+    }
+    return res.json();
+  },
+
+  // 2. Recall Sanitário Anvisa
+  getRecalls: async (filters: { status?: string; search?: string } = {}) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.search) params.append('search', filters.search);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/sanitary/recalls${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar recalls sanitários');
+    }
+    return res.json();
+  },
+
+  getRecallById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/recalls/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao buscar recall #${id}`);
+    }
+    return res.json();
+  },
+
+  registerRecall: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/recalls`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar recall sanitário');
+    }
+    return res.json();
+  },
+
+  getAffectedPatients: async (recallId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/recalls/${recallId}/patients`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar pacientes afetados');
+    }
+    return res.json();
+  },
+
+  resolveRecall: async (recallId: number, data: { actionTaken: string; notes?: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/recalls/${recallId}/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao concluir recall sanitário');
+    }
+    return res.json();
+  },
+
+  getRecallPatientReport: async (recallId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/recalls/${recallId}/patient-report`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir relatório de pacientes');
+    }
+    return res.json();
+  },
+
+  // 3. Baixas de Perdas & Laudo VISA
+  getLosses: async (filters: any = {}) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters.storeId) params.append('storeId', String(filters.storeId));
+    if (filters.reason) params.append('reason', filters.reason);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.startDate) params.append('startDate', filters.startDate);
+    if (filters.endDate) params.append('endDate', filters.endDate);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/sanitary/losses${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar baixas de estoque');
+    }
+    return res.json();
+  },
+
+  getLossById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/losses/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || `Falha ao buscar baixa #${id}`);
+    }
+    return res.json();
+  },
+
+  createLossDraft: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/losses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar rascunho de baixa');
+    }
+    return res.json();
+  },
+
+  approveLoss: async (id: number, data: any = {}) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/losses/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao aprovar baixa de perda');
+    }
+    return res.json();
+  },
+
+  recordDisposalCertificate: async (id: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/losses/${id}/disposal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar certificado de descarte');
+    }
+    return res.json();
+  },
+
+  getLossLaudo: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/losses/${id}/laudo`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir laudo sanitário');
+    }
+    return res.json();
+  },
+};
+
+const api = {
   setBaseUrl,
   getBaseUrl,
   searchProducts,
@@ -2731,6 +2939,8 @@ export const api = {
   crmApi,
   delivery: deliveryApi,
   deliveryApi,
+  sanitary: sanitaryApi,
+  sanitaryApi,
 };
 
 export default api;
