@@ -3099,6 +3099,102 @@ export const cashFlowApi = {
   },
 };
 
+export const spedApi = {
+  getParameters: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sped/parameters/${storeId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar parâmetros contábeis');
+    }
+    return res.json();
+  },
+
+  saveParameters: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sped/parameters`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao salvar dados contábeis');
+    }
+    return res.json();
+  },
+
+  runAudit: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sped/audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao executar auditoria fiscal');
+    }
+    return res.json();
+  },
+
+  getInventory: async (storeId = 1, date?: string) => {
+    const base = getBaseUrl();
+    const query = date ? `?storeId=${storeId}&date=${encodeURIComponent(date)}` : `?storeId=${storeId}`;
+    const res = await fetch(`${base}/api/sped/inventory${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar inventário Bloco H');
+    }
+    return res.json();
+  },
+
+  generate: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sped/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao gerar arquivo fiscal');
+    }
+    return res.json();
+  },
+
+  getHistory: async (storeId = 1, type?: string) => {
+    const base = getBaseUrl();
+    const query = type ? `?storeId=${storeId}&type=${encodeURIComponent(type)}` : `?storeId=${storeId}`;
+    const res = await fetch(`${base}/api/sped/history${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter histórico fiscal');
+    }
+    return res.json();
+  },
+
+  getGeneration: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sped/generations/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar geração fiscal');
+    }
+    return res.json();
+  },
+
+  printSlip: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sped/print/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir comprovante térmico fiscal');
+    }
+    return res.json();
+  }
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -3183,6 +3279,8 @@ export const api = {
   bankReconciliationApi,
   cashFlow: cashFlowApi,
   cashFlowApi,
+  sped: spedApi,
+  spedApi,
 };
 
 export default api;

@@ -11,7 +11,8 @@ export type StationMode =
   | 'DELIVERY'
   | 'SANITARY'
   | 'CARD_RECONCILIATION'
-  | 'BANK_RECONCILIATION';
+  | 'BANK_RECONCILIATION'
+  | 'SPED_FISCAL';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -28,6 +29,7 @@ export * from './inventory';
 export * from './credit';
 export * from './crm';
 export * from './delivery';
+export * from './sped';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';

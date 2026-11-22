@@ -22,7 +22,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'DELIVERY' ||
         stored === 'SANITARY' ||
         stored === 'CARD_RECONCILIATION' ||
-        stored === 'BANK_RECONCILIATION'
+        stored === 'BANK_RECONCILIATION' ||
+        stored === 'SPED_FISCAL'
       ) {
         return stored;
       }
@@ -63,6 +64,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isSanitary: mode === 'SANITARY',
     isCardReconciliation: mode === 'CARD_RECONCILIATION',
     isBankReconciliation: mode === 'BANK_RECONCILIATION',
+    isSpedFiscal: mode === 'SPED_FISCAL',
   };
 }
 
