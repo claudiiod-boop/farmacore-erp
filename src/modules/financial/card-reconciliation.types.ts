@@ -107,6 +107,8 @@ export interface CreateContractInput {
   notes?: string;
 }
 
+export type CreateAcquirerContractInput = CreateContractInput;
+
 export interface UpdateContractInput {
   merchantCode?: string;
   defaultBankName?: string;
