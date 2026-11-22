@@ -31,6 +31,7 @@ import { registerDeliveryRoutes } from '../modules/delivery/delivery.routes';
 import { registerSanitaryRoutes } from '../modules/sanitary/sanitary.routes';
 import { registerCardReconciliationRoutes } from '../modules/financial/card-reconciliation.routes';
 import { registerBankReconciliationRoutes } from '../modules/financial/bank-reconciliation.routes';
+import { registerSpedRoutes } from '../modules/fiscal/sped.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2026,4 +2027,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== CONCILIAÇÃO BANCÁRIA OFX & FLUXO DE CAIXA =====================
   registerBankReconciliationRoutes(app, db);
+
+  // ===================== SPED FISCAL EFD ICMS/IPI, SINTEGRA & BLOCO H =====================
+  registerSpedRoutes(app, db);
 }
