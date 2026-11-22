@@ -29,6 +29,7 @@ import { registerCreditRoutes } from '../modules/credit/credit.routes';
 import { registerCrmRoutes } from '../modules/crm/crm.routes';
 import { registerDeliveryRoutes } from '../modules/delivery/delivery.routes';
 import { registerSanitaryRoutes } from '../modules/sanitary/sanitary.routes';
+import { registerCardReconciliationRoutes } from '../modules/financial/card-reconciliation.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2018,4 +2019,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== VALIDADES, RECALL ANVISA & LAUDO VISA =====================
   registerSanitaryRoutes(app, db);
+
+  // ===================== CONCILIAÇÃO DE CARTÕES, RECEBÍVEIS & TAXAS MDR =====================
+  registerCardReconciliationRoutes(app, db);
 }
