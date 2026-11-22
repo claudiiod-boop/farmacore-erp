@@ -9,7 +9,10 @@ import {
   CreateAcquirerContractInput,
   CreateFeeRuleInput,
   ImportStatementInput,
-  ReconciliationStatus
+  ReconciliationStatus,
+  ReceivablesCalendarDay,
+  DivergenceReport,
+  DivergenceItem
 } from './card-reconciliation.types';
 import { CardFeeCalculatorService } from './card-fee-calculator.service';
 
@@ -407,6 +410,144 @@ export class CardReconciliationService {
     return {
       batch: this.mapBatchRow(batchRow),
       entries: entryRows.map(r => this.mapEntryRow(r))
+    };
+  }
+
+  /**
+   * Retorna o calendário consolidado de recebíveis dia a dia por adquirente.
+   */
+  static async getReceivablesCalendar(
+    db: Database,
+    storeId: number,
+    startDate: string,
+    endDate: string
+  ): Promise<ReceivablesCalendarDay[]> {
+    const rows = db.prepare(`
+      SELECT 
+        e.settlement_date,
+        COALESCE(c.acquirer_name, 'OUTROS') AS acquirer_name,
+        e.gross_amount,
+        e.charged_fee_amount,
+        e.net_amount
+      FROM card_settlement_entries e
+      JOIN card_reconciliation_batches b ON b.id = e.batch_id
+      LEFT JOIN acquirer_contracts c ON c.id = b.acquirer_contract_id
+      WHERE b.store_id = ? AND e.settlement_date >= ? AND e.settlement_date <= ?
+      ORDER BY e.settlement_date ASC
+    `).all(storeId, startDate, endDate) as any[];
+
+    const daysMap = new Map<string, ReceivablesCalendarDay>();
+
+    for (const r of rows) {
+      let day = daysMap.get(r.settlement_date);
+      if (!day) {
+        day = {
+          date: r.settlement_date,
+          totalGross: 0,
+          totalFee: 0,
+          totalNet: 0,
+          transactionCount: 0,
+          byAcquirer: {}
+        };
+        daysMap.set(r.settlement_date, day);
+      }
+
+      day.totalGross = Math.round((day.totalGross + r.gross_amount) * 100) / 100;
+      day.totalFee = Math.round((day.totalFee + r.charged_fee_amount) * 100) / 100;
+      day.totalNet = Math.round((day.totalNet + r.net_amount) * 100) / 100;
+      day.transactionCount++;
+
+      const acq = r.acquirer_name;
+      if (!day.byAcquirer[acq]) {
+        day.byAcquirer[acq] = { gross: 0, net: 0, count: 0 };
+      }
+      day.byAcquirer[acq].gross = Math.round((day.byAcquirer[acq].gross + r.gross_amount) * 100) / 100;
+      day.byAcquirer[acq].net = Math.round((day.byAcquirer[acq].net + r.net_amount) * 100) / 100;
+      day.byAcquirer[acq].count++;
+    }
+
+    return Array.from(daysMap.values());
+  }
+
+  /**
+   * Gera relatório detalhado de cobranças indevidas / divergências de taxa MDR para contestação.
+   */
+  static async getDivergenceReport(
+    db: Database,
+    storeId: number,
+    options?: { startDate?: string; endDate?: string; status?: ReconciliationStatus }
+  ): Promise<DivergenceReport> {
+    let sql = `
+      SELECT 
+        e.id,
+        e.batch_id,
+        b.batch_code,
+        e.nsu,
+        e.authorization_code,
+        e.transaction_date,
+        e.settlement_date,
+        COALESCE(c.acquirer_name, 'OUTROS') AS acquirer_name,
+        e.brand_name,
+        e.gross_amount,
+        e.charged_mdr_rate,
+        COALESCE(e.contract_mdr_rate, 0.0) AS contract_mdr_rate,
+        e.charged_fee_amount,
+        COALESCE(e.expected_fee_amount, 0.0) AS expected_fee_amount,
+        e.divergence_amount
+      FROM card_settlement_entries e
+      JOIN card_reconciliation_batches b ON b.id = e.batch_id
+      LEFT JOIN acquirer_contracts c ON c.id = b.acquirer_contract_id
+      WHERE b.store_id = ?
+    `;
+
+    const params: any[] = [storeId];
+
+    if (options?.status) {
+      sql += ` AND e.reconciliation_status = ?`;
+      params.push(options.status);
+    } else {
+      sql += ` AND e.reconciliation_status = 'DIVERGENT_FEE'`;
+    }
+
+    if (options?.startDate) {
+      sql += ` AND e.settlement_date >= ?`;
+      params.push(options.startDate);
+    }
+    if (options?.endDate) {
+      sql += ` AND e.settlement_date <= ?`;
+      params.push(options.endDate);
+    }
+
+    sql += ` ORDER BY e.settlement_date DESC, e.id DESC`;
+
+    const rows = db.prepare(sql).all(...params) as any[];
+
+    let totalOvercharged = 0;
+    const items: DivergenceItem[] = rows.map(r => {
+      totalOvercharged = Math.round((totalOvercharged + r.divergence_amount) * 100) / 100;
+      return {
+        id: r.id,
+        batchId: r.batch_id,
+        batchCode: r.batch_code,
+        nsu: r.nsu,
+        authorizationCode: r.authorization_code,
+        transactionDate: r.transaction_date,
+        settlementDate: r.settlement_date,
+        acquirerName: r.acquirer_name,
+        brandName: r.brand_name,
+        grossAmount: r.gross_amount,
+        chargedMdrRate: r.charged_mdr_rate,
+        contractMdrRate: r.contract_mdr_rate,
+        chargedFeeAmount: r.charged_fee_amount,
+        expectedFeeAmount: r.expected_fee_amount,
+        divergenceAmount: r.divergence_amount
+      };
+    });
+
+    return {
+      totalDivergentCount: items.length,
+      totalOverchargedAmount: totalOvercharged,
+      items
     };
   }
 
