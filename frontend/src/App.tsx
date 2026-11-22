@@ -10,6 +10,7 @@ import CustomerCreditPage from './pages/CustomerCreditPage';
 import CrmPage from './pages/CrmPage';
 import DeliveryPage from './pages/DeliveryPage';
 import { SanitaryPage } from './pages/SanitaryPage';
+import CardReconciliationPage from './pages/CardReconciliationPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -27,10 +28,11 @@ import {
   Users,
   Sparkles,
   Bike,
+  CreditCard,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -352,6 +354,20 @@ function AppContent() {
               <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
               <span>[F12] Validades & VISA</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-card-reconciliation-button"
+              onClick={() => setMode('CARD_RECONCILIATION')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isCardReconciliation
+                  ? 'bg-indigo-950 text-indigo-300 border-indigo-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <CreditCard className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Conciliação Cartões / MDR</span>
+            </button>
           </nav>
         </div>
 
@@ -416,6 +432,7 @@ function AppContent() {
         {isCrm && <CrmPage />}
         {isDelivery && <DeliveryPage />}
         {isSanitary && <SanitaryPage />}
+        {isCardReconciliation && <CardReconciliationPage />}
       </div>
 
       {/* Global PBM Modal */}

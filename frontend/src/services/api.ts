@@ -121,6 +121,7 @@ export * from '../types/credit';
 export * from '../types/crm';
 export * from '../types/delivery';
 export * from '../types/sanitary';
+export * from '../types/card-reconciliation';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -2863,6 +2864,140 @@ export const sanitaryApi = {
   },
 };
 
+// ============================================================================
+// CONCILIAÇÃO DE CARTÕES, RECEBÍVEIS & TAXAS MDR (FASE 15)
+// ============================================================================
+
+export const cardReconciliationApi = {
+  // 1. Contratos e Regras
+  listContracts: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/card-reconciliation/contracts?storeId=${storeId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar contratos de adquirentes');
+    }
+    return res.json();
+  },
+
+  createContract: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/card-reconciliation/contracts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar contrato de adquirente');
+    }
+    return res.json();
+  },
+
+  getContractById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/card-reconciliation/contracts/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar contrato');
+    }
+    return res.json();
+  },
+
+  addFeeRule: async (contractId: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/card-reconciliation/contracts/${contractId}/rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao adicionar regra de taxa');
+    }
+    return res.json();
+  },
+
+  // 2. Importação e Lotes de Extrato
+  importStatement: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/card-reconciliation/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao importar e processar extrato');
+    }
+    return res.json();
+  },
+
+  getBatchDetails: async (batchId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/card-reconciliation/batches/${batchId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar detalhes do lote');
+    }
+    return res.json();
+  },
+
+  // 3. Calendário de Recebíveis D+1 / D+30
+  getReceivablesCalendar: async (storeId = 1, startDate?: string, endDate?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams({ storeId: String(storeId) });
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await fetch(`${base}/api/card-reconciliation/calendar?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar calendário de recebíveis');
+    }
+    return res.json();
+  },
+
+  printCalendarSlip: async (storeId = 1, date?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams({ storeId: String(storeId) });
+    if (date) params.append('date', date);
+    const res = await fetch(`${base}/api/card-reconciliation/calendar/print?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao gerar extrato térmico diário');
+    }
+    return res.json();
+  },
+
+  // 4. Auditoria de Divergências de Taxa MDR
+  getDivergences: async (storeId = 1, startDate?: string, endDate?: string, status?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams({ storeId: String(storeId) });
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (status) params.append('status', status);
+    const res = await fetch(`${base}/api/card-reconciliation/divergences?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao consultar divergências');
+    }
+    return res.json();
+  },
+
+  printDivergenceSlip: async (storeId = 1, startDate?: string, endDate?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams({ storeId: String(storeId) });
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await fetch(`${base}/api/card-reconciliation/divergences/print?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir comprovante de contestação');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -2941,6 +3076,8 @@ export const api = {
   deliveryApi,
   sanitary: sanitaryApi,
   sanitaryApi,
+  cardReconciliation: cardReconciliationApi,
+  cardReconciliationApi,
 };
 
 export default api;
