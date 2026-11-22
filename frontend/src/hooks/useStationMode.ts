@@ -21,7 +21,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'CRM' ||
         stored === 'DELIVERY' ||
         stored === 'SANITARY' ||
-        stored === 'CARD_RECONCILIATION'
+        stored === 'CARD_RECONCILIATION' ||
+        stored === 'BANK_RECONCILIATION'
       ) {
         return stored;
       }
@@ -61,6 +62,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isDelivery: mode === 'DELIVERY',
     isSanitary: mode === 'SANITARY',
     isCardReconciliation: mode === 'CARD_RECONCILIATION',
+    isBankReconciliation: mode === 'BANK_RECONCILIATION',
   };
 }
 

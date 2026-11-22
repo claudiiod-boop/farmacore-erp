@@ -122,6 +122,7 @@ export * from '../types/crm';
 export * from '../types/delivery';
 export * from '../types/sanitary';
 export * from '../types/card-reconciliation';
+export * from '../types/bank-reconciliation';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -2998,6 +2999,106 @@ export const cardReconciliationApi = {
   },
 };
 
+// ============================================================================
+// CONCILIAÇÃO BANCÁRIA OFX & FLUXO DE CAIXA (FASE 16)
+// ============================================================================
+
+export const bankReconciliationApi = {
+  listAccounts: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/bank-reconciliation/accounts?storeId=${storeId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar contas bancárias');
+    }
+    return res.json();
+  },
+
+  createAccount: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/bank-reconciliation/accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar conta bancária');
+    }
+    return res.json();
+  },
+
+  uploadOfx: async (data: { bankAccountId: number; fileName: string; ofxContent: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/bank-reconciliation/upload-ofx`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao importar extrato OFX');
+    }
+    return res.json();
+  },
+
+  getBatchDetails: async (batchId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/bank-reconciliation/batches/${batchId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar detalhes do lote');
+    }
+    return res.json();
+  },
+
+  manualMatch: async (entryId: number, data: { reconciliationType: string; matchedEntityId?: number; notes: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/bank-reconciliation/entries/${entryId}/manual-match`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao vincular lançamento');
+    }
+    return res.json();
+  },
+
+  printBatchSlip: async (batchId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/bank-reconciliation/batches/${batchId}/print`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao gerar comprovante de extrato');
+    }
+    return res.json();
+  },
+};
+
+export const cashFlowApi = {
+  getOverview: async (storeId = 1, daysAhead = 30) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/cash-flow/overview?storeId=${storeId}&daysAhead=${daysAhead}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter fluxo de caixa');
+    }
+    return res.json();
+  },
+
+  printCashFlowSlip: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/cash-flow/print?storeId=${storeId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir extrato de liquidez');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -3078,6 +3179,10 @@ export const api = {
   sanitaryApi,
   cardReconciliation: cardReconciliationApi,
   cardReconciliationApi,
+  bankReconciliation: bankReconciliationApi,
+  bankReconciliationApi,
+  cashFlow: cashFlowApi,
+  cashFlowApi,
 };
 
 export default api;

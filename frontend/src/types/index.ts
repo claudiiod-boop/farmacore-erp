@@ -10,7 +10,8 @@ export type StationMode =
   | 'CRM'
   | 'DELIVERY'
   | 'SANITARY'
-  | 'CARD_RECONCILIATION';
+  | 'CARD_RECONCILIATION'
+  | 'BANK_RECONCILIATION';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
