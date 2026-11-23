@@ -125,6 +125,7 @@ export * from '../types/card-reconciliation';
 export * from '../types/bank-reconciliation';
 export * from '../types/sped';
 export * from '../types/clinical';
+export * from '../types/b2b';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -3374,6 +3375,169 @@ export const clinicalApi = {
   }
 };
 
+export const b2bApi = {
+  getReplenishmentSuggestions: async (
+    storeId = 1,
+    options?: { abcFilter?: string; minRuptureRiskOnly?: boolean }
+  ) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams({ storeId: String(storeId) });
+    if (options?.abcFilter) params.append('abcFilter', options.abcFilter);
+    if (options?.minRuptureRiskOnly) params.append('minRuptureRiskOnly', 'true');
+    const res = await fetch(`${base}/api/b2b/replenishment/suggestions?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar sugestões de reposição');
+    }
+    return res.json();
+  },
+
+  saveReplenishmentRule: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/replenishment/rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao salvar regra de reposição');
+    }
+    return res.json();
+  },
+
+  getSuppliers: async (activeOnly = false) => {
+    const base = getBaseUrl();
+    const query = activeOnly ? '?activeOnly=true' : '';
+    const res = await fetch(`${base}/api/b2b/suppliers${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar distribuidoras');
+    }
+    return res.json();
+  },
+
+  registerSupplier: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/suppliers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar distribuidora');
+    }
+    return res.json();
+  },
+
+  createCampaign: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/campaigns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar campanha de cotação');
+    }
+    return res.json();
+  },
+
+  listCampaigns: async (storeId = 1, status?: string) => {
+    const base = getBaseUrl();
+    const query = status
+      ? `?storeId=${storeId}&status=${encodeURIComponent(status)}`
+      : `?storeId=${storeId}`;
+    const res = await fetch(`${base}/api/b2b/campaigns${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar campanhas de cotação');
+    }
+    return res.json();
+  },
+
+  getCampaign: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/campaigns/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter campanha de cotação');
+    }
+    return res.json();
+  },
+
+  exportEdiQuotation: async (campaignId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/campaigns/${campaignId}/export-edi`, {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao exportar espelho EDI Farma');
+    }
+    return res.json();
+  },
+
+  importEdiProposals: async (campaignId: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/campaigns/${campaignId}/import-proposals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao importar propostas EDI');
+    }
+    return res.json();
+  },
+
+  submitProposal: async (campaignId: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/campaigns/${campaignId}/proposals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao submeter proposta comercial');
+    }
+    return res.json();
+  },
+
+  optimizeCampaign: async (
+    campaignId: number,
+    mode: 'SPLIT_ORDER' | 'SINGLE_SUPPLIER_BEST_TOTAL' = 'SPLIT_ORDER'
+  ) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/campaigns/${campaignId}/optimize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao otimizar cotação');
+    }
+    return res.json();
+  },
+
+  generatePurchaseOrders: async (campaignId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/b2b/campaigns/${campaignId}/generate-orders`, {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao gerar pedidos de compra');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -3462,6 +3626,8 @@ export const api = {
   spedApi,
   clinical: clinicalApi,
   clinicalApi,
+  b2b: b2bApi,
+  b2bApi,
 };
 
 export default api;

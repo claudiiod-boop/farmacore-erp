@@ -13,7 +13,8 @@ export type StationMode =
   | 'CARD_RECONCILIATION'
   | 'BANK_RECONCILIATION'
   | 'SPED_FISCAL'
-  | 'CLINICAL_CONSULTING';
+  | 'CLINICAL_CONSULTING'
+  | 'B2B_QUOTATIONS';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -32,6 +33,7 @@ export * from './crm';
 export * from './delivery';
 export * from './sped';
 export * from './clinical';
+export * from './b2b';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';

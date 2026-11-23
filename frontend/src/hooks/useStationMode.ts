@@ -24,7 +24,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'CARD_RECONCILIATION' ||
         stored === 'BANK_RECONCILIATION' ||
         stored === 'SPED_FISCAL' ||
-        stored === 'CLINICAL_CONSULTING'
+        stored === 'CLINICAL_CONSULTING' ||
+        stored === 'B2B_QUOTATIONS'
       ) {
         return stored;
       }
@@ -67,6 +68,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isBankReconciliation: mode === 'BANK_RECONCILIATION',
     isSpedFiscal: mode === 'SPED_FISCAL',
     isClinicalConsulting: mode === 'CLINICAL_CONSULTING',
+    isB2bQuotations: mode === 'B2B_QUOTATIONS',
   };
 }
 

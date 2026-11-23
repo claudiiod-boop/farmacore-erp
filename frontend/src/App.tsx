@@ -14,6 +14,7 @@ import CardReconciliationPage from './pages/CardReconciliationPage';
 import BankReconciliationPage from './pages/BankReconciliationPage';
 import SpedFiscalPage from './pages/SpedFiscalPage';
 import ClinicalConsultingPage from './pages/ClinicalConsultingPage';
+import B2bQuotationsPage from './pages/B2bQuotationsPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -34,10 +35,11 @@ import {
   CreditCard,
   FileCode,
   Stethoscope,
+  Truck,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -415,6 +417,20 @@ function AppContent() {
               <Stethoscope className="w-3.5 h-3.5 text-emerald-400" />
               <span>Consultório / DSF</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-b2b-quotations-button"
+              onClick={() => setMode('B2B_QUOTATIONS')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isB2bQuotations
+                  ? 'bg-blue-950 text-blue-300 border-blue-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Truck className="w-3.5 h-3.5 text-blue-400" />
+              <span>Cotação B2B / EDI</span>
+            </button>
           </nav>
         </div>
 
@@ -483,6 +499,7 @@ function AppContent() {
         {isBankReconciliation && <BankReconciliationPage />}
         {isSpedFiscal && <SpedFiscalPage />}
         {isClinicalConsulting && <ClinicalConsultingPage />}
+        {isB2bQuotations && <B2bQuotationsPage />}
       </div>
 
       {/* Global PBM Modal */}
