@@ -235,6 +235,7 @@ describe('SanitaryPage - Posto [F12] Validades & Vigilância Sanitária', () => 
 
     await waitFor(() => {
       expect(screen.getByTestId('sanitary-page')).toBeDefined();
+      expect(screen.getByTestId('card-risk-expired')).toBeDefined();
     });
 
     expect(screen.getByText(/Central de Validades & Vigilância Sanitária/i)).toBeDefined();

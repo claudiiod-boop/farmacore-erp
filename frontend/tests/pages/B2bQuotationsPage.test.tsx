@@ -179,12 +179,11 @@ describe('B2bQuotationsPage (Cotação Eletrônica B2B, Reposição e EDI Farma)
 
     await waitFor(() => {
       expect(b2bApi.getReplenishmentSuggestions).toHaveBeenCalledWith(1);
+      expect(screen.getByText('Dipirona 500mg Gotas')).toBeDefined();
+      expect(screen.getByText('Amoxicilina 500mg 21 caps')).toBeDefined();
+      expect(screen.getByText('HIGH')).toBeDefined();
+      expect(screen.getByText('MEDIUM')).toBeDefined();
     });
-
-    expect(screen.getByText('Dipirona 500mg Gotas')).toBeDefined();
-    expect(screen.getByText('Amoxicilina 500mg 21 caps')).toBeDefined();
-    expect(screen.getByText('HIGH')).toBeDefined();
-    expect(screen.getByText('MEDIUM')).toBeDefined();
   });
 
   it('should select critical items and create a quotation campaign', async () => {

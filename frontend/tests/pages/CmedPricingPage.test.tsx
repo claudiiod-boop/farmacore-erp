@@ -114,12 +114,10 @@ describe('CmedPricingPage (Tabela Oficial CMED / ANVISA & Trava Regulatória PMC
 
     await waitFor(() => {
       expect(cmedApi.runAudit).toHaveBeenCalledWith(1, 18.0);
+      expect(screen.getByText('Acima do Teto PMC')).toBeDefined();
+      expect(screen.getByText('Infração Sanitária Gravíssima')).toBeDefined();
+      expect(screen.getByText('Dipirona 500mg Gotas')).toBeDefined();
     });
-
-    // Cards de resumo
-    expect(screen.getByText('Acima do Teto PMC')).toBeDefined();
-    expect(screen.getByText('Infração Sanitária Gravíssima')).toBeDefined();
-    expect(screen.getByText('Dipirona 500mg Gotas')).toBeDefined();
 
     const fixBtn = screen.getByRole('button', { name: /Corrigir Todos para o Teto PMC/i });
     fireEvent.click(fixBtn);
