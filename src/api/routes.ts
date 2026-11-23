@@ -35,6 +35,7 @@ import { registerSpedRoutes } from '../modules/fiscal/sped.routes';
 import { registerClinicalRoutes } from '../modules/clinical/clinical.routes';
 import { registerB2bRoutes } from '../modules/b2b/b2b.routes';
 import { registerCmedRoutes } from '../modules/cmed/cmed.routes';
+import { registerOmnichannelRoutes } from '../modules/omnichannel/omnichannel.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2042,4 +2043,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== TABELA OFICIAL CMED / ANVISA & PRECIFICAÇÃO REGULATÓRIA =====================
   registerCmedRoutes(app, db);
+
+  // ===================== OMNICHANNEL, WHATSAPP OPENWA & PICK-AND-PACK ASSISTIDO =====================
+  registerOmnichannelRoutes(app, db);
 }
