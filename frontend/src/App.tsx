@@ -16,6 +16,7 @@ import SpedFiscalPage from './pages/SpedFiscalPage';
 import ClinicalConsultingPage from './pages/ClinicalConsultingPage';
 import B2bQuotationsPage from './pages/B2bQuotationsPage';
 import CmedPricingPage from './pages/CmedPricingPage';
+import { OmnichannelPickPackPage } from './pages/OmnichannelPickPackPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -38,10 +39,11 @@ import {
   Stethoscope,
   Truck,
   Scale,
+  MessageSquare,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -447,6 +449,20 @@ function AppContent() {
               <Scale className="w-3.5 h-3.5 text-red-400" />
               <span>CMED / Precificação</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-omnichannel-button"
+              onClick={() => setMode('OMNICHANNEL_PICK_PACK')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isOmnichannelPickPack
+                  ? 'bg-emerald-950 text-emerald-300 border-emerald-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Omnichannel / WhatsApp</span>
+            </button>
           </nav>
         </div>
 
@@ -517,6 +533,7 @@ function AppContent() {
         {isClinicalConsulting && <ClinicalConsultingPage />}
         {isB2bQuotations && <B2bQuotationsPage />}
         {isCmedPricing && <CmedPricingPage />}
+        {isOmnichannelPickPack && <OmnichannelPickPackPage />}
       </div>
 
       {/* Global PBM Modal */}

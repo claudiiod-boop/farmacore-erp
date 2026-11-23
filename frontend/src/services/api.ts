@@ -3628,6 +3628,129 @@ export const cmedApi = {
   },
 };
 
+export const omnichannelApi = {
+  listOrders: async (storeId = 1, status?: string) => {
+    const base = getBaseUrl();
+    const query = status ? `?storeId=${storeId}&status=${status}` : `?storeId=${storeId}`;
+    const res = await fetch(`${base}/api/omnichannel/orders${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao carregar pedidos omnichannel');
+    }
+    return res.json();
+  },
+
+  getOrder: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/orders/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter pedido');
+    }
+    return res.json();
+  },
+
+  startPicking: async (id: number, operatorId = 1, operatorName = 'OPERADOR_BALCAO') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/orders/${id}/start-picking`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operatorId, operatorName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao iniciar separação do pedido');
+    }
+    return res.json();
+  },
+
+  scanBarcode: async (id: number, barcode: string, operatorName = 'OPERADOR_BALCAO') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/orders/${id}/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ barcode, operatorName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao bipar código de barras');
+    }
+    return res.json();
+  },
+
+  dispatchOrder: async (id: number, operatorName = 'OPERADOR_EXPEDICAO') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/orders/${id}/dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operatorName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao despachar pedido');
+    }
+    return res.json();
+  },
+
+  listChannels: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/channels?storeId=${storeId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao carregar canais');
+    }
+    return res.json();
+  },
+
+  saveChannel: async (channel: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/channels`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(channel),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao salvar configuração do canal');
+    }
+    return res.json();
+  },
+
+  listConversations: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/conversations?storeId=${storeId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar conversas');
+    }
+    return res.json();
+  },
+
+  getConversationMessages: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/conversations/${id}/messages`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao carregar mensagens');
+    }
+    return res.json();
+  },
+
+  replyConversation: async (id: number, content: string, operatorName = 'OPERADOR') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/omnichannel/conversations/${id}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, operatorName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao enviar resposta');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -3720,6 +3843,8 @@ export const api = {
   b2bApi,
   cmed: cmedApi,
   cmedApi,
+  omnichannel: omnichannelApi,
+  omnichannelApi,
 };
 
 export default api;

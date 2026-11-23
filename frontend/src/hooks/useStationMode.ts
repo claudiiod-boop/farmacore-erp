@@ -26,7 +26,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'SPED_FISCAL' ||
         stored === 'CLINICAL_CONSULTING' ||
         stored === 'B2B_QUOTATIONS' ||
-        stored === 'CMED_PRICING'
+        stored === 'CMED_PRICING' ||
+        stored === 'OMNICHANNEL_PICK_PACK'
       ) {
         return stored;
       }
@@ -71,6 +72,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isClinicalConsulting: mode === 'CLINICAL_CONSULTING',
     isB2bQuotations: mode === 'B2B_QUOTATIONS',
     isCmedPricing: mode === 'CMED_PRICING',
+    isOmnichannelPickPack: mode === 'OMNICHANNEL_PICK_PACK',
   };
 }
 
