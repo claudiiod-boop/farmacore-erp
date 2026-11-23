@@ -123,6 +123,8 @@ export * from '../types/delivery';
 export * from '../types/sanitary';
 export * from '../types/card-reconciliation';
 export * from '../types/bank-reconciliation';
+export * from '../types/sped';
+export * from '../types/clinical';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -3195,6 +3197,183 @@ export const spedApi = {
   }
 };
 
+export const clinicalApi = {
+  getPharmacists: async (storeId = 1, activeOnly = false) => {
+    const base = getBaseUrl();
+    const query = activeOnly ? `?storeId=${storeId}&activeOnly=true` : `?storeId=${storeId}`;
+    const res = await fetch(`${base}/api/clinical/pharmacists${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar farmacêuticos');
+    }
+    return res.json();
+  },
+
+  registerPharmacist: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/pharmacists`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar farmacêutico');
+    }
+    return res.json();
+  },
+
+  getCatalog: async (storeId = 1, category?: string) => {
+    const base = getBaseUrl();
+    const query = category ? `?storeId=${storeId}&category=${encodeURIComponent(category)}` : `?storeId=${storeId}`;
+    const res = await fetch(`${base}/api/clinical/catalog${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar catálogo de serviços');
+    }
+    return res.json();
+  },
+
+  registerCatalogItem: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/catalog`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar serviço no catálogo');
+    }
+    return res.json();
+  },
+
+  startAttendance: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/attendances`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao iniciar atendimento clínico');
+    }
+    return res.json();
+  },
+
+  getAttendance: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/attendances/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar atendimento clínico');
+    }
+    return res.json();
+  },
+
+  addProcedure: async (id: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/attendances/${id}/procedures`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao adicionar procedimento');
+    }
+    return res.json();
+  },
+
+  addRapidTest: async (id: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/attendances/${id}/rapid-tests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao adicionar teste rápido TLR');
+    }
+    return res.json();
+  },
+
+  completeAttendance: async (id: number, data?: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/attendances/${id}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {})
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao finalizar atendimento clínico');
+    }
+    return res.json();
+  },
+
+  getDsfSlip: async (id: number, storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/attendances/${id}/dsf?storeId=${storeId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir Declaração de Serviço Farmacêutico (DSF)');
+    }
+    return res.json();
+  },
+
+  listAttendances: async (storeId = 1, options?: { patientCpf?: string; status?: string; limit?: number }) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams({ storeId: String(storeId) });
+    if (options?.patientCpf) params.append('patientCpf', options.patientCpf);
+    if (options?.status) params.append('status', options.status);
+    if (options?.limit) params.append('limit', String(options.limit));
+    const res = await fetch(`${base}/api/clinical/attendances?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar atendimentos');
+    }
+    return res.json();
+  },
+
+  registerPharmacovigilance: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/pharmacovigilance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar farmacovigilância');
+    }
+    return res.json();
+  },
+
+  listPharmacovigilance: async (storeId = 1, limit?: number) => {
+    const base = getBaseUrl();
+    const query = limit ? `?storeId=${storeId}&limit=${limit}` : `?storeId=${storeId}`;
+    const res = await fetch(`${base}/api/clinical/pharmacovigilance${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar notificações de farmacovigilância');
+    }
+    return res.json();
+  },
+
+  exportPharmacovigilanceSanitary: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/clinical/pharmacovigilance/${id}/export`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao exportar dossiê sanitário Notivisa');
+    }
+    return res.json();
+  }
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -3281,6 +3460,8 @@ export const api = {
   cashFlowApi,
   sped: spedApi,
   spedApi,
+  clinical: clinicalApi,
+  clinicalApi,
 };
 
 export default api;
