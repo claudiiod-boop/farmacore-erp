@@ -33,6 +33,7 @@ import { registerCardReconciliationRoutes } from '../modules/financial/card-reco
 import { registerBankReconciliationRoutes } from '../modules/financial/bank-reconciliation.routes';
 import { registerSpedRoutes } from '../modules/fiscal/sped.routes';
 import { registerClinicalRoutes } from '../modules/clinical/clinical.routes';
+import { registerB2bRoutes } from '../modules/b2b/b2b.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2034,4 +2035,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== CONSULTÓRIO FARMACÊUTICO & SERVIÇOS CLÍNICOS (RDC 777/2023) =====================
   registerClinicalRoutes(app, db);
+
+  // ===================== COTAÇÃO B2B, REPOSIÇÃO & EDI FARMA (DISTRIBUIDORAS) =====================
+  registerB2bRoutes(app, db);
 }
