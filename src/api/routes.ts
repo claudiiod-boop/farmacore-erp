@@ -34,6 +34,7 @@ import { registerBankReconciliationRoutes } from '../modules/financial/bank-reco
 import { registerSpedRoutes } from '../modules/fiscal/sped.routes';
 import { registerClinicalRoutes } from '../modules/clinical/clinical.routes';
 import { registerB2bRoutes } from '../modules/b2b/b2b.routes';
+import { registerCmedRoutes } from '../modules/cmed/cmed.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2038,4 +2039,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== COTAÇÃO B2B, REPOSIÇÃO & EDI FARMA (DISTRIBUIDORAS) =====================
   registerB2bRoutes(app, db);
+
+  // ===================== TABELA OFICIAL CMED / ANVISA & PRECIFICAÇÃO REGULATÓRIA =====================
+  registerCmedRoutes(app, db);
 }
