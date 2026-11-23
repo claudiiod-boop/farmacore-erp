@@ -17,6 +17,7 @@ import ClinicalConsultingPage from './pages/ClinicalConsultingPage';
 import B2bQuotationsPage from './pages/B2bQuotationsPage';
 import CmedPricingPage from './pages/CmedPricingPage';
 import { OmnichannelPickPackPage } from './pages/OmnichannelPickPackPage';
+import { CompoundingPage } from './pages/CompoundingPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -40,10 +41,11 @@ import {
   Truck,
   Scale,
   MessageSquare,
+  FlaskConical,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -463,6 +465,20 @@ function AppContent() {
               <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
               <span>Omnichannel / WhatsApp</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-compounding-button"
+              onClick={() => setMode('COMPOUNDING_MAGISTRAL')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isCompounding
+                  ? 'bg-purple-950 text-purple-300 border-purple-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <FlaskConical className="w-3.5 h-3.5 text-purple-400" />
+              <span>Magistral / Manipulação</span>
+            </button>
           </nav>
         </div>
 
@@ -534,6 +550,7 @@ function AppContent() {
         {isB2bQuotations && <B2bQuotationsPage />}
         {isCmedPricing && <CmedPricingPage />}
         {isOmnichannelPickPack && <OmnichannelPickPackPage />}
+        {isCompounding && <CompoundingPage />}
       </div>
 
       {/* Global PBM Modal */}

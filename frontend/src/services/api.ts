@@ -3751,6 +3751,185 @@ export const omnichannelApi = {
   },
 };
 
+export const compoundingApi = {
+  listRawMaterials: async (search = '') => {
+    const base = getBaseUrl();
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+    const res = await fetch(`${base}/api/compounding/raw-materials${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar matérias-primas');
+    }
+    return res.json();
+  },
+
+  createRawMaterial: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/raw-materials`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar matéria-prima');
+    }
+    return res.json();
+  },
+
+  listBatches: async (rawMaterialId?: number, status?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (rawMaterialId) params.append('rawMaterialId', String(rawMaterialId));
+    if (status) params.append('status', status);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/compounding/batches${queryString}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar lotes de matéria-prima');
+    }
+    return res.json();
+  },
+
+  createBatch: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/batches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar lote');
+    }
+    return res.json();
+  },
+
+  releaseBatch: async (id: number, pharmacistName = 'FARMACEUTICO_RT') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/batches/${id}/release`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pharmacistName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao liberar lote');
+    }
+    return res.json();
+  },
+
+  rejectBatch: async (id: number, rejectionReason: string, pharmacistName = 'FARMACEUTICO_RT') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/batches/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rejectionReason, pharmacistName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao reprovar lote');
+    }
+    return res.json();
+  },
+
+  calculateCapsule: async (components: any[], totalUnits = 30, excipientDensity = 0.6) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/calculate-capsule`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ components, totalUnits, excipientDensity }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao calcular cubagem da cápsula');
+    }
+    return res.json();
+  },
+
+  listOrders: async (storeId = 1, status?: string) => {
+    const base = getBaseUrl();
+    const query = status ? `?storeId=${storeId}&status=${status}` : `?storeId=${storeId}`;
+    const res = await fetch(`${base}/api/compounding/orders${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar ordens de manipulação');
+    }
+    return res.json();
+  },
+
+  getOrder: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/orders/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter ordem de manipulação');
+    }
+    return res.json();
+  },
+
+  createOrder: async (orderData: any, components: any[]) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderData, components }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar ordem de manipulação');
+    }
+    return res.json();
+  },
+
+  weighItem: async (
+    orderId: number,
+    itemId: number,
+    weighedAmount: number,
+    operatorName = 'OPERADOR_PESAGEM'
+  ) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/orders/${orderId}/weigh-item`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId, weighedAmount, operatorName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar pesagem');
+    }
+    return res.json();
+  },
+
+  evaluateQualityControl: async (
+    orderId: number,
+    actualAverageWeightMg: number,
+    pharmacistName = 'FARMACEUTICO_RT'
+  ) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/orders/${orderId}/quality-control`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actualAverageWeightMg, pharmacistName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha no controle de qualidade');
+    }
+    return res.json();
+  },
+
+  getLabel: async (orderId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/compounding/orders/${orderId}/label`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao gerar rótulo magistral');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -3845,6 +4024,8 @@ export const api = {
   cmedApi,
   omnichannel: omnichannelApi,
   omnichannelApi,
+  compounding: compoundingApi,
+  compoundingApi,
 };
 
 export default api;

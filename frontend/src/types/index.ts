@@ -16,7 +16,8 @@ export type StationMode =
   | 'CLINICAL_CONSULTING'
   | 'B2B_QUOTATIONS'
   | 'CMED_PRICING'
-  | 'OMNICHANNEL_PICK_PACK';
+  | 'OMNICHANNEL_PICK_PACK'
+  | 'COMPOUNDING_MAGISTRAL';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -38,6 +39,7 @@ export * from './clinical';
 export * from './b2b';
 export * from './cmed';
 export * from './omnichannel';
+export * from './compounding';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
