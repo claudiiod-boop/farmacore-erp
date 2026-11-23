@@ -126,6 +126,7 @@ export * from '../types/bank-reconciliation';
 export * from '../types/sped';
 export * from '../types/clinical';
 export * from '../types/b2b';
+export * from '../types/cmed';
 
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
 export type ControlType =
@@ -3538,6 +3539,95 @@ export const b2bApi = {
   },
 };
 
+export const cmedApi = {
+  importCmedFile: async (data: { fileContent: string; versionCode: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/cmed/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao importar tabela CMED');
+    }
+    return res.json();
+  },
+
+  searchCmedProducts: async (q = '', limit = 50) => {
+    const base = getBaseUrl();
+    const query = q ? `?q=${encodeURIComponent(q)}&limit=${limit}` : `?limit=${limit}`;
+    const res = await fetch(`${base}/api/cmed/search${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao consultar base CMED');
+    }
+    return res.json();
+  },
+
+  validatePrice: async (ean: string, price: number, icmsRate = 18.0) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/cmed/validate-price`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ean, price, icmsRate }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao validar preço contra o PMC');
+    }
+    return res.json();
+  },
+
+  runAudit: async (storeId = 1, icmsRate = 18.0) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/cmed/audit?storeId=${storeId}&icmsRate=${icmsRate}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao executar auditoria de preços CMED');
+    }
+    return res.json();
+  },
+
+  getRules: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/cmed/rules?storeId=${storeId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar regras de precificação');
+    }
+    return res.json();
+  },
+
+  saveRule: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/cmed/rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao salvar regra de precificação');
+    }
+    return res.json();
+  },
+
+  applyUpdates: async (storeId = 1, updates: any[], auditorUser = 'SISTEMA') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/cmed/apply-updates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId, updates, auditorUser }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao aplicar atualizações de preços');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -3628,6 +3718,8 @@ export const api = {
   clinicalApi,
   b2b: b2bApi,
   b2bApi,
+  cmed: cmedApi,
+  cmedApi,
 };
 
 export default api;

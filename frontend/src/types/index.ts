@@ -14,7 +14,8 @@ export type StationMode =
   | 'BANK_RECONCILIATION'
   | 'SPED_FISCAL'
   | 'CLINICAL_CONSULTING'
-  | 'B2B_QUOTATIONS';
+  | 'B2B_QUOTATIONS'
+  | 'CMED_PRICING';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -34,6 +35,7 @@ export * from './delivery';
 export * from './sped';
 export * from './clinical';
 export * from './b2b';
+export * from './cmed';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
