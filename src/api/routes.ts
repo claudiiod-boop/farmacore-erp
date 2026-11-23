@@ -36,6 +36,7 @@ import { registerClinicalRoutes } from '../modules/clinical/clinical.routes';
 import { registerB2bRoutes } from '../modules/b2b/b2b.routes';
 import { registerCmedRoutes } from '../modules/cmed/cmed.routes';
 import { registerOmnichannelRoutes } from '../modules/omnichannel/omnichannel.routes';
+import { registerCompoundingRoutes } from '../modules/compounding/compounding.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2046,4 +2047,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== OMNICHANNEL, WHATSAPP OPENWA & PICK-AND-PACK ASSISTIDO =====================
   registerOmnichannelRoutes(app, db);
+
+  // ===================== FARMÁCIA MAGISTRAL & MANIPULAÇÃO (RDC 67/2007) =====================
+  registerCompoundingRoutes(app, db);
 }
