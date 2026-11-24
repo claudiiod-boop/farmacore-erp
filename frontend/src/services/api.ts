@@ -5078,6 +5078,110 @@ export const returnsApi = {
   },
 };
 
+export const quarantineApi = {
+  transfer: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/quarantine/transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao transferir para quarentena');
+    }
+    return res.json();
+  },
+
+  sweepExpired: async (storeId?: number, sweptBy?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/quarantine/sweep-expired`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId, sweptBy }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao varrer lotes vencidos');
+    }
+    return res.json();
+  },
+
+  registerRecall: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/quarantine/recalls`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar recall');
+    }
+    return res.json();
+  },
+
+  listRecalls: async () => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/quarantine/recalls`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar recalls');
+    }
+    return res.json();
+  },
+
+  listQuarantine: async (storeId?: number, status?: string, reason?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (status) params.append('status', status);
+    if (reason) params.append('reason', reason);
+    const res = await fetch(`${base}/api/quarantine?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar itens em quarentena');
+    }
+    return res.json();
+  },
+
+  getQuarantineById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/quarantine/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter registro de quarentena');
+    }
+    return res.json();
+  },
+
+  resolveQuarantine: async (id: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/quarantine/${id}/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao resolver quarentena');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/quarantine/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs de quarentena');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5194,6 +5298,8 @@ export const api = {
   replenishmentApi,
   returns: returnsApi,
   returnsApi,
+  quarantine: quarantineApi,
+  quarantineApi,
 };
 
 export default api;

@@ -38,7 +38,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'BMPO_REGULATORY' ||
         stored === 'SNCM_TRACEABILITY' ||
         stored === 'SMART_REPLENISHMENT' ||
-        stored === 'CUSTOMER_RETURNS'
+        stored === 'CUSTOMER_RETURNS' ||
+        stored === 'QUARANTINE_REGULATORY'
       ) {
         return stored;
       }
@@ -95,6 +96,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isSncm: mode === 'SNCM_TRACEABILITY',
     isReplenishment: mode === 'SMART_REPLENISHMENT',
     isCustomerReturns: mode === 'CUSTOMER_RETURNS',
+    isQuarantine: mode === 'QUARANTINE_REGULATORY',
   };
 }
 

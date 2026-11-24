@@ -27,7 +27,8 @@ export type StationMode =
   | 'BMPO_REGULATORY'
   | 'SNCM_TRACEABILITY'
   | 'SMART_REPLENISHMENT'
-  | 'CUSTOMER_RETURNS';
+  | 'CUSTOMER_RETURNS'
+  | 'QUARANTINE_REGULATORY';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -321,4 +322,5 @@ export * from './bmpo';
 export * from './sncm';
 export * from './replenishment';
 export * from './returns';
+export * from './quarantine';
 
