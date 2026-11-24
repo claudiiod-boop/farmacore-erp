@@ -75,6 +75,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isCmedPricing: mode === 'CMED_PRICING',
     isOmnichannelPickPack: mode === 'OMNICHANNEL_PICK_PACK',
     isCompounding: mode === 'COMPOUNDING_MAGISTRAL',
+    isSubscriptionClub: mode === 'SUBSCRIPTION_CLUB',
   };
 }
 

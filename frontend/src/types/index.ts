@@ -17,7 +17,8 @@ export type StationMode =
   | 'B2B_QUOTATIONS'
   | 'CMED_PRICING'
   | 'OMNICHANNEL_PICK_PACK'
-  | 'COMPOUNDING_MAGISTRAL';
+  | 'COMPOUNDING_MAGISTRAL'
+  | 'SUBSCRIPTION_CLUB';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -298,4 +299,8 @@ export * from './pbm';
 
 // ===================== TEF & CARD GATEWAY TYPES =====================
 export * from './tef';
+
+// ===================== COMPOUNDING & SUBSCRIPTIONS TYPES =====================
+export * from './compounding';
+export * from './subscription';
 

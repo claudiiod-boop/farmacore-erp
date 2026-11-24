@@ -3930,6 +3930,135 @@ export const compoundingApi = {
   },
 };
 
+export const subscriptionApi = {
+  listSubscriptions: async (filters?: { status?: string; customer_id?: number; store_id?: number }) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.customer_id) params.append('customer_id', String(filters.customer_id));
+    if (filters?.store_id) params.append('store_id', String(filters.store_id));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${base}/api/subscriptions${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar assinaturas');
+    }
+    return res.json();
+  },
+
+  getSubscription: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter assinatura');
+    }
+    return res.json();
+  },
+
+  createSubscription: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar assinatura');
+    }
+    return res.json();
+  },
+
+  updateSubscriptionStatus: async (id: number, status: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao atualizar status da assinatura');
+    }
+    return res.json();
+  },
+
+  addSubscriptionItem: async (id: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions/${id}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao adicionar item à assinatura');
+    }
+    return res.json();
+  },
+
+  removeSubscriptionItem: async (itemId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions/items/${itemId}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao remover item da assinatura');
+    }
+    return res.json();
+  },
+
+  renewPrescription: async (itemId: number, data: { prescription_doctor_crm: string; prescription_doctor_uf: string; prescription_expiry_date: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions/items/${itemId}/prescription`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao renovar receita médica');
+    }
+    return res.json();
+  },
+
+  getExpiringPrescriptions: async (daysAhead = 15) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions/expiring-prescriptions?daysAhead=${daysAhead}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar receitas a vencer');
+    }
+    return res.json();
+  },
+
+  processScheduledRefills: async (currentDate?: string, storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions/process-refills`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentDate, storeId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao processar reposições');
+    }
+    return res.json();
+  },
+
+  getSubscriptionKpis: async () => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/subscriptions/kpis`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao carregar KPIs de assinatura');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4026,6 +4155,8 @@ export const api = {
   omnichannelApi,
   compounding: compoundingApi,
   compoundingApi,
+  subscriptions: subscriptionApi,
+  subscriptionApi,
 };
 
 export default api;
