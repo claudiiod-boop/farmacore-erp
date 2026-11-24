@@ -45,6 +45,7 @@ import { registerPgrssRoutes } from '../modules/pgrss/pgrss.routes';
 import { registerKioskRoutes } from '../modules/kiosk/kiosk.routes';
 import { registerBmpoRoutes } from '../modules/bmpo/bmpo.routes';
 import { registerSncmRoutes } from '../modules/sncm/sncm.routes';
+import { registerReplenishmentRoutes } from '../modules/replenishment/replenishment.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2082,4 +2083,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== RASTREABILIDADE SNCM & DATAMATRIX (LEI 13.410/2016 ANVISA) =====================
   registerSncmRoutes(app, db);
+
+  // ===================== REPOSIÇÃO INTELIGENTE DE ESTOQUE & PONTO DE PEDIDO =====================
+  registerReplenishmentRoutes(app, db);
 }
