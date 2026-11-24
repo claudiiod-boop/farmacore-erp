@@ -5526,6 +5526,125 @@ export const sanitizationApi = {
   },
 };
 
+export const injectablesApi = {
+  getInjectables: async (params?: { storeId?: number; patientCpf?: string; startDate?: string; endDate?: string }) => {
+    const base = getBaseUrl();
+    const q = new URLSearchParams();
+    if (params?.storeId) q.append('storeId', String(params.storeId));
+    if (params?.patientCpf) q.append('patientCpf', params.patientCpf);
+    if (params?.startDate) q.append('startDate', params.startDate);
+    if (params?.endDate) q.append('endDate', params.endDate);
+    const res = await fetch(`${base}/api/injectables?${q.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar aplicações de injetáveis');
+    }
+    return res.json();
+  },
+
+  createInjectable: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/injectables`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar aplicação de injetável');
+    }
+    return res.json();
+  },
+
+  getByDeclaration: async (declarationNumber: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/injectables/declaration/${encodeURIComponent(declarationNumber)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar declaração DSF');
+    }
+    return res.json();
+  },
+
+  getVaccines: async (params?: { storeId?: number; patientCpf?: string; sipniStatus?: string; startDate?: string; endDate?: string }) => {
+    const base = getBaseUrl();
+    const q = new URLSearchParams();
+    if (params?.storeId) q.append('storeId', String(params.storeId));
+    if (params?.patientCpf) q.append('patientCpf', params.patientCpf);
+    if (params?.sipniStatus) q.append('sipniStatus', params.sipniStatus);
+    if (params?.startDate) q.append('startDate', params.startDate);
+    if (params?.endDate) q.append('endDate', params.endDate);
+    const res = await fetch(`${base}/api/vaccines?${q.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar registros de vacinas');
+    }
+    return res.json();
+  },
+
+  createVaccine: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/vaccines`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar vacinação');
+    }
+    return res.json();
+  },
+
+  getVaccineByCertificate: async (code: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/vaccines/certificate/${encodeURIComponent(code)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar certificado de vacinação');
+    }
+    return res.json();
+  },
+
+  exportSipni: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/vaccines/export-sipni`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId: storeId || 1 }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao exportar lote SI-PNI');
+    }
+    return res.json();
+  },
+
+  recordEapv: async (id: number, description: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/vaccines/${id}/eapv`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar evento adverso EAPV');
+    }
+    return res.json();
+  },
+
+  getSummary: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/injectables/summary?storeId=${storeId || 1}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao carregar resumo do consultório');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5650,6 +5769,8 @@ export const api = {
   digitalPrescriptionsApi,
   sanitization: sanitizationApi,
   sanitizationApi,
+  injectables: injectablesApi,
+  injectablesApi,
 };
 
 export default api;

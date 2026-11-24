@@ -41,7 +41,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'CUSTOMER_RETURNS' ||
         stored === 'QUARANTINE_REGULATORY' ||
         stored === 'TEMPERATURE_MONITORING' ||
-        stored === 'SANITIZATION_COMPLIANCE'
+        stored === 'SANITIZATION_COMPLIANCE' ||
+        stored === 'INJECTABLES_VACCINATION'
       ) {
         return stored;
       }
@@ -101,6 +102,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isQuarantine: mode === 'QUARANTINE_REGULATORY',
     isTemperatureMonitoring: mode === 'TEMPERATURE_MONITORING',
     isSanitizationCompliance: mode === 'SANITIZATION_COMPLIANCE',
+    isInjectablesVaccination: mode === 'INJECTABLES_VACCINATION',
   };
 }
 

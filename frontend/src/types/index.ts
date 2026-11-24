@@ -30,7 +30,8 @@ export type StationMode =
   | 'CUSTOMER_RETURNS'
   | 'QUARANTINE_REGULATORY'
   | 'TEMPERATURE_MONITORING'
-  | 'SANITIZATION_COMPLIANCE';
+  | 'SANITIZATION_COMPLIANCE'
+  | 'INJECTABLES_VACCINATION';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -328,4 +329,5 @@ export * from './quarantine';
 export * from './temperature';
 export * from './digital-prescription';
 export * from './sanitization';
+export * from './injectables';
 

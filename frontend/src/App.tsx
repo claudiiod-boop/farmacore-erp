@@ -31,6 +31,7 @@ import { CustomerReturnsPage } from './pages/CustomerReturnsPage';
 import { QuarantineRegulatoryPage } from './pages/QuarantineRegulatoryPage';
 import { TemperatureMonitoringPage } from './pages/TemperatureMonitoringPage';
 import { SanitizationCompliancePage } from './pages/SanitizationCompliancePage';
+import { InjectablesVaccinationPage } from './pages/InjectablesVaccinationPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -69,7 +70,7 @@ import {
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -687,6 +688,21 @@ function AppContent() {
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               <span>Sanitização & POPs</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-injectables-button"
+              onClick={() => setMode('INJECTABLES_VACCINATION')}
+              title="Livro de Injetáveis & Sala de Vacinas (RDC 197/2017 & RDC 44/2009 ANVISA)"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isInjectablesVaccination
+                  ? 'bg-indigo-950 text-indigo-300 border-indigo-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Stethoscope className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Injetáveis & Vacinas</span>
+            </button>
           </nav>
         </div>
 
@@ -772,6 +788,7 @@ function AppContent() {
         {isQuarantine && <QuarantineRegulatoryPage />}
         {isTemperatureMonitoring && <TemperatureMonitoringPage />}
         {isSanitizationCompliance && <SanitizationCompliancePage />}
+        {isInjectablesVaccination && <InjectablesVaccinationPage />}
       </div>
 
       {/* Global PBM Modal */}
