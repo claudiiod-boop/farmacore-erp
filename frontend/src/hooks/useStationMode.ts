@@ -77,6 +77,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isCompounding: mode === 'COMPOUNDING_MAGISTRAL',
     isSubscriptionClub: mode === 'SUBSCRIPTION_CLUB',
     isFractionation: mode === 'FRACTIONATION_RDC80',
+    isCommissions: mode === 'SALES_COMMISSIONS',
   };
 }
 

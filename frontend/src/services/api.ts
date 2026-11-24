@@ -4155,6 +4155,149 @@ export const fractionationApi = {
   },
 };
 
+export const commissionApi = {
+  listSellers: async (storeId?: number, activeOnly = true) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    params.append('activeOnly', String(activeOnly));
+    const res = await fetch(`${base}/api/commissions/sellers?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar vendedores');
+    }
+    return res.json();
+  },
+
+  createSeller: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/commissions/sellers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar vendedor');
+    }
+    return res.json();
+  },
+
+  listRules: async () => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/commissions/rules`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar regras de comissão');
+    }
+    return res.json();
+  },
+
+  updateRule: async (data: { categoryType: string; percentage: number; description?: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/commissions/rules`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao atualizar regra');
+    }
+    return res.json();
+  },
+
+  listCampaigns: async (activeOnly = false) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/commissions/campaigns?activeOnly=${activeOnly}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar campanhas');
+    }
+    return res.json();
+  },
+
+  createCampaign: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/commissions/campaigns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar campanha');
+    }
+    return res.json();
+  },
+
+  listGoals: async (periodMonth?: string, storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (periodMonth) params.append('periodMonth', periodMonth);
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/commissions/goals?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar metas');
+    }
+    return res.json();
+  },
+
+  setSalesGoal: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/commissions/goals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao definir meta');
+    }
+    return res.json();
+  },
+
+  getSellerStatement: async (sellerId: number, periodMonth?: string, status?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    params.append('sellerId', String(sellerId));
+    if (periodMonth) params.append('periodMonth', periodMonth);
+    if (status) params.append('status', status);
+    const res = await fetch(`${base}/api/commissions/statements?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter extrato do vendedor');
+    }
+    return res.json();
+  },
+
+  closeMonthlyCommissions: async (data: { sellerId: number; periodMonth?: string; status?: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/commissions/close-period`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao fechar comissões');
+    }
+    return res.json();
+  },
+
+  getCommissionKpis: async (periodMonth?: string) => {
+    const base = getBaseUrl();
+    const query = periodMonth ? `?periodMonth=${periodMonth}` : '';
+    const res = await fetch(`${base}/api/commissions/kpis${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs de comissão');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4255,6 +4398,8 @@ export const api = {
   subscriptionApi,
   fractionation: fractionationApi,
   fractionationApi,
+  commissions: commissionApi,
+  commissionApi,
 };
 
 export default api;

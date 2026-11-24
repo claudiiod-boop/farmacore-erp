@@ -20,6 +20,7 @@ import { OmnichannelPickPackPage } from './pages/OmnichannelPickPackPage';
 import { CompoundingPage } from './pages/CompoundingPage';
 import { SubscriptionsPage } from './pages/SubscriptionsPage';
 import { FractionationPage } from './pages/FractionationPage';
+import { CommissionsPage } from './pages/CommissionsPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -46,10 +47,11 @@ import {
   FlaskConical,
   Repeat,
   Scissors,
+  Award,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -511,6 +513,20 @@ function AppContent() {
               <Scissors className="w-3.5 h-3.5 text-sky-400" />
               <span>Fracionamento</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-commissions-button"
+              onClick={() => setMode('SALES_COMMISSIONS')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isCommissions
+                  ? 'bg-amber-950 text-amber-300 border-amber-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span>Comissões</span>
+            </button>
           </nav>
         </div>
 
@@ -585,6 +601,7 @@ function AppContent() {
         {isCompounding && <CompoundingPage />}
         {isSubscriptionClub && <SubscriptionsPage />}
         {isFractionation && <FractionationPage />}
+        {isCommissions && <CommissionsPage />}
       </div>
 
       {/* Global PBM Modal */}

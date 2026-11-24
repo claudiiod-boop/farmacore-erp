@@ -19,7 +19,8 @@ export type StationMode =
   | 'OMNICHANNEL_PICK_PACK'
   | 'COMPOUNDING_MAGISTRAL'
   | 'SUBSCRIPTION_CLUB'
-  | 'FRACTIONATION_RDC80';
+  | 'FRACTIONATION_RDC80'
+  | 'SALES_COMMISSIONS';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -305,4 +306,5 @@ export * from './tef';
 export * from './compounding';
 export * from './subscription';
 export * from './fractionation';
+export * from './commission';
 
