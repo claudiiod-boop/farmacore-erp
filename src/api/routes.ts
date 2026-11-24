@@ -48,6 +48,7 @@ import { registerSncmRoutes } from '../modules/sncm/sncm.routes';
 import { registerReplenishmentRoutes } from '../modules/replenishment/replenishment.routes';
 import { registerReturnsRoutes } from '../modules/returns/returns.routes';
 import { registerQuarantineRoutes } from '../modules/quarantine/quarantine.routes';
+import { registerTemperatureRoutes } from '../modules/temperature/temperature.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2094,4 +2095,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== QUARENTENA SANITÁRIA, LOTES VENCIDOS & NOTIVISA (RDC 44/2009 ANVISA) =====================
   registerQuarantineRoutes(app, db);
+
+  // ===================== MONITORAMENTO TÉRMICO, CADEIA DE FRIO & HIGROMETRIA (RDC 44/430 ANVISA) =====================
+  registerTemperatureRoutes(app, db);
 }
