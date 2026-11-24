@@ -49,6 +49,7 @@ import { registerReplenishmentRoutes } from '../modules/replenishment/replenishm
 import { registerReturnsRoutes } from '../modules/returns/returns.routes';
 import { registerQuarantineRoutes } from '../modules/quarantine/quarantine.routes';
 import { registerTemperatureRoutes } from '../modules/temperature/temperature.routes';
+import { registerDigitalPrescriptionRoutes } from '../modules/digital-prescriptions/digital-prescriptions.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2098,4 +2099,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== MONITORAMENTO TÉRMICO, CADEIA DE FRIO & HIGROMETRIA (RDC 44/430 ANVISA) =====================
   registerTemperatureRoutes(app, db);
+
+  // ===================== RECEITAS DIGITAIS ICP-BRASIL, CFM/CFF & DISPENSAÇÃO (LEI 14.063/2020) =====================
+  registerDigitalPrescriptionRoutes(app, db);
 }
