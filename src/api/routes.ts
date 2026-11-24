@@ -44,6 +44,7 @@ import { registerDreRoutes } from '../modules/dre/dre.routes';
 import { registerPgrssRoutes } from '../modules/pgrss/pgrss.routes';
 import { registerKioskRoutes } from '../modules/kiosk/kiosk.routes';
 import { registerBmpoRoutes } from '../modules/bmpo/bmpo.routes';
+import { registerSncmRoutes } from '../modules/sncm/sncm.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2078,4 +2079,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== BALANÇOS OFICIAIS BMPO, RMNRA & RMNRB (PORTARIA 344/98 ANVISA) =====================
   registerBmpoRoutes(app, db);
+
+  // ===================== RASTREABILIDADE SNCM & DATAMATRIX (LEI 13.410/2016 ANVISA) =====================
+  registerSncmRoutes(app, db);
 }
