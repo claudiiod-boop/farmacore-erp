@@ -285,9 +285,10 @@ export class KioskService {
         throw new Error('A quantidade do item deve ser maior que zero.');
       }
 
-      const product = this.db.prepare('SELECT * FROM products WHERE id = ?').get(item.product_id) as any;
+      const targetProdId = item.product_id || (item as any).productId;
+      const product = this.db.prepare('SELECT * FROM products WHERE id = ?').get(targetProdId) as any;
       if (!product) {
-        throw new Error(`Produto ${item.product_id} não encontrado.`);
+        throw new Error(`Produto ${targetProdId} não encontrado.`);
       }
 
       // Regra Sanitária: produtos controlados exigem balcão

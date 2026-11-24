@@ -42,6 +42,7 @@ import { registerFractionationRoutes } from '../modules/fractionation/fractionat
 import { registerCommissionRoutes } from '../modules/commissions/commission.routes';
 import { registerDreRoutes } from '../modules/dre/dre.routes';
 import { registerPgrssRoutes } from '../modules/pgrss/pgrss.routes';
+import { registerKioskRoutes } from '../modules/kiosk/kiosk.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2070,4 +2071,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== DESCARTE SANITÁRIO & PGRSS (RDC 222/2018 ANVISA) =====================
   registerPgrssRoutes(app, db);
+
+  // ===================== TOTEM AUTOATENDIMENTO, BUSCA-PREÇO & FILA =====================
+  registerKioskRoutes(app, db);
 }
