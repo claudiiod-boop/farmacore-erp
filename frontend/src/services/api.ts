@@ -5320,6 +5320,60 @@ export const temperatureApi = {
   },
 };
 
+export const digitalPrescriptionsApi = {
+  validate: async (code: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/digital-prescriptions/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao validar receita digital');
+    }
+    return res.json();
+  },
+
+  dispense: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/digital-prescriptions/dispense`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao dispensar receita digital');
+    }
+    return res.json();
+  },
+
+  getByCode: async (code: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/digital-prescriptions/${encodeURIComponent(code)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter receita digital');
+    }
+    return res.json();
+  },
+
+  mockCreate: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/digital-prescriptions/mock-create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar receita mock');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5440,6 +5494,8 @@ export const api = {
   quarantineApi,
   temperature: temperatureApi,
   temperatureApi,
+  digitalPrescriptions: digitalPrescriptionsApi,
+  digitalPrescriptionsApi,
 };
 
 export default api;

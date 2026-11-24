@@ -7,6 +7,7 @@ import {
   FileText,
   ShieldCheck,
   Building2,
+  QrCode,
 } from 'lucide-react';
 import ProductSearch, { formatBrl } from '../components/ProductSearch';
 import BatchSelector from '../components/BatchSelector';
@@ -16,8 +17,9 @@ import PreSaleTicket from '../components/PreSaleTicket';
 import PbmModal from '../components/pbm/PbmModal';
 import PbmReceiptModal from '../components/pbm/PbmReceiptModal';
 import NetworkStockModal from '../components/NetworkStockModal';
+import DigitalPrescriptionModal from '../components/counter/DigitalPrescriptionModal';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import type { PbmAuthorizationResult } from '../types';
+import type { PbmAuthorizationResult, DigitalPrescription } from '../types';
 import {
   getAvailableBatches,
   createPreSale,
@@ -45,6 +47,7 @@ export default function CounterPage() {
 
   // Prescription modal state
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [isDigitalPrescriptionModalOpen, setIsDigitalPrescriptionModalOpen] = useState(false);
 
   // Pre-sale ticket modal state
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
@@ -323,9 +326,20 @@ export default function CounterPage() {
     [addItemToCart]
   );
 
+  const handleImportDigitalPrescription = useCallback((prescription: DigitalPrescription) => {
+    setCustomerName(prescription.patient_name);
+    if (prescription.patient_cpf) {
+      setCustomerCpf(prescription.patient_cpf);
+    }
+    setNoticeMessage(
+      `Receita Digital (${prescription.prescription_code}) validada! Paciente: ${prescription.patient_name} • Dr(a). ${prescription.prescriber_name}`
+    );
+  }, []);
+
   const isAnyModalOpen =
     isTicketModalOpen ||
     isPrescriptionModalOpen ||
+    isDigitalPrescriptionModalOpen ||
     isBatchModalOpen ||
     isPbmModalOpen ||
     isPbmReceiptModalOpen ||
@@ -349,6 +363,8 @@ export default function CounterPage() {
     Escape: () => {
       if (isNetworkStockModalOpen) {
         setIsNetworkStockModalOpen(false);
+      } else if (isDigitalPrescriptionModalOpen) {
+        setIsDigitalPrescriptionModalOpen(false);
       } else if (isPbmReceiptModalOpen) {
         setIsPbmReceiptModalOpen(false);
       } else if (isPbmModalOpen) {
@@ -436,6 +452,17 @@ export default function CounterPage() {
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
               {authorizedPbm ? `Convênio: ${authorizedPbm.authorizationProtocol}` : 'F6 - Convênio PBM'}
             </span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="counter-digital-prescription-button"
+            title="Validador de Receitas Digitais ICP-Brasil (Memed, CFM, CFF)"
+            onClick={() => setIsDigitalPrescriptionModalOpen(true)}
+            className="flex items-center bg-emerald-800/90 hover:bg-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-600/50 shadow-sm transition text-emerald-100 hover:text-white cursor-pointer"
+          >
+            <QrCode className="w-4 h-4 mr-1.5 text-emerald-300" />
+            <span className="font-semibold">Receita Digital ICP</span>
           </button>
 
           <button
@@ -694,6 +721,13 @@ export default function CounterPage() {
         isOpen={isNetworkStockModalOpen}
         onClose={() => setIsNetworkStockModalOpen(false)}
         product={networkStockProduct}
+      />
+
+      {/* Validador de Receitas Digitais ICP-Brasil & Invalidação de Reuso */}
+      <DigitalPrescriptionModal
+        isOpen={isDigitalPrescriptionModalOpen}
+        onClose={() => setIsDigitalPrescriptionModalOpen(false)}
+        onImportToPreSale={handleImportDigitalPrescription}
       />
     </div>
   );

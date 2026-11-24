@@ -325,4 +325,5 @@ export * from './replenishment';
 export * from './returns';
 export * from './quarantine';
 export * from './temperature';
+export * from './digital-prescription';
 
