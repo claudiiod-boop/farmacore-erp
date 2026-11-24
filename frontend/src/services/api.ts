@@ -5374,6 +5374,158 @@ export const digitalPrescriptionsApi = {
   },
 };
 
+export const sanitizationApi = {
+  getLogs: async (params?: { storeId?: number; sectorName?: string; startDate?: string; endDate?: string; status?: string }) => {
+    const base = getBaseUrl();
+    const q = new URLSearchParams();
+    if (params?.storeId) q.append('storeId', String(params.storeId));
+    if (params?.sectorName) q.append('sectorName', params.sectorName);
+    if (params?.startDate) q.append('startDate', params.startDate);
+    if (params?.endDate) q.append('endDate', params.endDate);
+    if (params?.status) q.append('status', params.status);
+    const res = await fetch(`${base}/api/sanitization/logs?${q.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar registros de higienização');
+    }
+    return res.json();
+  },
+
+  createLog: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar higienização');
+    }
+    return res.json();
+  },
+
+  verifyLog: async (id: number, pharmacistCrf: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/logs/${id}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pharmacistCrf }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao verificar higienização');
+    }
+    return res.json();
+  },
+
+  getPestControlList: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/pest-control?storeId=${storeId || 1}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar laudos de dedetização');
+    }
+    return res.json();
+  },
+
+  getActivePestControl: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/pest-control/active?storeId=${storeId || 1}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar laudo de dedetização');
+    }
+    return res.json();
+  },
+
+  createPestControl: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/pest-control`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar laudo de dedetização');
+    }
+    return res.json();
+  },
+
+  getWaterTankList: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/water-tank?storeId=${storeId || 1}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar laudos de caixa d água');
+    }
+    return res.json();
+  },
+
+  getActiveWaterTank: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/water-tank/active?storeId=${storeId || 1}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar laudo de caixa d água');
+    }
+    return res.json();
+  },
+
+  createWaterTank: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/water-tank`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar limpeza de caixa d água');
+    }
+    return res.json();
+  },
+
+  getSops: async (params?: { storeId?: number; category?: string; status?: string }) => {
+    const base = getBaseUrl();
+    const q = new URLSearchParams();
+    if (params?.storeId) q.append('storeId', String(params.storeId));
+    if (params?.category) q.append('category', params.category);
+    if (params?.status) q.append('status', params.status);
+    const res = await fetch(`${base}/api/sanitization/sops?${q.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar POPs');
+    }
+    return res.json();
+  },
+
+  createOrUpdateSop: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/sops`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao salvar Procedimento Operacional Padrão');
+    }
+    return res.json();
+  },
+
+  getComplianceOverview: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitization/compliance-overview?storeId=${storeId || 1}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter panorama de conformidade sanitária');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5496,6 +5648,8 @@ export const api = {
   temperatureApi,
   digitalPrescriptions: digitalPrescriptionsApi,
   digitalPrescriptionsApi,
+  sanitization: sanitizationApi,
+  sanitizationApi,
 };
 
 export default api;

@@ -29,7 +29,8 @@ export type StationMode =
   | 'SMART_REPLENISHMENT'
   | 'CUSTOMER_RETURNS'
   | 'QUARANTINE_REGULATORY'
-  | 'TEMPERATURE_MONITORING';
+  | 'TEMPERATURE_MONITORING'
+  | 'SANITIZATION_COMPLIANCE';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -326,4 +327,5 @@ export * from './returns';
 export * from './quarantine';
 export * from './temperature';
 export * from './digital-prescription';
+export * from './sanitization';
 

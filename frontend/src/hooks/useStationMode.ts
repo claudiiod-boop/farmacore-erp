@@ -40,7 +40,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'SMART_REPLENISHMENT' ||
         stored === 'CUSTOMER_RETURNS' ||
         stored === 'QUARANTINE_REGULATORY' ||
-        stored === 'TEMPERATURE_MONITORING'
+        stored === 'TEMPERATURE_MONITORING' ||
+        stored === 'SANITIZATION_COMPLIANCE'
       ) {
         return stored;
       }
@@ -99,6 +100,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isCustomerReturns: mode === 'CUSTOMER_RETURNS',
     isQuarantine: mode === 'QUARANTINE_REGULATORY',
     isTemperatureMonitoring: mode === 'TEMPERATURE_MONITORING',
+    isSanitizationCompliance: mode === 'SANITIZATION_COMPLIANCE',
   };
 }
 
