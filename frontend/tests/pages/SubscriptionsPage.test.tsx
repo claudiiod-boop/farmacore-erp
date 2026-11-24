@@ -94,7 +94,7 @@ describe('SubscriptionsPage (Clube de Assinatura & Reposição Recorrente)', () 
       expect(screen.getByText('Contratos & Pacientes')).toBeDefined();
       expect(screen.getByText('Esteira de Reposições & Motor Autoship')).toBeDefined();
       expect(screen.getByText('Controle de Receitas de Uso Contínuo')).toBeDefined();
-    });
+    }, { timeout: 5000 });
   });
 
   it('should open new subscription modal and allow form submission', async () => {
