@@ -26,6 +26,7 @@ import { PgrssDisposalPage } from './pages/PgrssDisposalPage';
 import { KioskPage } from './pages/KioskPage';
 import { BmpoRegulatoryPage } from './pages/BmpoRegulatoryPage';
 import { SncmTraceabilityPage } from './pages/SncmTraceabilityPage';
+import { SmartReplenishmentPage } from './pages/SmartReplenishmentPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -58,10 +59,11 @@ import {
   MonitorSmartphone,
   FileSpreadsheet,
   QrCode,
+  TrendingUp,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -607,6 +609,20 @@ function AppContent() {
               <QrCode className="w-3.5 h-3.5 text-cyan-400" />
               <span>SNCM Rastreabilidade</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-replenishment-button"
+              onClick={() => setMode('SMART_REPLENISHMENT')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isReplenishment
+                  ? 'bg-amber-950 text-amber-300 border-amber-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
+              <span>Reposição Inteligente</span>
+            </button>
           </nav>
         </div>
 
@@ -687,6 +703,7 @@ function AppContent() {
         {isKiosk && <KioskPage />}
         {isBmpo && <BmpoRegulatoryPage />}
         {isSncm && <SncmTraceabilityPage />}
+        {isReplenishment && <SmartReplenishmentPage />}
       </div>
 
       {/* Global PBM Modal */}

@@ -25,7 +25,8 @@ export type StationMode =
   | 'PGRSS_DISPOSAL'
   | 'KIOSK_TERMINAL'
   | 'BMPO_REGULATORY'
-  | 'SNCM_TRACEABILITY';
+  | 'SNCM_TRACEABILITY'
+  | 'SMART_REPLENISHMENT';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -317,4 +318,5 @@ export * from './pgrss';
 export * from './kiosk';
 export * from './bmpo';
 export * from './sncm';
+export * from './replenishment';
 

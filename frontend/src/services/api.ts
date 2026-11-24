@@ -4862,6 +4862,98 @@ export const sncmApi = {
   },
 };
 
+export const replenishmentApi = {
+  getPurchaseSuggestions: async (storeId?: number, days?: number, status?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (days) params.append('days', String(days));
+    if (status) params.append('status', status);
+    const res = await fetch(`${base}/api/replenishment/suggestions?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter sugestões de reposição');
+    }
+    return res.json();
+  },
+
+  getProductAnalysis: async (productId: number, storeId?: number, days?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (days) params.append('days', String(days));
+    const res = await fetch(`${base}/api/replenishment/analysis/${productId}?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao analisar produto');
+    }
+    return res.json();
+  },
+
+  createOrder: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/replenishment/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar pedido de reposição');
+    }
+    return res.json();
+  },
+
+  listOrders: async (storeId?: number, status?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (status) params.append('status', status);
+    const res = await fetch(`${base}/api/replenishment/orders?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar pedidos de reposição');
+    }
+    return res.json();
+  },
+
+  getOrderById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/replenishment/orders/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter detalhes do pedido');
+    }
+    return res.json();
+  },
+
+  updateOrderStatus: async (id: number, status: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/replenishment/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao atualizar status do pedido');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/replenishment/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs de reposição');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4974,6 +5066,8 @@ export const api = {
   bmpoApi,
   sncm: sncmApi,
   sncmApi,
+  replenishment: replenishmentApi,
+  replenishmentApi,
 };
 
 export default api;

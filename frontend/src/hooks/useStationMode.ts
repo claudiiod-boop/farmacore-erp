@@ -36,7 +36,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'PGRSS_DISPOSAL' ||
         stored === 'KIOSK_TERMINAL' ||
         stored === 'BMPO_REGULATORY' ||
-        stored === 'SNCM_TRACEABILITY'
+        stored === 'SNCM_TRACEABILITY' ||
+        stored === 'SMART_REPLENISHMENT'
       ) {
         return stored;
       }
@@ -91,6 +92,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isKiosk: mode === 'KIOSK_TERMINAL',
     isBmpo: mode === 'BMPO_REGULATORY',
     isSncm: mode === 'SNCM_TRACEABILITY',
+    isReplenishment: mode === 'SMART_REPLENISHMENT',
   };
 }
 
