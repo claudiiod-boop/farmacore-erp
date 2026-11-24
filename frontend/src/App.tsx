@@ -29,6 +29,7 @@ import { SncmTraceabilityPage } from './pages/SncmTraceabilityPage';
 import { SmartReplenishmentPage } from './pages/SmartReplenishmentPage';
 import { CustomerReturnsPage } from './pages/CustomerReturnsPage';
 import { QuarantineRegulatoryPage } from './pages/QuarantineRegulatoryPage';
+import { TemperatureMonitoringPage } from './pages/TemperatureMonitoringPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -63,10 +64,11 @@ import {
   QrCode,
   TrendingUp,
   RotateCcw,
+  Thermometer,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -654,6 +656,21 @@ function AppContent() {
               <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
               <span>Quarentena & Notivisa</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-temperature-button"
+              onClick={() => setMode('TEMPERATURE_MONITORING')}
+              title="Termômetro & Higrômetro Digital (RDC 44/2009 & RDC 430/2020 ANVISA)"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isTemperatureMonitoring
+                  ? 'bg-emerald-950 text-emerald-300 border-emerald-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Thermometer className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Termo-Higrômetro</span>
+            </button>
           </nav>
         </div>
 
@@ -737,6 +754,7 @@ function AppContent() {
         {isReplenishment && <SmartReplenishmentPage />}
         {isCustomerReturns && <CustomerReturnsPage />}
         {isQuarantine && <QuarantineRegulatoryPage />}
+        {isTemperatureMonitoring && <TemperatureMonitoringPage />}
       </div>
 
       {/* Global PBM Modal */}

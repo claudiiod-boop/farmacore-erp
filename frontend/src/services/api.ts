@@ -5182,6 +5182,103 @@ export const quarantineApi = {
   },
 };
 
+export const temperatureApi = {
+  getSensors: async (storeId?: number, activeOnly: boolean = true) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    params.append('activeOnly', String(activeOnly));
+    const res = await fetch(`${base}/api/temperature/sensors?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar sensores');
+    }
+    return res.json();
+  },
+
+  registerSensor: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/temperature/sensors`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar sensor');
+    }
+    return res.json();
+  },
+
+  recordReading: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/temperature/readings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar leitura');
+    }
+    return res.json();
+  },
+
+  getReadings: async (sensorId: number, options?: { startDate?: string; endDate?: string; limit?: number }) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    params.append('sensorId', String(sensorId));
+    if (options?.startDate) params.append('startDate', options.startDate);
+    if (options?.endDate) params.append('endDate', options.endDate);
+    if (options?.limit) params.append('limit', String(options.limit));
+    const res = await fetch(`${base}/api/temperature/readings?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar leituras');
+    }
+    return res.json();
+  },
+
+  getExcursions: async (storeId?: number, status?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (status) params.append('status', status);
+    const res = await fetch(`${base}/api/temperature/excursions?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar excursões');
+    }
+    return res.json();
+  },
+
+  resolveExcursion: async (id: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/temperature/excursions/${id}/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao resolver excursão');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/temperature/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs de temperatura');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5300,6 +5397,8 @@ export const api = {
   returnsApi,
   quarantine: quarantineApi,
   quarantineApi,
+  temperature: temperatureApi,
+  temperatureApi,
 };
 
 export default api;

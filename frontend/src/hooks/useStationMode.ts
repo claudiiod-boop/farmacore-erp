@@ -39,7 +39,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'SNCM_TRACEABILITY' ||
         stored === 'SMART_REPLENISHMENT' ||
         stored === 'CUSTOMER_RETURNS' ||
-        stored === 'QUARANTINE_REGULATORY'
+        stored === 'QUARANTINE_REGULATORY' ||
+        stored === 'TEMPERATURE_MONITORING'
       ) {
         return stored;
       }
@@ -97,6 +98,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isReplenishment: mode === 'SMART_REPLENISHMENT',
     isCustomerReturns: mode === 'CUSTOMER_RETURNS',
     isQuarantine: mode === 'QUARANTINE_REGULATORY',
+    isTemperatureMonitoring: mode === 'TEMPERATURE_MONITORING',
   };
 }
 

@@ -28,7 +28,8 @@ export type StationMode =
   | 'SNCM_TRACEABILITY'
   | 'SMART_REPLENISHMENT'
   | 'CUSTOMER_RETURNS'
-  | 'QUARANTINE_REGULATORY';
+  | 'QUARANTINE_REGULATORY'
+  | 'TEMPERATURE_MONITORING';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -323,4 +324,5 @@ export * from './sncm';
 export * from './replenishment';
 export * from './returns';
 export * from './quarantine';
+export * from './temperature';
 
