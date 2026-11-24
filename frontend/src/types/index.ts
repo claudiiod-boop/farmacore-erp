@@ -22,7 +22,8 @@ export type StationMode =
   | 'FRACTIONATION_RDC80'
   | 'SALES_COMMISSIONS'
   | 'FINANCIAL_DRE'
-  | 'PGRSS_DISPOSAL';
+  | 'PGRSS_DISPOSAL'
+  | 'KIOSK_TERMINAL';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -311,4 +312,5 @@ export * from './fractionation';
 export * from './commission';
 export * from './dre';
 export * from './pgrss';
+export * from './kiosk';
 

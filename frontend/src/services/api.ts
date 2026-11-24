@@ -4532,6 +4532,113 @@ export const pgrssApi = {
   },
 };
 
+export const kioskApi = {
+  priceCheck: async (term: string, customerCpf?: string, storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    params.append('term', term);
+    if (customerCpf) params.append('customerCpf', customerCpf);
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/kiosk/price-check?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao consultar preço');
+    }
+    return res.json();
+  },
+
+  issueQueueTicket: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/kiosk/queue/ticket`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir senha');
+    }
+    return res.json();
+  },
+
+  listQueueTickets: async (storeId?: number, status?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (status) params.append('status', status);
+    const res = await fetch(`${base}/api/kiosk/queue/tickets?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar fila de senhas');
+    }
+    return res.json();
+  },
+
+  callQueueTicket: async (id: number, operatorName?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/kiosk/queue/tickets/${id}/call`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operatorName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao chamar senha');
+    }
+    return res.json();
+  },
+
+  completeQueueTicket: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/kiosk/queue/tickets/${id}/complete`, {
+      method: 'PATCH',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao concluir atendimento');
+    }
+    return res.json();
+  },
+
+  createExpressPreSale: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/kiosk/pre-sale`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir pré-venda expressa');
+    }
+    return res.json();
+  },
+
+  listTerminals: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/kiosk/terminals?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar terminais');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/kiosk/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs do totem');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4638,6 +4745,8 @@ export const api = {
   dreApi,
   pgrss: pgrssApi,
   pgrssApi,
+  kiosk: kioskApi,
+  kioskApi,
 };
 
 export default api;
