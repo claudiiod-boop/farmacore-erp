@@ -50,6 +50,7 @@ import { registerReturnsRoutes } from '../modules/returns/returns.routes';
 import { registerQuarantineRoutes } from '../modules/quarantine/quarantine.routes';
 import { registerTemperatureRoutes } from '../modules/temperature/temperature.routes';
 import { registerDigitalPrescriptionRoutes } from '../modules/digital-prescriptions/digital-prescriptions.routes';
+import { registerSanitizationRoutes } from '../modules/sanitization/sanitization.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2102,4 +2103,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== RECEITAS DIGITAIS ICP-BRASIL, CFM/CFF & DISPENSAÇÃO (LEI 14.063/2020) =====================
   registerDigitalPrescriptionRoutes(app, db);
+
+  // ===================== SANITIZAÇÃO, HIGIENIZAÇÃO, DEDETIZAÇÃO & POPS (RDC 44/2009 ANVISA) =====================
+  registerSanitizationRoutes(app, db);
 }
