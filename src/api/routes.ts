@@ -40,6 +40,7 @@ import { registerCompoundingRoutes } from '../modules/compounding/compounding.ro
 import { registerSubscriptionRoutes } from '../modules/subscriptions/subscription.routes';
 import { registerFractionationRoutes } from '../modules/fractionation/fractionation.routes';
 import { registerCommissionRoutes } from '../modules/commissions/commission.routes';
+import { registerDreRoutes } from '../modules/dre/dre.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2062,4 +2063,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== COMISSÕES MULTINÍVEL & METAS DE BALCÃO =====================
   registerCommissionRoutes(app, db);
+
+  // ===================== DRE GERENCIAL, CENTROS DE CUSTO & LUCRATIVIDADE =====================
+  registerDreRoutes(app, db);
 }
