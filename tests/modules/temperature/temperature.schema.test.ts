@@ -70,4 +70,37 @@ describe('Termômetro & Higrômetro Digital Schema (Migration 033)', () => {
     expect(checkRow.severity).toBe('CRITICAL');
     expect(checkRow.status).toBe('OPEN');
   });
+
+  it('Migration 034: deve suportar setores físicos expandidos e tabela temperature_rounds', () => {
+    const store = db.prepare('SELECT id FROM stores LIMIT 1').get() as { id: number };
+
+    // Inserir sensor com sector_code e floor_location
+    const sensorRes = db.prepare(`
+      INSERT INTO temperature_sensors (
+        store_id, name, location_type, sector_code, floor_location, min_allowed_temp, max_allowed_temp, min_allowed_humidity, max_allowed_humidity
+      ) VALUES (?, 'Termo-Higrômetro Hall Central', 'SALES_FLOOR', 'HALL_MEDICAMENTOS', 'TÉRREO BALCÃO', 15.0, 30.0, 40.0, 70.0)
+    `).run(store.id);
+    const sensorId = Number(sensorRes.lastInsertRowid);
+    expect(sensorId).toBeGreaterThan(0);
+
+    // Inserir ronda diária de temperatura
+    const roundRes = db.prepare(`
+      INSERT INTO temperature_rounds (
+        store_id, shift, conducted_by, readings_count, excursions_count, status
+      ) VALUES (?, 'MORNING', 'Farmacêutico RT', 1, 0, 'COMPLETED')
+    `).run(store.id);
+    const roundId = Number(roundRes.lastInsertRowid);
+    expect(roundId).toBeGreaterThan(0);
+
+    // Inserir leitura vinculada à ronda
+    const readingRes = db.prepare(`
+      INSERT INTO temperature_readings (
+        sensor_id, store_id, round_id, temperature, humidity, is_excursion, recorded_by
+      ) VALUES (?, ?, ?, 22.5, 55.0, 0, 'Farmacêutico RT')
+    `).run(sensorId, store.id, roundId);
+    expect(Number(readingRes.lastInsertRowid)).toBeGreaterThan(0);
+
+    const fetchedReading = db.prepare('SELECT * FROM temperature_readings WHERE id = ?').get(readingRes.lastInsertRowid) as any;
+    expect(fetchedReading.round_id).toBe(roundId);
+  });
 });
