@@ -38,6 +38,7 @@ import { registerCmedRoutes } from '../modules/cmed/cmed.routes';
 import { registerOmnichannelRoutes } from '../modules/omnichannel/omnichannel.routes';
 import { registerCompoundingRoutes } from '../modules/compounding/compounding.routes';
 import { registerSubscriptionRoutes } from '../modules/subscriptions/subscription.routes';
+import { registerFractionationRoutes } from '../modules/fractionation/fractionation.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2054,4 +2055,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== CLUBE DE ASSINATURA & REPOSIÇÃO RECORRENTE =====================
   registerSubscriptionRoutes(app, db);
+
+  // ===================== FRACIONAMENTO DE MEDICAMENTOS (RDC 80/2006) =====================
+  registerFractionationRoutes(app, db);
 }
