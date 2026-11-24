@@ -122,6 +122,7 @@ export interface RegisterSensorInput {
 export interface RecordReadingInput {
   sensorId: number;
   storeId?: number;
+  roundId?: number;
   temperature: number;
   humidity?: number;
   maxTempRecorded?: number;
