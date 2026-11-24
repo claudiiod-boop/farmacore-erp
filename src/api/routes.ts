@@ -39,6 +39,7 @@ import { registerOmnichannelRoutes } from '../modules/omnichannel/omnichannel.ro
 import { registerCompoundingRoutes } from '../modules/compounding/compounding.routes';
 import { registerSubscriptionRoutes } from '../modules/subscriptions/subscription.routes';
 import { registerFractionationRoutes } from '../modules/fractionation/fractionation.routes';
+import { registerCommissionRoutes } from '../modules/commissions/commission.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2058,4 +2059,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== FRACIONAMENTO DE MEDICAMENTOS (RDC 80/2006) =====================
   registerFractionationRoutes(app, db);
+
+  // ===================== COMISSÕES MULTINÍVEL & METAS DE BALCÃO =====================
+  registerCommissionRoutes(app, db);
 }
