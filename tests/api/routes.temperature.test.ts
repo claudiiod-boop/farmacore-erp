@@ -205,4 +205,62 @@ describe('Fastify REST Routes — Monitoramento Térmico & Higrometria (Fase 34)
     expect(kpis.active_sensors_count).toBeDefined();
     expect(kpis.cold_chain_status).toBeDefined();
   });
+
+  it('7. POST /api/temperature/seed-sectors deve semear os 5 setores físicos padrão', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/temperature/seed-sectors',
+      payload: { storeId },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const sectors = JSON.parse(res.body);
+    expect(sectors.length).toBe(5);
+    expect(sectors.some((s: any) => s.sector_code === 'HALL_MEDICAMENTOS')).toBe(true);
+    expect(sectors.some((s: any) => s.sector_code === 'ESTOQUE_CENTRAL')).toBe(true);
+  });
+
+  it('8. POST /api/temperature/rounds deve registrar ronda multissetorial em lote', async () => {
+    // 1. Semear setores
+    const sRes = await app.inject({
+      method: 'POST',
+      url: '/api/temperature/seed-sectors',
+      payload: { storeId },
+    });
+    const sectors = JSON.parse(sRes.body);
+    const sHall = sectors.find((s: any) => s.sector_code === 'HALL_MEDICAMENTOS');
+    const sGel = sectors.find((s: any) => s.sector_code === 'GELADEIRA_TERMOLABEIS');
+
+    // 2. Registrar ronda
+    const rRes = await app.inject({
+      method: 'POST',
+      url: '/api/temperature/rounds',
+      payload: {
+        storeId,
+        shift: 'MORNING',
+        conductedBy: 'Farmacêutico RT',
+        notes: 'Aferição matutina diária de rotina',
+        readings: [
+          { sensorId: sHall.id, temperature: 22.0, humidity: 55.0 },
+          { sensorId: sGel.id, temperature: 4.5 },
+        ],
+      },
+    });
+
+    expect(rRes.statusCode).toBe(201);
+    const data = JSON.parse(rRes.body);
+    expect(data.round.id).toBeDefined();
+    expect(data.round.readings_count).toBe(2);
+    expect(data.round.status).toBe('COMPLETED');
+
+    // 3. Consultar histórico de rondas
+    const listRes = await app.inject({
+      method: 'GET',
+      url: `/api/temperature/rounds?storeId=${storeId}`,
+    });
+    expect(listRes.statusCode).toBe(200);
+    const rounds = JSON.parse(listRes.body);
+    expect(rounds.length).toBeGreaterThanOrEqual(1);
+    expect(rounds[0].conducted_by).toBe('Farmacêutico RT');
+  });
 });

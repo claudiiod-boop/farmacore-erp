@@ -6,6 +6,8 @@ import type {
   RecordReadingInput,
   ResolveExcursionInput,
   SensorLocationType,
+  RecordSectorRoundInput,
+  SectorCode,
 } from './temperature.types';
 
 export async function registerTemperatureRoutes(app: FastifyInstance, db: Database) {
@@ -23,6 +25,8 @@ export async function registerTemperatureRoutes(app: FastifyInstance, db: Databa
         storeId: body.storeId || body.store_id ? Number(body.storeId || body.store_id) : 1,
         name: body.name,
         locationType: (body.locationType || body.location_type) as SensorLocationType,
+        sectorCode: (body.sectorCode || body.sector_code) as SectorCode,
+        floorLocation: body.floorLocation || body.floor_location,
         minAllowedTemp: body.minAllowedTemp !== undefined ? Number(body.minAllowedTemp) : (body.min_allowed_temp !== undefined ? Number(body.min_allowed_temp) : undefined),
         maxAllowedTemp: body.maxAllowedTemp !== undefined ? Number(body.maxAllowedTemp) : (body.max_allowed_temp !== undefined ? Number(body.max_allowed_temp) : undefined),
         minAllowedHumidity: body.minAllowedHumidity !== undefined ? Number(body.minAllowedHumidity) : (body.min_allowed_humidity !== undefined ? Number(body.min_allowed_humidity) : undefined),
@@ -153,6 +157,61 @@ export async function registerTemperatureRoutes(app: FastifyInstance, db: Databa
       return reply.send(kpis);
     } catch (err: any) {
       return reply.status(400).send({ error: err.message || 'Erro ao obter KPIs de temperatura' });
+    }
+  });
+
+  // 8. Registrar Ronda Sanitária Multissetorial (Checklist Diário em Lote)
+  app.post('/api/temperature/rounds', async (request, reply) => {
+    try {
+      const body = request.body as any;
+      if (!body.readings || !Array.isArray(body.readings) || body.readings.length === 0) {
+        return reply.status(400).send({ error: 'readings é obrigatório e deve ser uma lista não vazia' });
+      }
+
+      const input: RecordSectorRoundInput = {
+        storeId: body.storeId || body.store_id ? Number(body.storeId || body.store_id) : 1,
+        shift: body.shift || 'MORNING',
+        conductedBy: body.conductedBy || body.conducted_by || 'Farmacêutico RT',
+        notes: body.notes,
+        readings: body.readings.map((r: any) => ({
+          sensorId: Number(r.sensorId || r.sensor_id),
+          temperature: Number(r.temperature),
+          humidity: r.humidity !== undefined && r.humidity !== null ? Number(r.humidity) : undefined,
+          notes: r.notes,
+        })),
+      };
+
+      const result = service.recordSectorRound(input);
+      return reply.status(201).send(result);
+    } catch (err: any) {
+      return reply.status(400).send({ error: err.message || 'Erro ao registrar ronda de temperatura' });
+    }
+  });
+
+  // 9. Listar Histórico de Rondas Sanitárias
+  app.get('/api/temperature/rounds', async (request, reply) => {
+    try {
+      const query = request.query as any;
+      const storeId = query.storeId || query.store_id ? Number(query.storeId || query.store_id) : 1;
+      const limit = query.limit ? Number(query.limit) : 30;
+
+      const rounds = service.listRounds(storeId, limit);
+      return reply.send(rounds);
+    } catch (err: any) {
+      return reply.status(400).send({ error: err.message || 'Erro ao listar rondas' });
+    }
+  });
+
+  // 10. Inicializar / Semear Setores Físicos Padrão
+  app.post('/api/temperature/seed-sectors', async (request, reply) => {
+    try {
+      const body = (request.body as any) || {};
+      const storeId = body.storeId || body.store_id ? Number(body.storeId || body.store_id) : 1;
+
+      const sensors = service.seedDefaultStoreSectors(storeId);
+      return reply.status(200).send(sensors);
+    } catch (err: any) {
+      return reply.status(400).send({ error: err.message || 'Erro ao inicializar setores padrão' });
     }
   });
 }
