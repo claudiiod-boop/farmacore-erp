@@ -195,4 +195,79 @@ describe('TemperatureMonitoringService (Monitoramento Térmico, Cadeia de Frio &
     expect(kpis.cold_chain_status).toBe('EXCURSION');
     expect(kpis.ambient_status).toBe('NORMAL');
   });
+
+  it('seedDefaultStoreSectors cria os 5 setores regulamentares para a loja (Hall, Estoque, Geladeira, Injetáveis, Triagem)', () => {
+    const sensors = service.seedDefaultStoreSectors(storeId);
+    expect(sensors.length).toBe(5);
+
+    const hall = sensors.find((s) => s.sector_code === 'HALL_MEDICAMENTOS');
+    const estoque = sensors.find((s) => s.sector_code === 'ESTOQUE_CENTRAL');
+    const geladeira = sensors.find((s) => s.sector_code === 'GELADEIRA_TERMOLABEIS');
+    const injetaveis = sensors.find((s) => s.sector_code === 'SALA_INJETAVEIS');
+    const doca = sensors.find((s) => s.sector_code === 'QUARENTENA_RECEBIMENTO');
+
+    expect(hall).toBeDefined();
+    expect(estoque).toBeDefined();
+    expect(geladeira).toBeDefined();
+    expect(injetaveis).toBeDefined();
+    expect(doca).toBeDefined();
+
+    expect(geladeira?.min_allowed_temp).toBe(2.0);
+    expect(geladeira?.max_allowed_temp).toBe(8.0);
+    expect(hall?.min_allowed_temp).toBe(15.0);
+    expect(hall?.max_allowed_temp).toBe(30.0);
+  });
+
+  it('recordSectorRound grava a ronda sanitária diária em lote para múltiplos setores de uma só vez', () => {
+    const sensors = service.seedDefaultStoreSectors(storeId);
+    const sHall = sensors.find((s) => s.sector_code === 'HALL_MEDICAMENTOS')!;
+    const sEstoque = sensors.find((s) => s.sector_code === 'ESTOQUE_CENTRAL')!;
+    const sGel = sensors.find((s) => s.sector_code === 'GELADEIRA_TERMOLABEIS')!;
+
+    const roundRes = service.recordSectorRound({
+      storeId,
+      shift: 'MORNING',
+      conductedBy: 'Dra. Vanessa - Farmacêutica RT',
+      notes: 'Ronda matutina normal',
+      readings: [
+        { sensorId: sHall.id, temperature: 21.5, humidity: 52.0 },
+        { sensorId: sEstoque.id, temperature: 22.0, humidity: 50.0 },
+        { sensorId: sGel.id, temperature: 4.8 },
+      ],
+    });
+
+    expect(roundRes.round.id).toBeDefined();
+    expect(roundRes.round.shift).toBe('MORNING');
+    expect(roundRes.round.readings_count).toBe(3);
+    expect(roundRes.round.excursions_count).toBe(0);
+    expect(roundRes.round.status).toBe('COMPLETED');
+    expect(roundRes.round.readings?.length).toBe(3);
+
+    const rounds = service.listRounds(storeId);
+    expect(rounds.length).toBe(1);
+    expect(rounds[0].conducted_by).toBe('Dra. Vanessa - Farmacêutica RT');
+  });
+
+  it('recordSectorRound detecta excursão na geladeira e marca status da ronda como EXCURSION_DETECTED', () => {
+    const sensors = service.seedDefaultStoreSectors(storeId);
+    const sHall = sensors.find((s) => s.sector_code === 'HALL_MEDICAMENTOS')!;
+    const sGel = sensors.find((s) => s.sector_code === 'GELADEIRA_TERMOLABEIS')!;
+
+    const roundRes = service.recordSectorRound({
+      storeId,
+      shift: 'AFTERNOON',
+      conductedBy: 'Farmacêutico RT',
+      readings: [
+        { sensorId: sHall.id, temperature: 24.0, humidity: 55.0 },
+        { sensorId: sGel.id, temperature: 10.5 }, // Excursão (> 8°C)
+      ],
+    });
+
+    expect(roundRes.round.status).toBe('EXCURSION_DETECTED');
+    expect(roundRes.round.excursions_count).toBe(1);
+
+    const openExcursions = service.listExcursions(storeId, 'OPEN');
+    expect(openExcursions.length).toBe(1);
+    expect(openExcursions[0].peak_temp).toBe(10.5);
+  });
 });

@@ -7,6 +7,8 @@ import type {
   RecordReadingInput,
   ResolveExcursionInput,
   TemperatureKpis,
+  TemperatureRound,
+  RecordSectorRoundInput,
 } from './temperature.types';
 
 export class TemperatureMonitoringService {
@@ -33,19 +35,23 @@ export class TemperatureMonitoringService {
     const maxTemp = input.maxAllowedTemp !== undefined ? input.maxAllowedTemp : defaultMaxTemp;
     const minHumid = input.minAllowedHumidity !== undefined ? input.minAllowedHumidity : defaultMinHumid;
     const maxHumid = input.maxAllowedHumidity !== undefined ? input.maxAllowedHumidity : defaultMaxHumid;
+    const sectorCode = input.sectorCode || (input.locationType === 'REFRIGERATOR_COLD_CHAIN' ? 'GELADEIRA_TERMOLABEIS' : input.locationType === 'STORAGE_ROOM' ? 'ESTOQUE_CENTRAL' : 'HALL_MEDICAMENTOS');
+    const floorLocation = input.floorLocation || 'TÉRREO';
 
     const stmt = this.db.prepare(`
       INSERT INTO temperature_sensors (
-        store_id, name, location_type, min_allowed_temp, max_allowed_temp,
+        store_id, name, location_type, sector_code, floor_location, min_allowed_temp, max_allowed_temp,
         min_allowed_humidity, max_allowed_humidity, serial_number,
         calibration_cert_number, calibration_due_date, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
     `);
 
     const result = stmt.run(
       input.storeId,
       input.name,
       input.locationType,
+      sectorCode,
+      floorLocation,
       minTemp,
       maxTemp,
       minHumid,
@@ -93,14 +99,15 @@ export class TemperatureMonitoringService {
       // 1. Salvar leitura
       const readingStmt = this.db.prepare(`
         INSERT INTO temperature_readings (
-          sensor_id, store_id, temperature, humidity, max_temp_recorded, min_temp_recorded,
+          sensor_id, store_id, round_id, temperature, humidity, max_temp_recorded, min_temp_recorded,
           is_excursion, recorded_by, notes, recorded_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, coalesce(?, CURRENT_TIMESTAMP))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, coalesce(?, CURRENT_TIMESTAMP))
       `);
 
       const res = readingStmt.run(
         input.sensorId,
         storeId,
+        input.roundId || null,
         input.temperature,
         input.humidity !== undefined ? input.humidity : null,
         input.maxTempRecorded !== undefined ? input.maxTempRecorded : input.temperature,
@@ -369,5 +376,215 @@ export class TemperatureMonitoringService {
       cold_chain_status: coldChainStatus,
       ambient_status: ambientStatus,
     };
+  }
+
+  /**
+   * Inicializa automaticamente os 5 setores físicos regulamentares caso a loja ainda não possua sensores cadastrados
+   */
+  seedDefaultStoreSectors(storeId: number): TemperatureSensor[] {
+    const existing = this.listSensors(storeId, false);
+    if (existing.length > 0) {
+      return existing;
+    }
+
+    const defaultSectors = [
+      {
+        name: 'Hall de Medicamentos (Dispensário & Balcão)',
+        locationType: 'SALES_FLOOR' as const,
+        sectorCode: 'HALL_MEDICAMENTOS',
+        floorLocation: 'TÉRREO BALCÃO',
+        minAllowedTemp: 15.0,
+        maxAllowedTemp: 30.0,
+        minAllowedHumidity: 40.0,
+        maxAllowedHumidity: 70.0,
+        serialNumber: 'SEN-HALL-01',
+      },
+      {
+        name: 'Estoque Central & Almoxarifado',
+        locationType: 'STORAGE_ROOM' as const,
+        sectorCode: 'ESTOQUE_CENTRAL',
+        floorLocation: 'TÉRREO FUNDOS',
+        minAllowedTemp: 15.0,
+        maxAllowedTemp: 30.0,
+        minAllowedHumidity: 40.0,
+        maxAllowedHumidity: 70.0,
+        serialNumber: 'SEN-EST-01',
+      },
+      {
+        name: 'Geladeira Principal de Termolábeis',
+        locationType: 'REFRIGERATOR_COLD_CHAIN' as const,
+        sectorCode: 'GELADEIRA_TERMOLABEIS',
+        floorLocation: 'ÁREA TÉCNICA',
+        minAllowedTemp: 2.0,
+        maxAllowedTemp: 8.0,
+        minAllowedHumidity: 0.0,
+        maxAllowedHumidity: 100.0,
+        serialNumber: 'SEN-GEL-01',
+        calibrationCertNumber: 'RBC-2026/01',
+      },
+      {
+        name: 'Consultório & Sala de Injetáveis',
+        locationType: 'SALES_FLOOR' as const,
+        sectorCode: 'SALA_INJETAVEIS',
+        floorLocation: 'CONSULTÓRIO 01',
+        minAllowedTemp: 15.0,
+        maxAllowedTemp: 30.0,
+        minAllowedHumidity: 40.0,
+        maxAllowedHumidity: 70.0,
+        serialNumber: 'SEN-CLIN-01',
+      },
+      {
+        name: 'Doca de Recebimento & Triagem',
+        locationType: 'STORAGE_ROOM' as const,
+        sectorCode: 'QUARENTENA_RECEBIMENTO',
+        floorLocation: 'DOCA DE ENTRADA',
+        minAllowedTemp: 15.0,
+        maxAllowedTemp: 30.0,
+        minAllowedHumidity: 40.0,
+        maxAllowedHumidity: 70.0,
+        serialNumber: 'SEN-DOCA-01',
+      },
+    ];
+
+    for (const sec of defaultSectors) {
+      this.registerSensor({
+        storeId,
+        ...sec,
+      });
+    }
+
+    return this.listSensors(storeId, false);
+  }
+
+  /**
+   * Executa a Ronda Térmica Multissetorial em lote (Manhã / Tarde / Noite)
+   */
+  recordSectorRound(input: RecordSectorRoundInput): {
+    round: TemperatureRound;
+    results: Array<{ sensorId: number; readingId: number; isExcursion: boolean; excursionId?: number }>;
+  } {
+    if (!input.readings || input.readings.length === 0) {
+      throw new Error('A ronda deve conter ao menos 1 leitura de setor.');
+    }
+
+    let roundId = 0;
+    let excursionsCount = 0;
+    const results: Array<{ sensorId: number; readingId: number; isExcursion: boolean; excursionId?: number }> = [];
+
+    this.db.transaction(() => {
+      // 1. Criar cabeçalho da ronda
+      const roundStmt = this.db.prepare(`
+        INSERT INTO temperature_rounds (
+          store_id, shift, conducted_by, readings_count, excursions_count, status, notes
+        ) VALUES (?, ?, ?, ?, 0, 'COMPLETED', ?)
+      `);
+      const roundRes = roundStmt.run(
+        input.storeId,
+        input.shift,
+        input.conductedBy,
+        input.readings.length,
+        input.notes || null
+      );
+      roundId = Number(roundRes.lastInsertRowid);
+
+      // 2. Gravar leitura de cada setor
+      for (const item of input.readings) {
+        const readRes = this.recordReading({
+          sensorId: item.sensorId,
+          storeId: input.storeId,
+          roundId,
+          temperature: item.temperature,
+          humidity: item.humidity,
+          recordedBy: input.conductedBy,
+          notes: item.notes,
+        });
+
+        if (readRes.isExcursion) {
+          excursionsCount++;
+        }
+
+        results.push({
+          sensorId: item.sensorId,
+          readingId: readRes.readingId,
+          isExcursion: readRes.isExcursion,
+          excursionId: readRes.excursionId,
+        });
+      }
+
+      // 3. Atualizar status e contagem de excursões na ronda
+      const status = excursionsCount > 0 ? 'EXCURSION_DETECTED' : 'COMPLETED';
+      this.db
+        .prepare(`
+          UPDATE temperature_rounds
+          SET excursions_count = ?, status = ?
+          WHERE id = ?
+        `)
+        .run(excursionsCount, status, roundId);
+    })();
+
+    const round = this.getRoundById(roundId);
+    return { round, results };
+  }
+
+  /**
+   * Obtém detalhes de uma ronda por ID
+   */
+  getRoundById(roundId: number): TemperatureRound {
+    const row = this.db.prepare('SELECT * FROM temperature_rounds WHERE id = ?').get(roundId) as any;
+    if (!row) {
+      throw new Error(`Ronda #${roundId} não encontrada.`);
+    }
+
+    const readings = this.db
+      .prepare(`
+        SELECT tr.*, ts.name AS sensor_name, ts.location_type, ts.sector_code
+        FROM temperature_readings tr
+        JOIN temperature_sensors ts ON ts.id = tr.sensor_id
+        WHERE tr.round_id = ?
+        ORDER BY tr.id ASC
+      `)
+      .all(roundId) as any[];
+
+    return {
+      ...row,
+      readings: readings.map((r) => ({
+        ...r,
+        is_excursion: Boolean(r.is_excursion),
+      })),
+    };
+  }
+
+  /**
+   * Lista histórico de rondas sanitárias da loja
+   */
+  listRounds(storeId: number, limit: number = 30): TemperatureRound[] {
+    const rows = this.db
+      .prepare(`
+        SELECT * FROM temperature_rounds
+        WHERE store_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+      `)
+      .all(storeId, limit) as any[];
+
+    return rows.map((r) => {
+      const readings = this.db
+        .prepare(`
+          SELECT tr.*, ts.name AS sensor_name, ts.location_type, ts.sector_code
+          FROM temperature_readings tr
+          JOIN temperature_sensors ts ON ts.id = tr.sensor_id
+          WHERE tr.round_id = ?
+          ORDER BY tr.id ASC
+        `)
+        .all(r.id) as any[];
+
+      return {
+        ...r,
+        readings: readings.map((item) => ({
+          ...item,
+          is_excursion: Boolean(item.is_excursion),
+        })),
+      };
+    });
   }
 }
