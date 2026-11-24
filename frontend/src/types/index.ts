@@ -21,7 +21,8 @@ export type StationMode =
   | 'SUBSCRIPTION_CLUB'
   | 'FRACTIONATION_RDC80'
   | 'SALES_COMMISSIONS'
-  | 'FINANCIAL_DRE';
+  | 'FINANCIAL_DRE'
+  | 'PGRSS_DISPOSAL';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -309,4 +310,5 @@ export * from './subscription';
 export * from './fractionation';
 export * from './commission';
 export * from './dre';
+export * from './pgrss';
 

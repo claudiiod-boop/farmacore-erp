@@ -4437,6 +4437,101 @@ export const dreApi = {
   },
 };
 
+export const pgrssApi = {
+  segregateWaste: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/pgrss/segregate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao segregar resíduo');
+    }
+    return res.json();
+  },
+
+  listRecords: async (filters?: any) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters?.storeId) params.append('storeId', String(filters.storeId));
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.wasteGroup) params.append('wasteGroup', filters.wasteGroup);
+    if (filters?.reason) params.append('reason', filters.reason);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    const res = await fetch(`${base}/api/sanitary/pgrss/records?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar resíduos');
+    }
+    return res.json();
+  },
+
+  createManifest: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/pgrss/manifests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao emitir manifesto MTR');
+    }
+    return res.json();
+  },
+
+  listManifests: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/sanitary/pgrss/manifests?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar manifestos MTR');
+    }
+    return res.json();
+  },
+
+  getManifestDocument: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/pgrss/manifests/${id}/document`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter documento MTR');
+    }
+    return res.json();
+  },
+
+  finalizeCdf: async (id: number, data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sanitary/pgrss/manifests/${id}/cdf`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao finalizar MTR com CDF');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/sanitary/pgrss/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs PGRSS');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4541,6 +4636,8 @@ export const api = {
   commissionApi,
   dre: dreApi,
   dreApi,
+  pgrss: pgrssApi,
+  pgrssApi,
 };
 
 export default api;

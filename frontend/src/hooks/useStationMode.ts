@@ -32,7 +32,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'SUBSCRIPTION_CLUB' ||
         stored === 'FRACTIONATION_RDC80' ||
         stored === 'SALES_COMMISSIONS' ||
-        stored === 'FINANCIAL_DRE'
+        stored === 'FINANCIAL_DRE' ||
+        stored === 'PGRSS_DISPOSAL'
       ) {
         return stored;
       }
@@ -83,6 +84,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isFractionation: mode === 'FRACTIONATION_RDC80',
     isCommissions: mode === 'SALES_COMMISSIONS',
     isDre: mode === 'FINANCIAL_DRE',
+    isPgrss: mode === 'PGRSS_DISPOSAL',
   };
 }
 

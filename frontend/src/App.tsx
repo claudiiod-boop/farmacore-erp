@@ -22,6 +22,7 @@ import { SubscriptionsPage } from './pages/SubscriptionsPage';
 import { FractionationPage } from './pages/FractionationPage';
 import { CommissionsPage } from './pages/CommissionsPage';
 import { DreAnalyticsPage } from './pages/DreAnalyticsPage';
+import { PgrssDisposalPage } from './pages/PgrssDisposalPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -50,10 +51,11 @@ import {
   Scissors,
   Award,
   PieChart,
+  Trash2,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -543,6 +545,20 @@ function AppContent() {
               <PieChart className="w-3.5 h-3.5 text-emerald-400" />
               <span>DRE Gerencial</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-pgrss-button"
+              onClick={() => setMode('PGRSS_DISPOSAL')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isPgrss
+                  ? 'bg-rose-950 text-rose-300 border-rose-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>PGRSS & Descarte</span>
+            </button>
           </nav>
         </div>
 
@@ -619,6 +635,7 @@ function AppContent() {
         {isFractionation && <FractionationPage />}
         {isCommissions && <CommissionsPage />}
         {isDre && <DreAnalyticsPage />}
+        {isPgrss && <PgrssDisposalPage />}
       </div>
 
       {/* Global PBM Modal */}
