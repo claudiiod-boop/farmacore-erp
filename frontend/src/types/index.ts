@@ -23,7 +23,8 @@ export type StationMode =
   | 'SALES_COMMISSIONS'
   | 'FINANCIAL_DRE'
   | 'PGRSS_DISPOSAL'
-  | 'KIOSK_TERMINAL';
+  | 'KIOSK_TERMINAL'
+  | 'BMPO_REGULATORY';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -313,4 +314,5 @@ export * from './commission';
 export * from './dre';
 export * from './pgrss';
 export * from './kiosk';
+export * from './bmpo';
 

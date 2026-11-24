@@ -4639,6 +4639,106 @@ export const kioskApi = {
   },
 };
 
+export const bmpoApi = {
+  generateBmpo: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/regulatory/bmpo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao gerar BMPO');
+    }
+    return res.json();
+  },
+
+  generateRmnr: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/regulatory/rmnr`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao gerar RMNR');
+    }
+    return res.json();
+  },
+
+  listReports: async (storeId?: number, reportType?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (reportType) params.append('reportType', reportType);
+    const res = await fetch(`${base}/api/regulatory/reports?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar relatórios regulatórios');
+    }
+    return res.json();
+  },
+
+  getReportById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/regulatory/reports/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter detalhes do relatório');
+    }
+    return res.json();
+  },
+
+  fileWithVisa: async (data: { reportId: number; visaProtocolNumber: string; visaFilingDate: string; observations?: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/regulatory/reports/${data.reportId}/file-visa`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao protocolar relatório na VISA');
+    }
+    return res.json();
+  },
+
+  deleteReport: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/regulatory/reports/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao excluir relatório');
+    }
+  },
+
+  getPrintDocument: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/regulatory/reports/${id}/print`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter documento de impressão');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/regulatory/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs regulatórios');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4747,6 +4847,8 @@ export const api = {
   pgrssApi,
   kiosk: kioskApi,
   kioskApi,
+  bmpo: bmpoApi,
+  bmpoApi,
 };
 
 export default api;

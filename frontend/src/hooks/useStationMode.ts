@@ -34,7 +34,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'SALES_COMMISSIONS' ||
         stored === 'FINANCIAL_DRE' ||
         stored === 'PGRSS_DISPOSAL' ||
-        stored === 'KIOSK_TERMINAL'
+        stored === 'KIOSK_TERMINAL' ||
+        stored === 'BMPO_REGULATORY'
       ) {
         return stored;
       }
@@ -87,6 +88,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isDre: mode === 'FINANCIAL_DRE',
     isPgrss: mode === 'PGRSS_DISPOSAL',
     isKiosk: mode === 'KIOSK_TERMINAL',
+    isBmpo: mode === 'BMPO_REGULATORY',
   };
 }
 
