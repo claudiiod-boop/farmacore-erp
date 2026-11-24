@@ -4059,6 +4059,102 @@ export const subscriptionApi = {
   },
 };
 
+export const fractionationApi = {
+  listFractionableProducts: async (search?: string) => {
+    const base = getBaseUrl();
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+    const res = await fetch(`${base}/api/fractionation/products${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar produtos fracionáveis');
+    }
+    return res.json();
+  },
+
+  toggleProductFractionable: async (id: number, data: { isFractionable: boolean; unitsPerPackage?: number; fractionalUnit?: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/fractionation/products/${id}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao parametrizar fracionamento');
+    }
+    return res.json();
+  },
+
+  fractionateMedicine: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/fractionation/records`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao fracionar medicamento');
+    }
+    return res.json();
+  },
+
+  listFractionationRecords: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const query = storeId ? `?storeId=${storeId}` : '';
+    const res = await fetch(`${base}/api/fractionation/records${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar fracionamentos');
+    }
+    return res.json();
+  },
+
+  getFractionationRecord: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/fractionation/records/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter registro de fracionamento');
+    }
+    return res.json();
+  },
+
+  dispenseFractioned: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/fractionation/dispense`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao dispensar medicamento fracionado');
+    }
+    return res.json();
+  },
+
+  getOfficialLabel: async (dispensationId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/fractionation/label/${dispensationId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter rótulo térmico');
+    }
+    return res.json();
+  },
+
+  getFractionationKpis: async () => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/fractionation/kpis`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao carregar KPIs de fracionamento');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4157,6 +4253,8 @@ export const api = {
   compoundingApi,
   subscriptions: subscriptionApi,
   subscriptionApi,
+  fractionation: fractionationApi,
+  fractionationApi,
 };
 
 export default api;

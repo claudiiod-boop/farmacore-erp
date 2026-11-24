@@ -19,6 +19,7 @@ import CmedPricingPage from './pages/CmedPricingPage';
 import { OmnichannelPickPackPage } from './pages/OmnichannelPickPackPage';
 import { CompoundingPage } from './pages/CompoundingPage';
 import { SubscriptionsPage } from './pages/SubscriptionsPage';
+import { FractionationPage } from './pages/FractionationPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -44,10 +45,11 @@ import {
   MessageSquare,
   FlaskConical,
   Repeat,
+  Scissors,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -495,6 +497,20 @@ function AppContent() {
               <Repeat className="w-3.5 h-3.5 text-indigo-400" />
               <span>Clube Assinaturas</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-fractionation-button"
+              onClick={() => setMode('FRACTIONATION_RDC80')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isFractionation
+                  ? 'bg-sky-950 text-sky-300 border-sky-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Scissors className="w-3.5 h-3.5 text-sky-400" />
+              <span>Fracionamento</span>
+            </button>
           </nav>
         </div>
 
@@ -568,6 +584,7 @@ function AppContent() {
         {isOmnichannelPickPack && <OmnichannelPickPackPage />}
         {isCompounding && <CompoundingPage />}
         {isSubscriptionClub && <SubscriptionsPage />}
+        {isFractionation && <FractionationPage />}
       </div>
 
       {/* Global PBM Modal */}

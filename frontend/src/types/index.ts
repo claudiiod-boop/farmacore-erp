@@ -18,7 +18,8 @@ export type StationMode =
   | 'CMED_PRICING'
   | 'OMNICHANNEL_PICK_PACK'
   | 'COMPOUNDING_MAGISTRAL'
-  | 'SUBSCRIPTION_CLUB';
+  | 'SUBSCRIPTION_CLUB'
+  | 'FRACTIONATION_RDC80';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -303,4 +304,5 @@ export * from './tef';
 // ===================== COMPOUNDING & SUBSCRIPTIONS TYPES =====================
 export * from './compounding';
 export * from './subscription';
+export * from './fractionation';
 

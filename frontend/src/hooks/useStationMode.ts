@@ -76,6 +76,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isOmnichannelPickPack: mode === 'OMNICHANNEL_PICK_PACK',
     isCompounding: mode === 'COMPOUNDING_MAGISTRAL',
     isSubscriptionClub: mode === 'SUBSCRIPTION_CLUB',
+    isFractionation: mode === 'FRACTIONATION_RDC80',
   };
 }
 
