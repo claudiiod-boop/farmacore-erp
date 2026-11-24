@@ -4739,6 +4739,129 @@ export const bmpoApi = {
   },
 };
 
+export const sncmApi = {
+  parseDataMatrix: async (raw: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sncm/parse-datamatrix`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao decodificar DataMatrix');
+    }
+    return res.json();
+  },
+
+  registerReceipt: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sncm/receipt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar recebimento SNCM');
+    }
+    return res.json();
+  },
+
+  dispenseItem: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sncm/dispense`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao dispensar unidade SNCM');
+    }
+    return res.json();
+  },
+
+  listItems: async (storeId?: number, status?: string, search?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    const res = await fetch(`${base}/api/sncm/items?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar estoque serializado');
+    }
+    return res.json();
+  },
+
+  getItemBySerial: async (serial: string, gtin?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (gtin) params.append('gtin', gtin);
+    const res = await fetch(`${base}/api/sncm/items/${encodeURIComponent(serial)}?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter histórico da unidade');
+    }
+    return res.json();
+  },
+
+  quarantineItem: async (serial: string, reason: string, gtin?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sncm/items/${encodeURIComponent(serial)}/quarantine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, gtin }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao colocar item em quarentena');
+    }
+    return res.json();
+  },
+
+  listEvents: async (storeId?: number, limit?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (limit) params.append('limit', String(limit));
+    const res = await fetch(`${base}/api/sncm/events?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar eventos SNCM');
+    }
+    return res.json();
+  },
+
+  transmitEvents: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/sncm/transmit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao transmitir eventos ao SNCM');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/sncm/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs do SNCM');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4849,6 +4972,8 @@ export const api = {
   kioskApi,
   bmpo: bmpoApi,
   bmpoApi,
+  sncm: sncmApi,
+  sncmApi,
 };
 
 export default api;

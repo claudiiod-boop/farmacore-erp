@@ -25,6 +25,7 @@ import { DreAnalyticsPage } from './pages/DreAnalyticsPage';
 import { PgrssDisposalPage } from './pages/PgrssDisposalPage';
 import { KioskPage } from './pages/KioskPage';
 import { BmpoRegulatoryPage } from './pages/BmpoRegulatoryPage';
+import { SncmTraceabilityPage } from './pages/SncmTraceabilityPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -56,10 +57,11 @@ import {
   Trash2,
   MonitorSmartphone,
   FileSpreadsheet,
+  QrCode,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -591,6 +593,20 @@ function AppContent() {
               <FileSpreadsheet className="w-3.5 h-3.5 text-amber-400" />
               <span>BMPO / Mapas VISA</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-sncm-button"
+              onClick={() => setMode('SNCM_TRACEABILITY')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isSncm
+                  ? 'bg-cyan-950 text-cyan-300 border-cyan-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+              <span>SNCM Rastreabilidade</span>
+            </button>
           </nav>
         </div>
 
@@ -670,6 +686,7 @@ function AppContent() {
         {isPgrss && <PgrssDisposalPage />}
         {isKiosk && <KioskPage />}
         {isBmpo && <BmpoRegulatoryPage />}
+        {isSncm && <SncmTraceabilityPage />}
       </div>
 
       {/* Global PBM Modal */}
