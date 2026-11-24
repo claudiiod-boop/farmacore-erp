@@ -47,6 +47,7 @@ import { registerBmpoRoutes } from '../modules/bmpo/bmpo.routes';
 import { registerSncmRoutes } from '../modules/sncm/sncm.routes';
 import { registerReplenishmentRoutes } from '../modules/replenishment/replenishment.routes';
 import { registerReturnsRoutes } from '../modules/returns/returns.routes';
+import { registerQuarantineRoutes } from '../modules/quarantine/quarantine.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2090,4 +2091,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== DEVOLUÇÕES, TROCAS & ESTORNO FISCAL (RDC 44/2009 ANVISA) =====================
   registerReturnsRoutes(app, db);
+
+  // ===================== QUARENTENA SANITÁRIA, LOTES VENCIDOS & NOTIVISA (RDC 44/2009 ANVISA) =====================
+  registerQuarantineRoutes(app, db);
 }
