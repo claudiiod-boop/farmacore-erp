@@ -41,6 +41,7 @@ import { registerSubscriptionRoutes } from '../modules/subscriptions/subscriptio
 import { registerFractionationRoutes } from '../modules/fractionation/fractionation.routes';
 import { registerCommissionRoutes } from '../modules/commissions/commission.routes';
 import { registerDreRoutes } from '../modules/dre/dre.routes';
+import { registerPgrssRoutes } from '../modules/pgrss/pgrss.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2066,4 +2067,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== DRE GERENCIAL, CENTROS DE CUSTO & LUCRATIVIDADE =====================
   registerDreRoutes(app, db);
+
+  // ===================== DESCARTE SANITÁRIO & PGRSS (RDC 222/2018 ANVISA) =====================
+  registerPgrssRoutes(app, db);
 }
