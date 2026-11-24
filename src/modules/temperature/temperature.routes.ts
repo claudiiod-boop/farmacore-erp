@@ -130,6 +130,7 @@ export async function registerTemperatureRoutes(app: FastifyInstance, db: Databa
       }
 
       const input: ResolveExcursionInput = {
+        resolvedBy: body.resolvedBy || body.resolved_by || body.pharmacistCrf || body.pharmacist_crf,
         actionTaken: body.actionTaken || body.action_taken,
         pharmacistCrf: body.pharmacistCrf || body.pharmacist_crf,
         quarantineRecordId: body.quarantineRecordId || body.quarantine_record_id ? Number(body.quarantineRecordId || body.quarantine_record_id) : undefined,

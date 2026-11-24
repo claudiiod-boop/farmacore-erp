@@ -88,7 +88,7 @@ export interface RecordReadingInput {
 }
 
 export interface ResolveExcursionInput {
-  resolvedBy: string;
+  resolvedBy?: string;
   actionTaken: string;
   pharmacistCrf: string;
   quarantineRecordId?: number;
