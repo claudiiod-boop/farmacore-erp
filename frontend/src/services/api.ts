@@ -5277,6 +5277,47 @@ export const temperatureApi = {
     }
     return res.json();
   },
+
+  recordRound: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/temperature/rounds`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar ronda de temperatura');
+    }
+    return res.json();
+  },
+
+  getRounds: async (storeId?: number, limit?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (limit) params.append('limit', String(limit));
+    const res = await fetch(`${base}/api/temperature/rounds?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar histórico de rondas');
+    }
+    return res.json();
+  },
+
+  seedDefaultSectors: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/temperature/seed-sectors`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao inicializar setores');
+    }
+    return res.json();
+  },
 };
 
 export const api = {

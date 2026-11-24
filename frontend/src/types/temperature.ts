@@ -3,6 +3,16 @@ export type SensorLocationType =
   | 'SALES_FLOOR'
   | 'STORAGE_ROOM';
 
+export type SectorCode =
+  | 'HALL_MEDICAMENTOS'
+  | 'ESTOQUE_CENTRAL'
+  | 'GELADEIRA_TERMOLABEIS'
+  | 'SALA_INJETAVEIS'
+  | 'QUARENTENA_RECEBIMENTO'
+  | string;
+
+export type RoundShift = 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'SPECIAL';
+
 export type ExcursionSeverity = 'CRITICAL' | 'MILD';
 export type ExcursionStatus = 'OPEN' | 'RESOLVED';
 
@@ -11,6 +21,8 @@ export interface TemperatureSensor {
   store_id: number;
   name: string;
   location_type: SensorLocationType;
+  sector_code?: SectorCode | null;
+  floor_location?: string | null;
   min_allowed_temp: number;
   max_allowed_temp: number;
   min_allowed_humidity: number;
@@ -28,6 +40,7 @@ export interface TemperatureReading {
   id: number;
   sensor_id: number;
   store_id: number;
+  round_id?: number | null;
   temperature: number;
   humidity?: number | null;
   max_temp_recorded?: number | null;
@@ -38,6 +51,7 @@ export interface TemperatureReading {
   recorded_at: string;
   sensor_name?: string;
   location_type?: SensorLocationType;
+  sector_code?: SectorCode | null;
 }
 
 export interface TemperatureExcursion {
@@ -60,6 +74,35 @@ export interface TemperatureExcursion {
   location_type?: SensorLocationType;
 }
 
+export interface TemperatureRound {
+  id: number;
+  store_id: number;
+  shift: RoundShift;
+  conducted_by: string;
+  readings_count: number;
+  excursions_count: number;
+  status: 'COMPLETED' | 'EXCURSION_DETECTED';
+  notes?: string | null;
+  recorded_at: string;
+  created_at: string;
+  readings?: TemperatureReading[];
+}
+
+export interface SectorReadingItem {
+  sensorId: number;
+  temperature: number;
+  humidity?: number;
+  notes?: string;
+}
+
+export interface RecordSectorRoundInput {
+  storeId?: number;
+  shift: RoundShift;
+  conductedBy: string;
+  notes?: string;
+  readings: SectorReadingItem[];
+}
+
 export interface TemperatureKpis {
   active_sensors_count: number;
   open_excursions_count: number;
@@ -74,6 +117,8 @@ export interface RegisterSensorInput {
   storeId?: number;
   name: string;
   locationType: SensorLocationType;
+  sectorCode?: SectorCode;
+  floorLocation?: string;
   minAllowedTemp?: number;
   maxAllowedTemp?: number;
   minAllowedHumidity?: number;
@@ -86,6 +131,7 @@ export interface RegisterSensorInput {
 export interface RecordReadingInput {
   sensorId: number;
   storeId?: number;
+  roundId?: number;
   temperature: number;
   humidity?: number;
   maxTempRecorded?: number;

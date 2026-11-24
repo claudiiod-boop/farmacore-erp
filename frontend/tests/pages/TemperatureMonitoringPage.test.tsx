@@ -12,6 +12,9 @@ vi.mock('../../src/services/api', () => ({
     getReadings: vi.fn(),
     getExcursions: vi.fn(),
     resolveExcursion: vi.fn(),
+    recordRound: vi.fn(),
+    getRounds: vi.fn(),
+    seedDefaultSectors: vi.fn(),
   },
 }));
 
@@ -21,7 +24,7 @@ describe('TemperatureMonitoringPage (Termômetro & Higrômetro Digital RDC 44/20
   });
 
   const mockKpis = {
-    active_sensors_count: 3,
+    active_sensors_count: 2,
     open_excursions_count: 1,
     current_fridge_temp: 5.2,
     current_sales_floor_temp: 23.4,
@@ -36,6 +39,8 @@ describe('TemperatureMonitoringPage (Termômetro & Higrômetro Digital RDC 44/20
       store_id: 1,
       name: 'Geladeira Principal 01',
       location_type: 'REFRIGERATOR_COLD_CHAIN' as const,
+      sector_code: 'GELADEIRA_TERMOLABEIS',
+      floor_location: 'Área Técnica',
       min_allowed_temp: 2.0,
       max_allowed_temp: 8.0,
       min_allowed_humidity: 0.0,
@@ -60,8 +65,10 @@ describe('TemperatureMonitoringPage (Termômetro & Higrômetro Digital RDC 44/20
     {
       id: 2,
       store_id: 1,
-      name: 'Termo-Higrômetro Balcão',
+      name: 'Hall de Medicamentos Balcão Central',
       location_type: 'SALES_FLOOR' as const,
+      sector_code: 'HALL_MEDICAMENTOS',
+      floor_location: 'Térreo Balcão',
       min_allowed_temp: 15.0,
       max_allowed_temp: 30.0,
       min_allowed_humidity: 40.0,
@@ -112,9 +119,10 @@ describe('TemperatureMonitoringPage (Termômetro & Higrômetro Digital RDC 44/20
     (temperatureApi.getSensors as any).mockResolvedValue(mockSensors);
     (temperatureApi.getExcursions as any).mockResolvedValue(mockExcursions);
     (temperatureApi.getReadings as any).mockResolvedValue([]);
+    (temperatureApi.getRounds as any).mockResolvedValue([]);
   });
 
-  it('1. Renderiza KPIs consolidados e cards dos sensores cadastrados', async () => {
+  it('1. Renderiza KPIs consolidados e checklist da ronda por setores no mount', async () => {
     render(<TemperatureMonitoringPage />);
 
     await waitFor(() => {
@@ -122,60 +130,72 @@ describe('TemperatureMonitoringPage (Termômetro & Higrômetro Digital RDC 44/20
       expect(screen.getAllByText('5.2°C').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('23.4°C').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Geladeira Principal 01')).toBeDefined();
-      expect(screen.getByText('Termo-Higrômetro Balcão')).toBeDefined();
+      expect(screen.getByText('Hall de Medicamentos Balcão Central')).toBeDefined();
+      expect(screen.getByTestId('tab-sector-rounds')).toBeDefined();
+      expect(screen.getByTestId('btn-submit-sector-round')).toBeDefined();
     });
   });
 
-  it('2. Alterna entre abas e carrega incidentes de excursão', async () => {
-    render(<TemperatureMonitoringPage />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('tab-excursions')).toBeDefined();
-    });
-
-    fireEvent.click(screen.getByTestId('tab-excursions'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('btn-resolve-exc-1')).toBeDefined();
-      expect(screen.getByText('9.8°C')).toBeDefined();
-    });
-  });
-
-  it('3. Registra nova leitura diária com sucesso na aba Aferição', async () => {
-    (temperatureApi.recordReading as any).mockResolvedValue({
-      readingId: 201,
-      isExcursion: false,
-      temperature: 4.8,
+  it('2. Registra a Ronda Sanitária Diária em lote para todos os setores de uma só vez', async () => {
+    (temperatureApi.recordRound as any).mockResolvedValue({
+      round: {
+        id: 10,
+        shift: 'MORNING',
+        readings_count: 2,
+        excursions_count: 0,
+        status: 'COMPLETED',
+      },
+      results: [],
     });
 
     render(<TemperatureMonitoringPage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('tab-reading-entry')).toBeDefined();
+      expect(screen.getByTestId('round-temp-input-1')).toBeDefined();
+      expect(screen.getByTestId('round-temp-input-2')).toBeDefined();
     });
 
-    fireEvent.click(screen.getByTestId('tab-reading-entry'));
+    // Digitar temperaturas da geladeira e do hall
+    fireEvent.change(screen.getByTestId('round-temp-input-1'), { target: { value: '4.6' } });
+    fireEvent.change(screen.getByTestId('round-temp-input-2'), { target: { value: '22.5' } });
+    fireEvent.change(screen.getByTestId('round-humid-input-2'), { target: { value: '50.0' } });
 
-    const tempInput = screen.getByTestId('input-reading-temp');
-    fireEvent.change(tempInput, { target: { value: '4.8' } });
-
-    const submitBtn = screen.getByTestId('btn-submit-reading');
-    fireEvent.click(submitBtn);
+    // Salvar ronda completa
+    fireEvent.click(screen.getByTestId('btn-submit-sector-round'));
 
     await waitFor(() => {
-      expect(temperatureApi.recordReading).toHaveBeenCalledWith(
+      expect(temperatureApi.recordRound).toHaveBeenCalledWith(
         expect.objectContaining({
-          temperature: 4.8,
+          shift: 'MORNING',
+          readings: expect.arrayContaining([
+            expect.objectContaining({ sensorId: 1, temperature: 4.6 }),
+            expect.objectContaining({ sensorId: 2, temperature: 22.5, humidity: 50.0 }),
+          ]),
         })
       );
-      expect(screen.getByText(/Leitura de 4.8°C gravada com sucesso/i)).toBeDefined();
+      expect(screen.getByText(/Ronda \(MORNING\) registrada com sucesso/i)).toBeDefined();
     });
   });
 
-  it('4. Abre modal e cadastra novo termômetro/sensor', async () => {
+  it('3. Alterna para aba de Sensores e visualiza os detalhes', async () => {
+    render(<TemperatureMonitoringPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tab-sensors')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByTestId('tab-sensors'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sensor-card-1')).toBeDefined();
+      expect(screen.getByTestId('sensor-card-2')).toBeDefined();
+    });
+  });
+
+  it('4. Abre modal e cadastra novo setor/termômetro', async () => {
     (temperatureApi.registerSensor as any).mockResolvedValue({
       id: 3,
-      name: 'Geladeira 03 - Imunobiológicos',
+      name: 'Estoque Central Farmácia',
     });
 
     render(<TemperatureMonitoringPage />);
@@ -187,21 +207,21 @@ describe('TemperatureMonitoringPage (Termômetro & Higrômetro Digital RDC 44/20
     fireEvent.click(screen.getByTestId('btn-add-sensor'));
 
     const nameInput = screen.getByTestId('input-new-sensor-name');
-    fireEvent.change(nameInput, { target: { value: 'Geladeira 03 - Imunobiológicos' } });
+    fireEvent.change(nameInput, { target: { value: 'Estoque Central Farmácia' } });
 
     fireEvent.click(screen.getByTestId('btn-confirm-add-sensor'));
 
     await waitFor(() => {
       expect(temperatureApi.registerSensor).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'Geladeira 03 - Imunobiológicos',
+          name: 'Estoque Central Farmácia',
         })
       );
       expect(screen.getByText(/Sensor cadastrado com sucesso/i)).toBeDefined();
     });
   });
 
-  it('5. Abre modal de resolução de excursão e homologa com CRF do farmacêutico RT', async () => {
+  it('5. Abre modal de resolução de excursão e homologa com CRF do RT', async () => {
     (temperatureApi.resolveExcursion as any).mockResolvedValue({
       id: 1,
       status: 'RESOLVED',
