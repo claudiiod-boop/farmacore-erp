@@ -51,6 +51,7 @@ import { registerQuarantineRoutes } from '../modules/quarantine/quarantine.route
 import { registerTemperatureRoutes } from '../modules/temperature/temperature.routes';
 import { registerDigitalPrescriptionRoutes } from '../modules/digital-prescriptions/digital-prescriptions.routes';
 import { registerSanitizationRoutes } from '../modules/sanitization/sanitization.routes';
+import { registerInjectableVaccinationRoutes } from '../modules/injectables/injectables.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2106,4 +2107,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== SANITIZAÇÃO, HIGIENIZAÇÃO, DEDETIZAÇÃO & POPS (RDC 44/2009 ANVISA) =====================
   registerSanitizationRoutes(app, db);
+
+  // ===================== LIVRO DE INJETÁVEIS & SALA DE VACINAS (RDC 197/2017 & RDC 44/2009 ANVISA) =====================
+  registerInjectableVaccinationRoutes(app, db);
 }
