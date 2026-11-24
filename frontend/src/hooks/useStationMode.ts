@@ -28,7 +28,11 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'B2B_QUOTATIONS' ||
         stored === 'CMED_PRICING' ||
         stored === 'OMNICHANNEL_PICK_PACK' ||
-        stored === 'COMPOUNDING_MAGISTRAL'
+        stored === 'COMPOUNDING_MAGISTRAL' ||
+        stored === 'SUBSCRIPTION_CLUB' ||
+        stored === 'FRACTIONATION_RDC80' ||
+        stored === 'SALES_COMMISSIONS' ||
+        stored === 'FINANCIAL_DRE'
       ) {
         return stored;
       }
@@ -78,6 +82,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isSubscriptionClub: mode === 'SUBSCRIPTION_CLUB',
     isFractionation: mode === 'FRACTIONATION_RDC80',
     isCommissions: mode === 'SALES_COMMISSIONS',
+    isDre: mode === 'FINANCIAL_DRE',
   };
 }
 

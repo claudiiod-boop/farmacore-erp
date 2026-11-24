@@ -4298,6 +4298,145 @@ export const commissionApi = {
   },
 };
 
+export const dreApi = {
+  getReport: async (periodMonth?: string, storeId?: number, regime?: 'COMPETENCIA' | 'CAIXA') => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (periodMonth) params.append('periodMonth', periodMonth);
+    if (storeId) params.append('storeId', String(storeId));
+    if (regime) params.append('regime', regime);
+    const res = await fetch(`${base}/api/dre/report?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao carregar relatório DRE');
+    }
+    return res.json();
+  },
+
+  saveSnapshot: async (periodMonth: string, storeId?: number, regime?: 'COMPETENCIA' | 'CAIXA') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/dre/snapshot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ periodMonth, storeId, regime }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao salvar snapshot DRE');
+    }
+    return res.json();
+  },
+
+  listSnapshots: async (storeId?: number, periodMonth?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (periodMonth) params.append('periodMonth', periodMonth);
+    const res = await fetch(`${base}/api/dre/snapshots?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar snapshots DRE');
+    }
+    return res.json();
+  },
+
+  listCostCenters: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/dre/cost-centers?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar centros de custo');
+    }
+    return res.json();
+  },
+
+  createCostCenter: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/dre/cost-centers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar centro de custo');
+    }
+    return res.json();
+  },
+
+  listExpenses: async (filters?: any) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (filters?.storeId) params.append('storeId', String(filters.storeId));
+    if (filters?.costCenterId) params.append('costCenterId', String(filters.costCenterId));
+    if (filters?.expenseType) params.append('expenseType', filters.expenseType);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    const res = await fetch(`${base}/api/dre/expenses?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar despesas');
+    }
+    return res.json();
+  },
+
+  createExpense: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/dre/expenses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao cadastrar despesa');
+    }
+    return res.json();
+  },
+
+  payExpense: async (id: number, paymentDate?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/dre/expenses/${id}/pay`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentDate }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao dar baixa na despesa');
+    }
+    return res.json();
+  },
+
+  getBranchRanking: async (periodMonth?: string) => {
+    const base = getBaseUrl();
+    const query = periodMonth ? `?periodMonth=${periodMonth}` : '';
+    const res = await fetch(`${base}/api/dre/branch-ranking${query}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter ranking de filiais');
+    }
+    return res.json();
+  },
+
+  getKpis: async (periodMonth?: string, storeId?: number, regime?: 'COMPETENCIA' | 'CAIXA') => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (periodMonth) params.append('periodMonth', periodMonth);
+    if (storeId) params.append('storeId', String(storeId));
+    if (regime) params.append('regime', regime);
+    const res = await fetch(`${base}/api/dre/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs DRE');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -4400,6 +4539,8 @@ export const api = {
   fractionationApi,
   commissions: commissionApi,
   commissionApi,
+  dre: dreApi,
+  dreApi,
 };
 
 export default api;

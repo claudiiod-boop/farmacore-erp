@@ -20,7 +20,8 @@ export type StationMode =
   | 'COMPOUNDING_MAGISTRAL'
   | 'SUBSCRIPTION_CLUB'
   | 'FRACTIONATION_RDC80'
-  | 'SALES_COMMISSIONS';
+  | 'SALES_COMMISSIONS'
+  | 'FINANCIAL_DRE';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -307,4 +308,5 @@ export * from './compounding';
 export * from './subscription';
 export * from './fractionation';
 export * from './commission';
+export * from './dre';
 
