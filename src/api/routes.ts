@@ -43,6 +43,7 @@ import { registerCommissionRoutes } from '../modules/commissions/commission.rout
 import { registerDreRoutes } from '../modules/dre/dre.routes';
 import { registerPgrssRoutes } from '../modules/pgrss/pgrss.routes';
 import { registerKioskRoutes } from '../modules/kiosk/kiosk.routes';
+import { registerBmpoRoutes } from '../modules/bmpo/bmpo.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2074,4 +2075,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== TOTEM AUTOATENDIMENTO, BUSCA-PREÇO & FILA =====================
   registerKioskRoutes(app, db);
+
+  // ===================== BALANÇOS OFICIAIS BMPO, RMNRA & RMNRB (PORTARIA 344/98 ANVISA) =====================
+  registerBmpoRoutes(app, db);
 }
