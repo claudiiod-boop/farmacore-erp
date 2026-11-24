@@ -46,6 +46,7 @@ import { registerKioskRoutes } from '../modules/kiosk/kiosk.routes';
 import { registerBmpoRoutes } from '../modules/bmpo/bmpo.routes';
 import { registerSncmRoutes } from '../modules/sncm/sncm.routes';
 import { registerReplenishmentRoutes } from '../modules/replenishment/replenishment.routes';
+import { registerReturnsRoutes } from '../modules/returns/returns.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2086,4 +2087,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== REPOSIÇÃO INTELIGENTE DE ESTOQUE & PONTO DE PEDIDO =====================
   registerReplenishmentRoutes(app, db);
+
+  // ===================== DEVOLUÇÕES, TROCAS & ESTORNO FISCAL (RDC 44/2009 ANVISA) =====================
+  registerReturnsRoutes(app, db);
 }
