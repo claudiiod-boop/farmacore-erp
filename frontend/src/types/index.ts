@@ -26,7 +26,8 @@ export type StationMode =
   | 'KIOSK_TERMINAL'
   | 'BMPO_REGULATORY'
   | 'SNCM_TRACEABILITY'
-  | 'SMART_REPLENISHMENT';
+  | 'SMART_REPLENISHMENT'
+  | 'CUSTOMER_RETURNS';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -319,4 +320,5 @@ export * from './kiosk';
 export * from './bmpo';
 export * from './sncm';
 export * from './replenishment';
+export * from './returns';
 

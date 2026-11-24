@@ -4954,6 +4954,130 @@ export const replenishmentApi = {
   },
 };
 
+export const returnsApi = {
+  getEligibleItems: async (saleId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/returns/sale/${saleId}/eligible-items`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar itens da venda');
+    }
+    return res.json();
+  },
+
+  createReturn: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/returns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao criar devolução');
+    }
+    return res.json();
+  },
+
+  listReturns: async (storeId?: number, status?: string, returnType?: string) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    if (status) params.append('status', status);
+    if (returnType) params.append('returnType', returnType);
+    const res = await fetch(`${base}/api/returns?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao listar devoluções');
+    }
+    return res.json();
+  },
+
+  getReturnById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/returns/${id}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter devolução');
+    }
+    return res.json();
+  },
+
+  approveReturn: async (id: number, data?: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/returns/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao aprovar devolução');
+    }
+    return res.json();
+  },
+
+  rejectReturn: async (id: number, reason: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/returns/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao rejeitar devolução');
+    }
+    return res.json();
+  },
+
+  getFiscalSummary: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/returns/${id}/fiscal`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter espelho fiscal');
+    }
+    return res.json();
+  },
+
+  validateStoreCredit: async (code: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/returns/store-credits/validate/${encodeURIComponent(code)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao validar vale-compras');
+    }
+    return res.json();
+  },
+
+  useStoreCredit: async (code: string, amount: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/returns/store-credits/use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, amount }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao utilizar vale-compras');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const params = new URLSearchParams();
+    if (storeId) params.append('storeId', String(storeId));
+    const res = await fetch(`${base}/api/returns/kpis?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao obter KPIs de devolução');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5068,6 +5192,8 @@ export const api = {
   sncmApi,
   replenishment: replenishmentApi,
   replenishmentApi,
+  returns: returnsApi,
+  returnsApi,
 };
 
 export default api;

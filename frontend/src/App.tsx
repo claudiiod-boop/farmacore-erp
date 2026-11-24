@@ -27,6 +27,7 @@ import { KioskPage } from './pages/KioskPage';
 import { BmpoRegulatoryPage } from './pages/BmpoRegulatoryPage';
 import { SncmTraceabilityPage } from './pages/SncmTraceabilityPage';
 import { SmartReplenishmentPage } from './pages/SmartReplenishmentPage';
+import { CustomerReturnsPage } from './pages/CustomerReturnsPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -60,10 +61,11 @@ import {
   FileSpreadsheet,
   QrCode,
   TrendingUp,
+  RotateCcw,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -623,6 +625,20 @@ function AppContent() {
               <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
               <span>Reposição Inteligente</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-returns-button"
+              onClick={() => setMode('CUSTOMER_RETURNS')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isCustomerReturns
+                  ? 'bg-rose-950 text-rose-300 border-rose-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+              <span>Devoluções & Trocas</span>
+            </button>
           </nav>
         </div>
 
@@ -704,6 +720,7 @@ function AppContent() {
         {isBmpo && <BmpoRegulatoryPage />}
         {isSncm && <SncmTraceabilityPage />}
         {isReplenishment && <SmartReplenishmentPage />}
+        {isCustomerReturns && <CustomerReturnsPage />}
       </div>
 
       {/* Global PBM Modal */}
