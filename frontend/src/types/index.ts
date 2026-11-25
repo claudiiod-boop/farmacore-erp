@@ -32,7 +32,8 @@ export type StationMode =
   | 'TEMPERATURE_MONITORING'
   | 'SANITIZATION_COMPLIANCE'
   | 'INJECTABLES_VACCINATION'
-  | 'PHARMACOVIGILANCE_NOTIVISA';
+  | 'PHARMACOVIGILANCE_NOTIVISA'
+  | 'MARKETPLACE_HUB';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -332,4 +333,5 @@ export * from './digital-prescription';
 export * from './sanitization';
 export * from './injectables';
 export * from './pharmacovigilance';
+export * from './marketplace';
 

@@ -5751,6 +5751,122 @@ export const pharmacovigilanceApi = {
   },
 };
 
+export const marketplaceApi = {
+  getChannels: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/channels?storeId=${storeId || 1}`);
+    if (!res.ok) throw new Error('Falha ao listar canais de marketplace');
+    return res.json();
+  },
+
+  createChannel: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/channels`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao salvar canal de marketplace');
+    }
+    return res.json();
+  },
+
+  toggleChannel: async (id: number, isActive: boolean) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/channels/${id}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive }),
+    });
+    if (!res.ok) throw new Error('Falha ao alterar status do canal');
+    return res.json();
+  },
+
+  getCatalog: async (channelId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/catalog/${channelId}`);
+    if (!res.ok) throw new Error('Falha ao obter catálogo do canal');
+    return res.json();
+  },
+
+  mapCatalog: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/catalog/map`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao mapear produto no catálogo');
+    }
+    return res.json();
+  },
+
+  syncStock: async (channelId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/catalog/${channelId}/sync-stock`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Falha ao sincronizar estoque com o canal');
+    return res.json();
+  },
+
+  getOrders: async (storeId?: number, status?: string, channelId?: number) => {
+    const base = getBaseUrl();
+    let url = `${base}/api/marketplaces/orders?storeId=${storeId || 1}`;
+    if (status) url += `&status=${status}`;
+    if (channelId) url += `&channelId=${channelId}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Falha ao listar pedidos de marketplace');
+    return res.json();
+  },
+
+  getOrderById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/orders/${id}`);
+    if (!res.ok) throw new Error('Falha ao carregar detalhes do pedido');
+    return res.json();
+  },
+
+  updateOrderStatus: async (id: number, status: string, cancellationReason?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, cancellationReason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao atualizar status do pedido');
+    }
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/kpis?storeId=${storeId || 1}`);
+    if (!res.ok) throw new Error('Falha ao obter KPIs do hub de marketplaces');
+    return res.json();
+  },
+
+  simulateWebhook: async (channel: string, payload: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/marketplaces/webhook/${channel}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao disparar webhook simulado');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5879,6 +5995,8 @@ export const api = {
   injectablesApi,
   pharmacovigilance: pharmacovigilanceApi,
   pharmacovigilanceApi,
+  marketplaces: marketplaceApi,
+  marketplaceApi,
 };
 
 export default api;
