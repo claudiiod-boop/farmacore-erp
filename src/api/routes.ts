@@ -53,6 +53,7 @@ import { registerDigitalPrescriptionRoutes } from '../modules/digital-prescripti
 import { registerSanitizationRoutes } from '../modules/sanitization/sanitization.routes';
 import { registerInjectableVaccinationRoutes } from '../modules/injectables/injectables.routes';
 import { registerPharmacovigilanceRoutes } from '../modules/pharmacovigilance/pharmacovigilance.routes';
+import { registerMarketplaceRoutes } from '../modules/marketplaces/marketplace.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2114,4 +2115,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== FARMACOVIGILÂNCIA, REAÇÕES ADVERSAS (RAM) & QUEIXAS TÉCNICAS (NOTIVISA / RDC 406/2020) =====================
   registerPharmacovigilanceRoutes(app, db);
+
+  // ===================== HUB DE MARKETPLACES & DELIVERY EXTERNO (IFOOD, RAPPI, CONSULTA REMÉDIOS) =====================
+  registerMarketplaceRoutes(app, db);
 }
