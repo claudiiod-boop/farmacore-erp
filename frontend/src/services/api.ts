@@ -5645,6 +5645,112 @@ export const injectablesApi = {
   },
 };
 
+export const pharmacovigilanceApi = {
+  getAdrs: async (params?: { storeId?: number; severityLevel?: string; status?: string; startDate?: string; endDate?: string }) => {
+    const base = getBaseUrl();
+    const q = new URLSearchParams();
+    if (params?.storeId) q.append('storeId', String(params.storeId));
+    if (params?.severityLevel) q.append('severityLevel', params.severityLevel);
+    if (params?.status) q.append('status', params.status);
+    if (params?.startDate) q.append('startDate', params.startDate);
+    if (params?.endDate) q.append('endDate', params.endDate);
+    const res = await fetch(`${base}/api/pharmacovigilance/adrs?${q.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar notificações de RAM');
+    }
+    return res.json();
+  },
+
+  createAdr: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/pharmacovigilance/adrs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar notificação de RAM');
+    }
+    return res.json();
+  },
+
+  getAdrByProtocol: async (protocolCode: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/pharmacovigilance/adrs/${encodeURIComponent(protocolCode)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar notificação de RAM');
+    }
+    return res.json();
+  },
+
+  getComplaints: async (params?: { storeId?: number; complaintType?: string; status?: string; startDate?: string; endDate?: string }) => {
+    const base = getBaseUrl();
+    const q = new URLSearchParams();
+    if (params?.storeId) q.append('storeId', String(params.storeId));
+    if (params?.complaintType) q.append('complaintType', params.complaintType);
+    if (params?.status) q.append('status', params.status);
+    if (params?.startDate) q.append('startDate', params.startDate);
+    if (params?.endDate) q.append('endDate', params.endDate);
+    const res = await fetch(`${base}/api/pharmacovigilance/complaints?${q.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar queixas técnicas');
+    }
+    return res.json();
+  },
+
+  createComplaint: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/pharmacovigilance/complaints`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao registrar queixa técnica');
+    }
+    return res.json();
+  },
+
+  getComplaintByProtocol: async (protocolCode: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/pharmacovigilance/complaints/${encodeURIComponent(protocolCode)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao buscar queixa técnica');
+    }
+    return res.json();
+  },
+
+  submitToNotivisa: async (type: 'RAM' | 'TECHNICAL_COMPLAINT', id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/pharmacovigilance/submit-notivisa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, id }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao submeter ao NOTIVISA');
+    }
+    return res.json();
+  },
+
+  getSummary: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/pharmacovigilance/summary?storeId=${storeId || 1}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message || err?.error || 'Falha ao carregar resumo de farmacovigilância');
+    }
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5771,6 +5877,8 @@ export const api = {
   sanitizationApi,
   injectables: injectablesApi,
   injectablesApi,
+  pharmacovigilance: pharmacovigilanceApi,
+  pharmacovigilanceApi,
 };
 
 export default api;
