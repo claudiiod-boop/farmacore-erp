@@ -40,7 +40,8 @@ export type StationMode =
   | 'SANITARY_AUDIT_DOSSIER'
   | 'CORPORATE_AGREEMENTS_BILLING'
   | 'BLIND_INVENTORY_AUDIT'
-  | 'SAT_FISCAL_MODULE';
+  | 'SAT_FISCAL_MODULE'
+  | 'PRECISION_SCALE_MODULE';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -350,4 +351,5 @@ export * from './self-checkout';
 export * from './agreements';
 export * from './blind-inventory';
 export * from './sat';
+export * from './scale';
 

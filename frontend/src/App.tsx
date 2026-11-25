@@ -41,6 +41,7 @@ import { SanitaryAuditDossierPage } from './pages/SanitaryAuditDossierPage';
 import { CorporateAgreementsBillingPage } from './pages/CorporateAgreementsBillingPage';
 import { BlindInventoryPage } from './pages/BlindInventoryPage';
 import { SatFiscalPage } from './pages/SatFiscalPage';
+import { PrecisionScalePage } from './pages/PrecisionScalePage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -79,7 +80,7 @@ import {
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling, isBlindInventoryAudit, isSatFiscalModule } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling, isBlindInventoryAudit, isSatFiscalModule, isPrecisionScaleModule } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -847,6 +848,21 @@ function AppContent() {
               <QrCode className="w-3.5 h-3.5 text-red-400" />
               <span>SAT Fiscal</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-precision-scale-button"
+              onClick={() => setMode('PRECISION_SCALE_MODULE')}
+              title="Balança de Precisão & Checkout Pesável (INMETRO 236/94 & RDC 67/07)"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isPrecisionScaleModule
+                  ? 'bg-emerald-950 text-emerald-300 border-emerald-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Scale className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Balança & Pesáveis</span>
+            </button>
           </nav>
         </div>
 
@@ -942,6 +958,7 @@ function AppContent() {
         {isCorporateAgreementsBilling && <CorporateAgreementsBillingPage />}
         {isBlindInventoryAudit && <BlindInventoryPage />}
         {isSatFiscalModule && <SatFiscalPage />}
+        {isPrecisionScaleModule && <PrecisionScalePage />}
       </div>
 
       {/* Global PBM Modal */}

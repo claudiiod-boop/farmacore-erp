@@ -6392,6 +6392,51 @@ export const satFiscalApi = {
   },
 };
 
+export const scaleApi = {
+  registerDevice: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/scales/devices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  readWeight: async (deviceId: number, gross?: number, tare?: number) => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (gross !== undefined) query.append('gross', String(gross));
+    if (tare !== undefined) query.append('tare', String(tare));
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/v1/scales/devices/${deviceId}/read${qs}`);
+    return res.json();
+  },
+  decodeBarcode: async (barcode: string, storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/scales/barcodes/decode`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ barcode, store_id: storeId }),
+    });
+    return res.json();
+  },
+  generateLabel: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/scales/labels/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const qs = storeId ? `?store_id=${storeId}` : '';
+    const res = await fetch(`${base}/api/v1/scales/kpis${qs}`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6536,6 +6581,8 @@ export const api = {
   blindInventoryApi,
   satFiscal: satFiscalApi,
   satFiscalApi,
+  scale: scaleApi,
+  scaleApi,
 };
 
 export default api;

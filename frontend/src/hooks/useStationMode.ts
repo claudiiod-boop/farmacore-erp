@@ -46,7 +46,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'PHARMACOVIGILANCE_NOTIVISA' ||
         stored === 'CORPORATE_AGREEMENTS_BILLING' ||
         stored === 'BLIND_INVENTORY_AUDIT' ||
-        stored === 'SAT_FISCAL_MODULE'
+        stored === 'SAT_FISCAL_MODULE' ||
+        stored === 'PRECISION_SCALE_MODULE'
       ) {
         return stored;
       }
@@ -116,6 +117,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isCorporateAgreementsBilling: mode === 'CORPORATE_AGREEMENTS_BILLING',
     isBlindInventoryAudit: mode === 'BLIND_INVENTORY_AUDIT',
     isSatFiscalModule: mode === 'SAT_FISCAL_MODULE',
+    isPrecisionScaleModule: mode === 'PRECISION_SCALE_MODULE',
   };
 }
 
