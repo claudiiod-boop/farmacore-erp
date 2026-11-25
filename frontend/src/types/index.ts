@@ -37,7 +37,8 @@ export type StationMode =
   | 'BACKUP_DISASTER_RECOVERY'
   | 'SELF_CHECKOUT_TOUCH'
   | 'DDA_RECONCILIATION'
-  | 'SANITARY_AUDIT_DOSSIER';
+  | 'SANITARY_AUDIT_DOSSIER'
+  | 'CORPORATE_AGREEMENTS_BILLING';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -344,4 +345,5 @@ export * from './pharmacovigilance';
 export * from './marketplace';
 export * from './backup';
 export * from './self-checkout';
+export * from './agreements';
 

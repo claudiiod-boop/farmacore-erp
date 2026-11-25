@@ -38,6 +38,7 @@ import { BackupDisasterRecoveryPage } from './pages/BackupDisasterRecoveryPage';
 import { SelfCheckoutTouchPage } from './pages/SelfCheckoutTouchPage';
 import { DdaReconciliationPage } from './pages/DdaReconciliationPage';
 import { SanitaryAuditDossierPage } from './pages/SanitaryAuditDossierPage';
+import { CorporateAgreementsBillingPage } from './pages/CorporateAgreementsBillingPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -76,7 +77,7 @@ import {
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -799,6 +800,21 @@ function AppContent() {
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Dossiê ANVISA</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-agreements-billing-button"
+              onClick={() => setMode('CORPORATE_AGREEMENTS_BILLING')}
+              title="Faturamento de Convênios Empresariais & Desconto em Folha (RH)"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isCorporateAgreementsBilling
+                  ? 'bg-indigo-950 text-indigo-300 border-indigo-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Faturamento RH</span>
+            </button>
           </nav>
         </div>
 
@@ -891,6 +907,7 @@ function AppContent() {
         {isSelfCheckoutTouch && <SelfCheckoutTouchPage />}
         {isDdaReconciliation && <DdaReconciliationPage />}
         {isSanitaryAuditDossier && <SanitaryAuditDossierPage />}
+        {isCorporateAgreementsBilling && <CorporateAgreementsBillingPage />}
       </div>
 
       {/* Global PBM Modal */}

@@ -6165,6 +6165,79 @@ export const sanitaryAuditApi = {
   },
 };
 
+export const agreementsApi = {
+  generateInvoice: async (data: {
+    agreement_id: number;
+    period_start: string;
+    period_end: string;
+    due_date: string;
+  }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/agreements/invoices/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  generateBatchBilling: async (data: {
+    period_start: string;
+    period_end: string;
+    due_date: string;
+  }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/agreements/invoices/batch-billing`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  listInvoices: async (params?: { agreement_id?: number; status?: string }) => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (params?.agreement_id) query.append('agreement_id', String(params.agreement_id));
+    if (params?.status) query.append('status', params.status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/v1/agreements/invoices${qs}`);
+    return res.json();
+  },
+  getInvoiceById: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/agreements/invoices/${id}`);
+    return res.json();
+  },
+  exportPayrollDiscount: async (id: number, format?: 'json' | 'csv') => {
+    const base = getBaseUrl();
+    const fmt = format ? `?format=${format}` : '';
+    const res = await fetch(`${base}/api/v1/agreements/invoices/${id}/payroll-export${fmt}`);
+    if (format === 'csv') {
+      return res.text();
+    }
+    return res.json();
+  },
+  settleInvoice: async (id: number, data: { paid_date: string; notes?: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/agreements/invoices/${id}/settle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  checkEligibility: async (customerId: number, saleAmount?: number) => {
+    const base = getBaseUrl();
+    const qs = saleAmount !== undefined ? `?sale_amount=${saleAmount}` : '';
+    const res = await fetch(`${base}/api/v1/agreements/eligibility/${customerId}${qs}`);
+    return res.json();
+  },
+  getKpis: async () => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/agreements/kpis`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6303,6 +6376,8 @@ export const api = {
   ddaApi,
   sanitaryAudit: sanitaryAuditApi,
   sanitaryAuditApi,
+  agreements: agreementsApi,
+  agreementsApi,
 };
 
 export default api;

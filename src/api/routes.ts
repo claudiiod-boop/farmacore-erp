@@ -58,6 +58,7 @@ import { registerBackupRoutes } from '../modules/backup/backup.routes';
 import { registerSelfCheckoutRoutes } from '../modules/self-checkout/self-checkout.routes';
 import { registerDdaRoutes } from '../modules/financial/dda.routes';
 import { registerSanitaryAuditRoutes } from '../modules/sanitary-audit/sanitary-audit.routes';
+import { registerCorporateAgreementsRoutes } from '../modules/agreements/agreements.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2134,4 +2135,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== AUDITORIA SANITÁRIA AUTOMATIZADA & DOSSIÊ DE AUTOINSPEÇÃO (ANVISA/VISA) =====================
   registerSanitaryAuditRoutes(app, db);
+
+  // ===================== CONVÊNIOS EMPRESARIAIS & FATURAMENTO EM LOTE (B2B RH) =====================
+  registerCorporateAgreementsRoutes(app, db);
 }
