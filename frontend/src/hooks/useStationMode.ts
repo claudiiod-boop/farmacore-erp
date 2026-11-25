@@ -47,7 +47,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'CORPORATE_AGREEMENTS_BILLING' ||
         stored === 'BLIND_INVENTORY_AUDIT' ||
         stored === 'SAT_FISCAL_MODULE' ||
-        stored === 'PRECISION_SCALE_MODULE'
+        stored === 'PRECISION_SCALE_MODULE' ||
+        stored === 'FARMACIA_POPULAR_AUDIT'
       ) {
         return stored;
       }
@@ -118,6 +119,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isBlindInventoryAudit: mode === 'BLIND_INVENTORY_AUDIT',
     isSatFiscalModule: mode === 'SAT_FISCAL_MODULE',
     isPrecisionScaleModule: mode === 'PRECISION_SCALE_MODULE',
+    isFarmaciaPopularAudit: mode === 'FARMACIA_POPULAR_AUDIT',
   };
 }
 

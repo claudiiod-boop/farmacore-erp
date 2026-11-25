@@ -42,6 +42,7 @@ import { CorporateAgreementsBillingPage } from './pages/CorporateAgreementsBilli
 import { BlindInventoryPage } from './pages/BlindInventoryPage';
 import { SatFiscalPage } from './pages/SatFiscalPage';
 import { PrecisionScalePage } from './pages/PrecisionScalePage';
+import { FarmaciaPopularAuditPage } from './pages/FarmaciaPopularAuditPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -74,13 +75,14 @@ import {
   MonitorSmartphone,
   FileSpreadsheet,
   QrCode,
+  Landmark,
   TrendingUp,
   RotateCcw,
   Thermometer,
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling, isBlindInventoryAudit, isSatFiscalModule, isPrecisionScaleModule } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling, isBlindInventoryAudit, isSatFiscalModule, isPrecisionScaleModule, isFarmaciaPopularAudit } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -863,6 +865,21 @@ function AppContent() {
               <Scale className="w-3.5 h-3.5 text-emerald-400" />
               <span>Balança & Pesáveis</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-fp-audit-button"
+              onClick={() => setMode('FARMACIA_POPULAR_AUDIT')}
+              title="Auditoria Farmácia Popular, Glosas FNS & Dossiê 5 Anos (DENASUS)"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isFarmaciaPopularAudit
+                  ? 'bg-indigo-950 text-indigo-300 border-indigo-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <Landmark className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Auditoria F. Popular</span>
+            </button>
           </nav>
         </div>
 
@@ -959,6 +976,7 @@ function AppContent() {
         {isBlindInventoryAudit && <BlindInventoryPage />}
         {isSatFiscalModule && <SatFiscalPage />}
         {isPrecisionScaleModule && <PrecisionScalePage />}
+        {isFarmaciaPopularAudit && <FarmaciaPopularAuditPage />}
       </div>
 
       {/* Global PBM Modal */}

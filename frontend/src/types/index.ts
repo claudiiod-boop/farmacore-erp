@@ -41,7 +41,8 @@ export type StationMode =
   | 'CORPORATE_AGREEMENTS_BILLING'
   | 'BLIND_INVENTORY_AUDIT'
   | 'SAT_FISCAL_MODULE'
-  | 'PRECISION_SCALE_MODULE';
+  | 'PRECISION_SCALE_MODULE'
+  | 'FARMACIA_POPULAR_AUDIT';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -352,4 +353,5 @@ export * from './agreements';
 export * from './blind-inventory';
 export * from './sat';
 export * from './scale';
+export * from './fp-audit';
 

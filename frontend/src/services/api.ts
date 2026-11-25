@@ -6437,6 +6437,69 @@ export const scaleApi = {
   },
 };
 
+export const fpAuditApi = {
+  importSettlementBatch: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/farmacia-popular/settlements/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  reconcileAuthorizations: async (batchId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/farmacia-popular/settlements/${batchId}/reconcile`, {
+      method: 'POST',
+    });
+    return res.json();
+  },
+  listAuditItems: async (filters?: { store_id?: number; settlement_batch_id?: number; status?: string }) => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (filters?.store_id) query.append('store_id', String(filters.store_id));
+    if (filters?.settlement_batch_id) query.append('settlement_batch_id', String(filters.settlement_batch_id));
+    if (filters?.status) query.append('status', filters.status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/v1/farmacia-popular/settlements/items${qs}`);
+    return res.json();
+  },
+  contestGloss: async (itemId: number, data: { justification: string; proof_file_reference?: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/farmacia-popular/glosas/${itemId}/contest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  registerDossier: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/farmacia-popular/dossiers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  listDossiers: async (filters?: { store_id?: number; status?: string; patient_cpf?: string }) => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (filters?.store_id) query.append('store_id', String(filters.store_id));
+    if (filters?.status) query.append('status', filters.status);
+    if (filters?.patient_cpf) query.append('patient_cpf', filters.patient_cpf);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/v1/farmacia-popular/dossiers${qs}`);
+    return res.json();
+  },
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const qs = storeId ? `?store_id=${storeId}` : '';
+    const res = await fetch(`${base}/api/v1/farmacia-popular/kpis${qs}`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6583,6 +6646,8 @@ export const api = {
   satFiscalApi,
   scale: scaleApi,
   scaleApi,
+  fpAudit: fpAuditApi,
+  fpAuditApi,
 };
 
 export default api;

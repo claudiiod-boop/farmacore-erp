@@ -62,6 +62,7 @@ import { registerCorporateAgreementsRoutes } from '../modules/agreements/agreeme
 import { registerBlindInventoryRoutes } from '../modules/inventory-audit/blind-inventory.routes';
 import { registerSatFiscalRoutes } from '../modules/fiscal/sat.routes';
 import { registerScaleRoutes } from '../modules/scales/scale.routes';
+import { registerFarmaciaPopularAuditRoutes } from '../modules/pbm/farmacia-popular-audit.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2150,4 +2151,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== BALANÇA DE PRECISÃO & CHECKOUT COM CÓDIGO PESÁVEL (INMETRO 236/94 & RDC 67/07) =====================
   registerScaleRoutes(app, db);
+
+  // ===================== AUDITORIA FARMÁCIA POPULAR (MS/DATASUS), GLOSAS & ARQUIVO 5 ANOS =====================
+  registerFarmaciaPopularAuditRoutes(app, db);
 }
