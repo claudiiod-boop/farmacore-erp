@@ -57,6 +57,7 @@ import { registerMarketplaceRoutes } from '../modules/marketplaces/marketplace.r
 import { registerBackupRoutes } from '../modules/backup/backup.routes';
 import { registerSelfCheckoutRoutes } from '../modules/self-checkout/self-checkout.routes';
 import { registerDdaRoutes } from '../modules/financial/dda.routes';
+import { registerSanitaryAuditRoutes } from '../modules/sanitary-audit/sanitary-audit.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2130,4 +2131,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== CONCILIAÇÃO BANCÁRIA DDA & BOLETOS DE MEDICAMENTOS =====================
   registerDdaRoutes(app, db);
+
+  // ===================== AUDITORIA SANITÁRIA AUTOMATIZADA & DOSSIÊ DE AUTOINSPEÇÃO (ANVISA/VISA) =====================
+  registerSanitaryAuditRoutes(app, db);
 }

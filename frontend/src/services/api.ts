@@ -6124,6 +6124,47 @@ export const ddaApi = {
   },
 };
 
+export const sanitaryAuditApi = {
+  runScan: async (data: { store_id?: string; responsible_pharmacist_crf: string; responsible_pharmacist_name: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/sanitary-audit/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  getHistory: async (storeId: string = '1') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/sanitary-audit/history?store_id=${storeId}`);
+    return res.json();
+  },
+  getAuditById: async (id: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/sanitary-audit/${id}`);
+    return res.json();
+  },
+  getDossier: async (id: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/sanitary-audit/${id}/dossier`);
+    return res.json();
+  },
+  updateActionPlan: async (id: string, notes: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/sanitary-audit/${id}/action-plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes }),
+    });
+    return res.json();
+  },
+  getDashboard: async (storeId: string = '1') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/sanitary-audit/dashboard?store_id=${storeId}`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6260,6 +6301,8 @@ export const api = {
   selfCheckoutApi,
   dda: ddaApi,
   ddaApi,
+  sanitaryAudit: sanitaryAuditApi,
+  sanitaryAuditApi,
 };
 
 export default api;

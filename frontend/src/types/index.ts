@@ -36,7 +36,8 @@ export type StationMode =
   | 'MARKETPLACE_HUB'
   | 'BACKUP_DISASTER_RECOVERY'
   | 'SELF_CHECKOUT_TOUCH'
-  | 'DDA_RECONCILIATION';
+  | 'DDA_RECONCILIATION'
+  | 'SANITARY_AUDIT_DOSSIER';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -60,6 +61,7 @@ export * from './cmed';
 export * from './omnichannel';
 export * from './compounding';
 export * from './dda';
+export * from './sanitary-audit';
 
 // ===================== PRODUCT & CATALOG TYPES =====================
 export type Stripe = 'SEM_TARJA' | 'VERMELHA' | 'PRETA';
@@ -322,6 +324,7 @@ export * from './tef';
 // ===================== COMPOUNDING & SUBSCRIPTIONS TYPES =====================
 export * from './compounding';
 export * from './dda';
+export * from './sanitary-audit';
 export * from './subscription';
 export * from './fractionation';
 export * from './commission';
