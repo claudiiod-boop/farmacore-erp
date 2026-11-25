@@ -34,7 +34,8 @@ export type StationMode =
   | 'INJECTABLES_VACCINATION'
   | 'PHARMACOVIGILANCE_NOTIVISA'
   | 'MARKETPLACE_HUB'
-  | 'BACKUP_DISASTER_RECOVERY';
+  | 'BACKUP_DISASTER_RECOVERY'
+  | 'SELF_CHECKOUT_TOUCH';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -336,4 +337,5 @@ export * from './injectables';
 export * from './pharmacovigilance';
 export * from './marketplace';
 export * from './backup';
+export * from './self-checkout';
 

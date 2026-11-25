@@ -5982,6 +5982,98 @@ export const backupApi = {
   },
 };
 
+export const selfCheckoutApi = {
+  startSession: async (data?: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/self-checkout/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao iniciar autoatendimento');
+    }
+    return res.json();
+  },
+
+  getSession: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/self-checkout/sessions/${id}`);
+    if (!res.ok) throw new Error('Falha ao carregar sessão');
+    return res.json();
+  },
+
+  scanItem: async (sessionId: number, eanOrCode: string, quantity?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/self-checkout/sessions/${sessionId}/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eanOrCode, quantity }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao bipar produto');
+    }
+    return res.json();
+  },
+
+  removeItem: async (sessionId: number, itemId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/self-checkout/sessions/${sessionId}/items/${itemId}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Falha ao remover item');
+    return res.json();
+  },
+
+  initiatePayment: async (sessionId: number, paymentMethod: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/self-checkout/sessions/${sessionId}/payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentMethod }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao iniciar pagamento');
+    }
+    return res.json();
+  },
+
+  finalizeSale: async (sessionId: number, details?: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/self-checkout/sessions/${sessionId}/finalize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(details || {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao finalizar venda');
+    }
+    return res.json();
+  },
+
+  cancelSession: async (sessionId: number, reason?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/self-checkout/sessions/${sessionId}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) throw new Error('Falha ao cancelar sessão');
+    return res.json();
+  },
+
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/self-checkout/kpis?storeId=${storeId || 1}`);
+    if (!res.ok) throw new Error('Falha ao carregar métricas de autoatendimento');
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,

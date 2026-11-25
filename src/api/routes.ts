@@ -55,6 +55,7 @@ import { registerInjectableVaccinationRoutes } from '../modules/injectables/inje
 import { registerPharmacovigilanceRoutes } from '../modules/pharmacovigilance/pharmacovigilance.routes';
 import { registerMarketplaceRoutes } from '../modules/marketplaces/marketplace.routes';
 import { registerBackupRoutes } from '../modules/backup/backup.routes';
+import { registerSelfCheckoutRoutes } from '../modules/self-checkout/self-checkout.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2122,4 +2123,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== BACKUP EM NUVEM, CRIPTOGRAFIA LGPD & DISASTER RECOVERY =====================
   registerBackupRoutes(app, db);
+
+  // ===================== TOTEM AUTOATENDIMENTO AVANÇADO & SELF-CHECKOUT TOUCH (TEF/PIX) =====================
+  registerSelfCheckoutRoutes(app, db);
 }
