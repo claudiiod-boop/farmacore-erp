@@ -12,3 +12,7 @@ frontend/dist/
 .env.local
 .DS_Store
 Thumbs.db
+backups/
+*.sqlite.enc
+*.sqlite.bak
+temp_test_backups/
