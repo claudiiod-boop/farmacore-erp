@@ -6074,6 +6074,56 @@ export const selfCheckoutApi = {
   },
 };
 
+export const ddaApi = {
+  importFile: async (storeId: string, items: any[]) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/dda/import-file`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: storeId, items }),
+    });
+    return res.json();
+  },
+  getInvoices: async (params?: { store_id?: string; status?: string; startDate?: string; endDate?: string }) => {
+    const base = getBaseUrl();
+    const qs = new URLSearchParams(params as any).toString();
+    const res = await fetch(`${base}/api/v1/dda/invoices${qs ? `?${qs}` : ''}`);
+    return res.json();
+  },
+  reconcileAuto: async (storeId: string = '1') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/dda/reconcile-auto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: storeId }),
+    });
+    return res.json();
+  },
+  manualMatch: async (id: string, matchType: 'PURCHASE' | 'EXPENSE', targetId: string | number, userId?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/dda/invoices/${id}/manual-match`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchType, targetId, userId }),
+    });
+    return res.json();
+  },
+  settleInvoice: async (id: string, paidAmount: number, paymentDate: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/dda/invoices/${id}/settle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paidAmount, paymentDate }),
+    });
+    return res.json();
+  },
+  getKpis: async (storeId: string = '1') => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/dda/kpis?store_id=${storeId}`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6206,6 +6256,10 @@ export const api = {
   marketplaceApi,
   backup: backupApi,
   backupApi,
+  selfCheckout: selfCheckoutApi,
+  selfCheckoutApi,
+  dda: ddaApi,
+  ddaApi,
 };
 
 export default api;

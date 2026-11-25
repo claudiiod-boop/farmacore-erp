@@ -108,6 +108,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isMarketplaceHub: mode === 'MARKETPLACE_HUB',
     isBackupDisasterRecovery: mode === 'BACKUP_DISASTER_RECOVERY',
     isSelfCheckoutTouch: mode === 'SELF_CHECKOUT_TOUCH',
+    isDdaReconciliation: mode === 'DDA_RECONCILIATION',
   };
 }
 

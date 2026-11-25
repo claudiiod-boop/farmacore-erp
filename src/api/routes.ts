@@ -56,6 +56,7 @@ import { registerPharmacovigilanceRoutes } from '../modules/pharmacovigilance/ph
 import { registerMarketplaceRoutes } from '../modules/marketplaces/marketplace.routes';
 import { registerBackupRoutes } from '../modules/backup/backup.routes';
 import { registerSelfCheckoutRoutes } from '../modules/self-checkout/self-checkout.routes';
+import { registerDdaRoutes } from '../modules/financial/dda.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2126,4 +2127,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== TOTEM AUTOATENDIMENTO AVANÇADO & SELF-CHECKOUT TOUCH (TEF/PIX) =====================
   registerSelfCheckoutRoutes(app, db);
+
+  // ===================== CONCILIAÇÃO BANCÁRIA DDA & BOLETOS DE MEDICAMENTOS =====================
+  registerDdaRoutes(app, db);
 }
