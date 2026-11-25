@@ -106,6 +106,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isInjectablesVaccination: mode === 'INJECTABLES_VACCINATION',
     isPharmacovigilance: mode === 'PHARMACOVIGILANCE_NOTIVISA',
     isMarketplaceHub: mode === 'MARKETPLACE_HUB',
+    isBackupDisasterRecovery: mode === 'BACKUP_DISASTER_RECOVERY',
   };
 }
 

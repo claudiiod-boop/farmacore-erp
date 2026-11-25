@@ -5867,6 +5867,121 @@ export const marketplaceApi = {
   },
 };
 
+export const backupApi = {
+  createBackup: async (data?: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/backup/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao criar backup');
+    }
+    return res.json();
+  },
+
+  listBackups: async (limit?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/backup/list?limit=${limit || 20}`);
+    if (!res.ok) throw new Error('Falha ao listar backups');
+    return res.json();
+  },
+
+  verifyIntegrity: async (id: number, operatorName?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/backup/${id}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operatorName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao verificar integridade');
+    }
+    return res.json();
+  },
+
+  restoreBackup: async (id: number, operatorName?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/backup/${id}/restore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operatorName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao restaurar backup');
+    }
+    return res.json();
+  },
+
+  getConfig: async () => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/backup/config`);
+    if (!res.ok) throw new Error('Falha ao obter configurações de backup');
+    return res.json();
+  },
+
+  updateConfig: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/backup/config`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao salvar configurações de backup');
+    }
+    return res.json();
+  },
+
+  getKpis: async () => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/backup/kpis`);
+    if (!res.ok) throw new Error('Falha ao obter métricas de backup');
+    return res.json();
+  },
+
+  exportClientDossier: async (cpf: string, operatorName?: string, reason?: string) => {
+    const base = getBaseUrl();
+    let url = `${base}/api/lgpd/dossier/${encodeURIComponent(cpf)}`;
+    const params = new URLSearchParams();
+    if (operatorName) params.append('operatorName', operatorName);
+    if (reason) params.append('reason', reason);
+    if (params.toString()) url += `?${params.toString()}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao exportar dossiê LGPD');
+    }
+    return res.json();
+  },
+
+  anonymizeClient: async (cpf: string, operatorName?: string, reason?: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/lgpd/anonymize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cpf, operatorName, reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || err?.message || 'Falha ao anonimizar cliente');
+    }
+    return res.json();
+  },
+
+  listAuditLogs: async (limit?: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/lgpd/audit-logs?limit=${limit || 50}`);
+    if (!res.ok) throw new Error('Falha ao carregar logs de auditoria LGPD');
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -5997,6 +6112,8 @@ export const api = {
   pharmacovigilanceApi,
   marketplaces: marketplaceApi,
   marketplaceApi,
+  backup: backupApi,
+  backupApi,
 };
 
 export default api;

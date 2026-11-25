@@ -33,7 +33,8 @@ export type StationMode =
   | 'SANITIZATION_COMPLIANCE'
   | 'INJECTABLES_VACCINATION'
   | 'PHARMACOVIGILANCE_NOTIVISA'
-  | 'MARKETPLACE_HUB';
+  | 'MARKETPLACE_HUB'
+  | 'BACKUP_DISASTER_RECOVERY';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -334,4 +335,5 @@ export * from './sanitization';
 export * from './injectables';
 export * from './pharmacovigilance';
 export * from './marketplace';
+export * from './backup';
 
