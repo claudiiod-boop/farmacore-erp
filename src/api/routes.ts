@@ -54,6 +54,7 @@ import { registerSanitizationRoutes } from '../modules/sanitization/sanitization
 import { registerInjectableVaccinationRoutes } from '../modules/injectables/injectables.routes';
 import { registerPharmacovigilanceRoutes } from '../modules/pharmacovigilance/pharmacovigilance.routes';
 import { registerMarketplaceRoutes } from '../modules/marketplaces/marketplace.routes';
+import { registerBackupRoutes } from '../modules/backup/backup.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2118,4 +2119,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== HUB DE MARKETPLACES & DELIVERY EXTERNO (IFOOD, RAPPI, CONSULTA REMÉDIOS) =====================
   registerMarketplaceRoutes(app, db);
+
+  // ===================== BACKUP EM NUVEM, CRIPTOGRAFIA LGPD & DISASTER RECOVERY =====================
+  registerBackupRoutes(app, db);
 }
