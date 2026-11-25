@@ -52,6 +52,7 @@ import { registerTemperatureRoutes } from '../modules/temperature/temperature.ro
 import { registerDigitalPrescriptionRoutes } from '../modules/digital-prescriptions/digital-prescriptions.routes';
 import { registerSanitizationRoutes } from '../modules/sanitization/sanitization.routes';
 import { registerInjectableVaccinationRoutes } from '../modules/injectables/injectables.routes';
+import { registerPharmacovigilanceRoutes } from '../modules/pharmacovigilance/pharmacovigilance.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2110,4 +2111,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== LIVRO DE INJETÁVEIS & SALA DE VACINAS (RDC 197/2017 & RDC 44/2009 ANVISA) =====================
   registerInjectableVaccinationRoutes(app, db);
+
+  // ===================== FARMACOVIGILÂNCIA, REAÇÕES ADVERSAS (RAM) & QUEIXAS TÉCNICAS (NOTIVISA / RDC 406/2020) =====================
+  registerPharmacovigilanceRoutes(app, db);
 }
