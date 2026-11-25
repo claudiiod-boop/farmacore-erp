@@ -6318,6 +6318,80 @@ export const blindInventoryApi = {
   },
 };
 
+export const satFiscalApi = {
+  registerDevice: async (data: {
+    store_id: number;
+    pos_station_id: string;
+    serial_number: string;
+    model?: string;
+    sign_code: string;
+    firmware_version?: string;
+  }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/sat/devices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  checkDeviceStatus: async (deviceId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/sat/devices/${deviceId}/status`);
+    return res.json();
+  },
+  issueCfe: async (data: {
+    sale_id: number;
+    sat_device_id: number;
+    customer_cpf?: string;
+    force_offline_contingency?: boolean;
+  }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/sat/cfe/issue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  syncContingency: async (deviceId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/sat/devices/${deviceId}/sync-contingency`, {
+      method: 'POST',
+    });
+    return res.json();
+  },
+  cancelCfe: async (cfeId: number, justification: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/sat/cfe/${cfeId}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ justification }),
+    });
+    return res.json();
+  },
+  getExtrato: async (cfeId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/sat/cfe/${cfeId}/extrato`);
+    return res.json();
+  },
+  listCfe: async (params?: { store_id?: number; status?: string }) => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (params?.store_id) query.append('store_id', String(params.store_id));
+    if (params?.status) query.append('status', params.status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/v1/fiscal/sat/cfe${qs}`);
+    return res.json();
+  },
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const qs = storeId ? `?store_id=${storeId}` : '';
+    const res = await fetch(`${base}/api/v1/fiscal/sat/kpis${qs}`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6460,6 +6534,8 @@ export const api = {
   agreementsApi,
   blindInventory: blindInventoryApi,
   blindInventoryApi,
+  satFiscal: satFiscalApi,
+  satFiscalApi,
 };
 
 export default api;

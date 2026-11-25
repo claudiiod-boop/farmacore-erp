@@ -39,7 +39,8 @@ export type StationMode =
   | 'DDA_RECONCILIATION'
   | 'SANITARY_AUDIT_DOSSIER'
   | 'CORPORATE_AGREEMENTS_BILLING'
-  | 'BLIND_INVENTORY_AUDIT';
+  | 'BLIND_INVENTORY_AUDIT'
+  | 'SAT_FISCAL_MODULE';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -348,4 +349,5 @@ export * from './backup';
 export * from './self-checkout';
 export * from './agreements';
 export * from './blind-inventory';
+export * from './sat';
 
