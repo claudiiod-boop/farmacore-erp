@@ -38,7 +38,8 @@ export type StationMode =
   | 'SELF_CHECKOUT_TOUCH'
   | 'DDA_RECONCILIATION'
   | 'SANITARY_AUDIT_DOSSIER'
-  | 'CORPORATE_AGREEMENTS_BILLING';
+  | 'CORPORATE_AGREEMENTS_BILLING'
+  | 'BLIND_INVENTORY_AUDIT';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -346,4 +347,5 @@ export * from './marketplace';
 export * from './backup';
 export * from './self-checkout';
 export * from './agreements';
+export * from './blind-inventory';
 

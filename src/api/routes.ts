@@ -59,6 +59,7 @@ import { registerSelfCheckoutRoutes } from '../modules/self-checkout/self-checko
 import { registerDdaRoutes } from '../modules/financial/dda.routes';
 import { registerSanitaryAuditRoutes } from '../modules/sanitary-audit/sanitary-audit.routes';
 import { registerCorporateAgreementsRoutes } from '../modules/agreements/agreements.routes';
+import { registerBlindInventoryRoutes } from '../modules/inventory-audit/blind-inventory.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2138,4 +2139,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== CONVÊNIOS EMPRESARIAIS & FATURAMENTO EM LOTE (B2B RH) =====================
   registerCorporateAgreementsRoutes(app, db);
+
+  // ===================== BALANÇO PATRIMONIAL & INVENTÁRIO ROTATIVO CEGO (RDC 44/2009 & PORTARIA 344/98) =====================
+  registerBlindInventoryRoutes(app, db);
 }

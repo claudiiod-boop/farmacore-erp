@@ -39,6 +39,7 @@ import { SelfCheckoutTouchPage } from './pages/SelfCheckoutTouchPage';
 import { DdaReconciliationPage } from './pages/DdaReconciliationPage';
 import { SanitaryAuditDossierPage } from './pages/SanitaryAuditDossierPage';
 import { CorporateAgreementsBillingPage } from './pages/CorporateAgreementsBillingPage';
+import { BlindInventoryPage } from './pages/BlindInventoryPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -77,7 +78,7 @@ import {
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling, isBlindInventoryAudit } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -815,6 +816,21 @@ function AppContent() {
               <Building2 className="w-3.5 h-3.5 text-indigo-400" />
               <span>Faturamento RH</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-blind-inventory-button"
+              onClick={() => setMode('BLIND_INVENTORY_AUDIT')}
+              title="Balanço Patrimonial & Inventário Rotativo Cego (RDC 44/2009 e Portaria 344/98)"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isBlindInventoryAudit
+                  ? 'bg-amber-950 text-amber-300 border-amber-600 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <ClipboardList className="w-3.5 h-3.5 text-amber-400" />
+              <span>Inventário Cego</span>
+            </button>
           </nav>
         </div>
 
@@ -908,6 +924,7 @@ function AppContent() {
         {isDdaReconciliation && <DdaReconciliationPage />}
         {isSanitaryAuditDossier && <SanitaryAuditDossierPage />}
         {isCorporateAgreementsBilling && <CorporateAgreementsBillingPage />}
+        {isBlindInventoryAudit && <BlindInventoryPage />}
       </div>
 
       {/* Global PBM Modal */}

@@ -6238,6 +6238,86 @@ export const agreementsApi = {
   },
 };
 
+export const blindInventoryApi = {
+  createSession: async (data: {
+    store_id: number;
+    type: string;
+    responsible_user_id?: number;
+    responsible_pharmacist_crf?: string;
+    notes?: string;
+    product_ids?: number[];
+  }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/blind-inventory/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  countItem: async (inventoryId: number, data: {
+    product_id: number;
+    batch_id?: number;
+    counted_quantity: number;
+  }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/blind-inventory/sessions/${inventoryId}/count`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  reconcileSession: async (inventoryId: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/blind-inventory/sessions/${inventoryId}/reconcile`, {
+      method: 'POST',
+    });
+    return res.json();
+  },
+  approveControlled: async (itemId: number, data: {
+    pharmacist_crf: string;
+    justification: string;
+  }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/blind-inventory/items/${itemId}/approve-controlled`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  finalizeSession: async (inventoryId: number, data?: { user_id?: number }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/blind-inventory/sessions/${inventoryId}/finalize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    });
+    return res.json();
+  },
+  getSessionById: async (inventoryId: number, isManagerView: boolean = false) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/blind-inventory/sessions/${inventoryId}?is_manager_view=${isManagerView}`);
+    return res.json();
+  },
+  listSessions: async (params?: { store_id?: number; status?: string }) => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (params?.store_id) query.append('store_id', String(params.store_id));
+    if (params?.status) query.append('status', params.status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/v1/blind-inventory/sessions${qs}`);
+    return res.json();
+  },
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const qs = storeId ? `?store_id=${storeId}` : '';
+    const res = await fetch(`${base}/api/v1/blind-inventory/kpis${qs}`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6378,6 +6458,8 @@ export const api = {
   sanitaryAuditApi,
   agreements: agreementsApi,
   agreementsApi,
+  blindInventory: blindInventoryApi,
+  blindInventoryApi,
 };
 
 export default api;

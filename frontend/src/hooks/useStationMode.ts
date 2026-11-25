@@ -44,7 +44,8 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'SANITIZATION_COMPLIANCE' ||
         stored === 'INJECTABLES_VACCINATION' ||
         stored === 'PHARMACOVIGILANCE_NOTIVISA' ||
-        stored === 'CORPORATE_AGREEMENTS_BILLING'
+        stored === 'CORPORATE_AGREEMENTS_BILLING' ||
+        stored === 'BLIND_INVENTORY_AUDIT'
       ) {
         return stored;
       }
@@ -112,6 +113,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isDdaReconciliation: mode === 'DDA_RECONCILIATION',
     isSanitaryAuditDossier: mode === 'SANITARY_AUDIT_DOSSIER',
     isCorporateAgreementsBilling: mode === 'CORPORATE_AGREEMENTS_BILLING',
+    isBlindInventoryAudit: mode === 'BLIND_INVENTORY_AUDIT',
   };
 }
 
