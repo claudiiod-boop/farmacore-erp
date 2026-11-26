@@ -122,6 +122,7 @@ export function useStationMode(initialDefault: StationMode = 'COUNTER') {
     isPrecisionScaleModule: mode === 'PRECISION_SCALE_MODULE',
     isFarmaciaPopularAudit: mode === 'FARMACIA_POPULAR_AUDIT',
     isMdfeFiscalModule: mode === 'MDFE_FISCAL_MODULE',
+    isPharmaceuticalAssistance: mode === 'PHARMACEUTICAL_ASSISTANCE',
   };
 }
 

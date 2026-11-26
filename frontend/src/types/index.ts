@@ -43,7 +43,8 @@ export type StationMode =
   | 'SAT_FISCAL_MODULE'
   | 'PRECISION_SCALE_MODULE'
   | 'FARMACIA_POPULAR_AUDIT'
-  | 'MDFE_FISCAL_MODULE';
+  | 'MDFE_FISCAL_MODULE'
+  | 'PHARMACEUTICAL_ASSISTANCE';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -356,4 +357,5 @@ export * from './sat';
 export * from './scale';
 export * from './fp-audit';
 export * from './mdfe';
+export * from './pharmaceutical-assistance';
 

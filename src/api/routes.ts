@@ -64,6 +64,7 @@ import { registerSatFiscalRoutes } from '../modules/fiscal/sat.routes';
 import { registerScaleRoutes } from '../modules/scales/scale.routes';
 import { registerFarmaciaPopularAuditRoutes } from '../modules/pbm/farmacia-popular-audit.routes';
 import { registerMdfeRoutes } from '../modules/fiscal/mdfe.routes';
+import { registerPharmaceuticalAssistanceRoutes } from '../modules/clinical/pharmaceutical-assistance.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2158,4 +2159,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== MDF-e MANIFESTO FISCAL ELETRÔNICO (MODELO 58 / AJUSTE SINIEF 21/2010) =====================
   registerMdfeRoutes(app, db);
+
+  // ===================== ASSISTÊNCIA FARMACÊUTICA INTEGRAL & LIVRO RT (LEI 13.021/14 & CRF/CFF) =====================
+  registerPharmaceuticalAssistanceRoutes(app, db);
 }

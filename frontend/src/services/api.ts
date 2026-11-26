@@ -6557,6 +6557,64 @@ export const mdfeApi = {
   },
 };
 
+export const assistanceApi = {
+  getStaff: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/assistance/staff?store_id=${storeId}`);
+    return res.json();
+  },
+  registerStaff: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/assistance/staff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  getShifts: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/assistance/shifts?store_id=${storeId}`);
+    return res.json();
+  },
+  setShifts: async (storeId: number, staffId: number, shifts: any[]) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/assistance/shifts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: storeId, staff_id: staffId, shifts }),
+    });
+    return res.json();
+  },
+  getLogbook: async (storeId = 1, limit = 50) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/assistance/logbook?store_id=${storeId}&limit=${limit}`);
+    return res.json();
+  },
+  recordLogbook: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/assistance/logbook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  getExtract: async (storeId = 1, startDate?: string, endDate?: string) => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams({ store_id: String(storeId) });
+    if (startDate) query.append('start_date', startDate);
+    if (endDate) query.append('end_date', endDate);
+    const res = await fetch(`${base}/api/assistance/logbook/extract?${query.toString()}`);
+    return res.json();
+  },
+  getKpis: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/assistance/kpis?store_id=${storeId}`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6707,6 +6765,8 @@ export const api = {
   fpAuditApi,
   mdfe: mdfeApi,
   mdfeApi,
+  assistance: assistanceApi,
+  assistanceApi,
 };
 
 export default api;
