@@ -6500,6 +6500,63 @@ export const fpAuditApi = {
   },
 };
 
+export const mdfeApi = {
+  createDraft: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/mdfe/drafts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  authorize: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/mdfe/${id}/authorize`, {
+      method: 'POST',
+    });
+    return res.json();
+  },
+  close: async (id: number, data?: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/mdfe/${id}/close`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    });
+    return res.json();
+  },
+  cancel: async (id: number, data: { justification: string }) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/mdfe/${id}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  getDamdfe: async (id: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/v1/fiscal/mdfe/${id}/damdfe`);
+    return res.json();
+  },
+  list: async (filters?: { store_id?: number; status?: string }) => {
+    const base = getBaseUrl();
+    const query = new URLSearchParams();
+    if (filters?.store_id) query.append('store_id', String(filters.store_id));
+    if (filters?.status) query.append('status', filters.status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${base}/api/v1/fiscal/mdfe${qs}`);
+    return res.json();
+  },
+  getKpis: async (storeId?: number) => {
+    const base = getBaseUrl();
+    const qs = storeId ? `?store_id=${storeId}` : '';
+    const res = await fetch(`${base}/api/v1/fiscal/mdfe/kpis${qs}`);
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6648,6 +6705,8 @@ export const api = {
   scaleApi,
   fpAudit: fpAuditApi,
   fpAuditApi,
+  mdfe: mdfeApi,
+  mdfeApi,
 };
 
 export default api;
