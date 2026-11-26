@@ -4,6 +4,7 @@ import { OpenWaGatewayService } from './openwa-gateway.service';
 import { OmnichannelBotService } from './omnichannel-bot.service';
 import { PickAndPackService } from './pick-and-pack.service';
 import { OpenWaWebhookPayload } from './omnichannel.types';
+import { verifyWebhookSignature } from '../../middlewares/security.middleware';
 
 export async function registerOmnichannelRoutes(app: FastifyInstance, db: Database) {
   const gateway = new OpenWaGatewayService(db);
@@ -14,6 +15,23 @@ export async function registerOmnichannelRoutes(app: FastifyInstance, db: Databa
   app.post('/api/omnichannel/webhook/openwa', async (request, reply) => {
     try {
       const payload = request.body as OpenWaWebhookPayload;
+
+      // Validação de segurança de chave / webhook token
+      const channelId = payload && (payload as any).channelId ? Number((payload as any).channelId) : 1;
+      const channel = gateway.getChannelById(channelId, { showSecrets: true });
+      if (channel?.api_key) {
+        const sig = (request.headers['authorization'] ||
+          request.headers['x-api-key'] ||
+          request.headers['x-hub-signature-256']) as string | undefined;
+
+        if (!verifyWebhookSignature(channel.api_key, payload, sig)) {
+          return reply.status(401).send({
+            error: 'UNAUTHORIZED_WEBHOOK',
+            message: 'Chave de API ou assinatura inválida para o webhook do WhatsApp',
+          });
+        }
+      }
+
       const result = await botService.handleOpenWaWebhook(payload);
       return reply.send(result);
     } catch (err: any) {

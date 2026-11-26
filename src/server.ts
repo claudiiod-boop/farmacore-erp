@@ -1,4 +1,5 @@
 import Fastify, { FastifyInstance } from 'fastify';
+import rateLimit from '@fastify/rate-limit';
 import { Database, getDatabase } from './database/connection';
 import { runMigrations } from './database/migrator';
 import { seedCatalogIfEmpty } from './database/seeds/seed-catalog';
@@ -11,6 +12,25 @@ export async function buildServer(db?: Database): Promise<FastifyInstance> {
 
   const app = Fastify({
     logger: false,
+  });
+
+  // Proteção contra Força Bruta e DoS (Rate Limiting de 300 req/min por IP)
+  await app.register(rateLimit, {
+    max: process.env.NODE_ENV === 'test' ? 100000 : 300,
+    timeWindow: '1 minute',
+    errorResponseBuilder: (req, context) => ({
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: `Taxa limite de requisições excedida. Máximo de ${context.max} requisições por ${context.after}.`,
+    }),
+  });
+
+  // Headers de Segurança HTTP (Anti-Clickjacking, X-Content-Type-Options)
+  app.addHook('onSend', async (_request, reply) => {
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'DENY');
+    reply.header('X-XSS-Protection', '1; mode=block');
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   });
 
   await registerRoutes(app, database);

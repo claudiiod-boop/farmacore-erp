@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Database } from '../../database/connection';
 import { MarketplaceHubService } from './marketplace-hub.service';
+import { verifyWebhookSignature } from '../../middlewares/security.middleware';
 import type {
   RegisterChannelInput,
   MapCatalogProductInput,
@@ -109,6 +110,24 @@ export async function registerMarketplaceRoutes(app: FastifyInstance, db: Databa
     try {
       const params = request.params as any;
       const body = request.body as any;
+      const channelId = Number(body.channelId || body.channel_id);
+
+      // Verificação de assinatura criptográfica HMAC-SHA256 se o canal possuir webhook_secret
+      if (channelId) {
+        const channelConfig = service.getChannelById(channelId, { showSecrets: true });
+        if (channelConfig?.webhook_secret) {
+          const sig = (request.headers['x-hub-signature-256'] ||
+            request.headers['x-webhook-secret'] ||
+            request.headers['authorization']) as string | undefined;
+
+          if (!verifyWebhookSignature(channelConfig.webhook_secret, body, sig)) {
+            return reply.status(401).send({
+              error: 'UNAUTHORIZED_WEBHOOK_SIGNATURE',
+              message: 'Assinatura inválida do webhook externo',
+            });
+          }
+        }
+      }
 
       const input: IngestOrderInput = {
         storeId: body.storeId || body.store_id ? Number(body.storeId || body.store_id) : 1,

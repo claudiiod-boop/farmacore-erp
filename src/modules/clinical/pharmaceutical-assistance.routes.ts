@@ -6,8 +6,16 @@ import { PharmaceuticalAssistanceService } from './pharmaceutical-assistance.ser
 export function registerPharmaceuticalAssistanceRoutes(app: FastifyInstance, db: Database) {
   const service = new PharmaceuticalAssistanceService(db);
 
-  // POST /api/assistance/staff - Cadastrar farmacêutico
+  // POST /api/assistance/staff - Cadastrar farmacêutico (Protegido contra Escalada de Privilégio)
   app.post('/api/assistance/staff', async (request: FastifyRequest, reply: FastifyReply) => {
+    const operatorRole = (request.headers['x-operator-role'] as string)?.toUpperCase();
+    if (operatorRole && !['ADMIN', 'GERENTE', 'RT'].includes(operatorRole)) {
+      return reply.status(403).send({
+        error: 'FORBIDDEN',
+        message: 'Apenas Administradores, Gerentes ou RTs podem gerenciar o quadro farmacêutico.',
+      });
+    }
+
     const schema = z.object({
       store_id: z.number().int().positive(),
       name: z.string().min(2),

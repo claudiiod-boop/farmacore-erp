@@ -58,10 +58,15 @@ export class OpenWaGatewayService {
     return this.getChannelById(Number(result.lastInsertRowid))!;
   }
 
-  public getChannelById(id: number): OmnichannelChannel | undefined {
-    return this.db
+  public getChannelById(id: number, options?: { showSecrets?: boolean }): OmnichannelChannel | undefined {
+    const ch = this.db
       .prepare<OmnichannelChannel>('SELECT * FROM omnichannel_channels WHERE id = ?')
       .get(id);
+    if (!ch || options?.showSecrets) return ch;
+    return {
+      ...ch,
+      api_key: ch.api_key ? '********' : null,
+    };
   }
 
   public getChannelBySession(sessionId: string): OmnichannelChannel | undefined {
@@ -72,12 +77,17 @@ export class OpenWaGatewayService {
       .get(sessionId);
   }
 
-  public listChannels(storeId: number = 1): OmnichannelChannel[] {
-    return this.db
+  public listChannels(storeId: number = 1, options?: { showSecrets?: boolean }): OmnichannelChannel[] {
+    const list = this.db
       .prepare<OmnichannelChannel>(
         'SELECT * FROM omnichannel_channels WHERE store_id = ? ORDER BY id ASC'
       )
       .all(storeId);
+    if (options?.showSecrets) return list;
+    return list.map((ch) => ({
+      ...ch,
+      api_key: ch.api_key ? '********' : null,
+    }));
   }
 
   /**

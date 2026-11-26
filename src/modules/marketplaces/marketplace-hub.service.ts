@@ -72,17 +72,28 @@ export class MarketplaceHubService {
     return this.getChannelById(Number(res.lastInsertRowid))!;
   }
 
-  listChannels(storeId: number): MarketplaceChannel[] {
-    return this.db
+  listChannels(storeId: number, options?: { showSecrets?: boolean }): MarketplaceChannel[] {
+    const list = this.db
       .prepare('SELECT * FROM marketplace_channels WHERE store_id = ? ORDER BY id ASC')
       .all(storeId) as MarketplaceChannel[];
+    if (options?.showSecrets) return list;
+    return list.map((c) => ({
+      ...c,
+      api_secret: c.api_secret ? '********' : null,
+      webhook_secret: c.webhook_secret ? '********' : null,
+    }));
   }
 
-  getChannelById(channelId: number): MarketplaceChannel | null {
+  getChannelById(channelId: number, options?: { showSecrets?: boolean }): MarketplaceChannel | null {
     const channel = this.db
       .prepare('SELECT * FROM marketplace_channels WHERE id = ?')
       .get(channelId) as MarketplaceChannel | undefined;
-    return channel || null;
+    if (!channel || options?.showSecrets) return channel || null;
+    return {
+      ...channel,
+      api_secret: channel.api_secret ? '********' : null,
+      webhook_secret: channel.webhook_secret ? '********' : null,
+    };
   }
 
   toggleChannelStatus(channelId: number, isActive: boolean): MarketplaceChannel {
