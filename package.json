@@ -11,6 +11,7 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "dev:web": "vite --config frontend/vite.config.ts",
+    "dev:all": "concurrently \"tsx watch src/index.ts\" \"vite --config frontend/vite.config.ts\"",
     "build:web": "vite build --config frontend/vite.config.ts",
     "dev:desktop": "concurrently \"tsx src/index.ts\" \"electron -r tsx desktop/main.ts\""
   },
