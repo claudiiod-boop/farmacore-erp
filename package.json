@@ -9,6 +9,7 @@
     "test:watch": "vitest",
     "test:frontend": "vitest run --config frontend/vite.config.ts",
     "start": "node dist/index.js",
+    "seed:catalog": "tsx src/database/seeds/seed-catalog.ts",
     "dev": "tsx watch src/index.ts",
     "dev:web": "vite --config frontend/vite.config.ts",
     "dev:all": "concurrently \"tsx watch src/index.ts\" \"vite --config frontend/vite.config.ts\"",

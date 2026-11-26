@@ -1,11 +1,13 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import { Database, getDatabase } from './database/connection';
 import { runMigrations } from './database/migrator';
+import { seedCatalogIfEmpty } from './database/seeds/seed-catalog';
 import { registerRoutes } from './api/routes';
 
 export async function buildServer(db?: Database): Promise<FastifyInstance> {
   const database = db ?? getDatabase();
   runMigrations(database);
+  seedCatalogIfEmpty(database);
 
   const app = Fastify({
     logger: false,
