@@ -45,6 +45,7 @@ import { PrecisionScalePage } from './pages/PrecisionScalePage';
 import { FarmaciaPopularAuditPage } from './pages/FarmaciaPopularAuditPage';
 import { MdfePage } from './pages/MdfePage';
 import { PharmaceuticalAssistancePage } from './pages/PharmaceuticalAssistancePage';
+import { MagnosFarmaAnalyticsPage } from './pages/MagnosFarmaAnalyticsPage';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -84,7 +85,7 @@ import {
 } from 'lucide-react';
 
 function AppContent() {
-  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling, isBlindInventoryAudit, isSatFiscalModule, isPrecisionScaleModule, isFarmaciaPopularAudit, isMdfeFiscalModule, isPharmaceuticalAssistance } = useStationMode();
+  const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling, isBlindInventoryAudit, isSatFiscalModule, isPrecisionScaleModule, isFarmaciaPopularAudit, isMdfeFiscalModule, isPharmaceuticalAssistance, isMagnosFarmaAnalytics } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
@@ -912,6 +913,21 @@ function AppContent() {
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Assistência & RT</span>
             </button>
+
+            <button
+              type="button"
+              data-testid="topbar-analytics-button"
+              onClick={() => setMode('MAGNOS_FARMA_ANALYTICS')}
+              title="Magnos Farma Analytics (BI Executivo em Tempo Real & Orçamentos WhatsApp)"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-semibold transition border text-xs cursor-pointer ${
+                isMagnosFarmaAnalytics
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold shadow-sm'
+                  : 'bg-slate-900 text-emerald-400 hover:text-emerald-300 border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Analytics & BI</span>
+            </button>
           </nav>
         </div>
 
@@ -1011,6 +1027,7 @@ function AppContent() {
         {isFarmaciaPopularAudit && <FarmaciaPopularAuditPage />}
         {isMdfeFiscalModule && <MdfePage />}
         {isPharmaceuticalAssistance && <PharmaceuticalAssistancePage />}
+        {isMagnosFarmaAnalytics && <MagnosFarmaAnalyticsPage />}
       </div>
 
       {/* Global PBM Modal */}

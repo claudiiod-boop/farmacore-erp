@@ -65,6 +65,7 @@ import { registerScaleRoutes } from '../modules/scales/scale.routes';
 import { registerFarmaciaPopularAuditRoutes } from '../modules/pbm/farmacia-popular-audit.routes';
 import { registerMdfeRoutes } from '../modules/fiscal/mdfe.routes';
 import { registerPharmaceuticalAssistanceRoutes } from '../modules/clinical/pharmaceutical-assistance.routes';
+import { registerAnalyticsRoutes } from '../modules/analytics/analytics.routes';
 import type {
   DeclareBlindClosureParams,
   ReviewClosureParams,
@@ -2162,4 +2163,7 @@ export async function registerRoutes(app: FastifyInstance, db: Database): Promis
 
   // ===================== ASSISTÊNCIA FARMACÊUTICA INTEGRAL & LIVRO RT (LEI 13.021/14 & CRF/CFF) =====================
   registerPharmaceuticalAssistanceRoutes(app, db);
+
+  // ===================== MAGNOS FARMA ANALYTICS (BI TEMPO REAL) & ORÇAMENTOS WHATSAPP (INOVAFARMA) =====================
+  registerAnalyticsRoutes(app, db);
 }

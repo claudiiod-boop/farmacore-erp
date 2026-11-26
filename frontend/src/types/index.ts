@@ -44,7 +44,8 @@ export type StationMode =
   | 'PRECISION_SCALE_MODULE'
   | 'FARMACIA_POPULAR_AUDIT'
   | 'MDFE_FISCAL_MODULE'
-  | 'PHARMACEUTICAL_ASSISTANCE';
+  | 'PHARMACEUTICAL_ASSISTANCE'
+  | 'MAGNOS_FARMA_ANALYTICS';
 export type PaymentMethod =
   | 'DINHEIRO'
   | 'CARTAO_CREDITO'
@@ -358,4 +359,5 @@ export * from './scale';
 export * from './fp-audit';
 export * from './mdfe';
 export * from './pharmaceutical-assistance';
+export * from './analytics';
 

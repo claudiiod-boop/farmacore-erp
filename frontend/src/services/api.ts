@@ -6615,6 +6615,46 @@ export const assistanceApi = {
   },
 };
 
+export const analyticsApi = {
+  getLive: async (storeId = 1) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/analytics/live?store_id=${storeId}`);
+    return res.json();
+  },
+  setTarget: async (storeId: number, yearMonth: string, targetAmount: number) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/analytics/target`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: storeId, year_month: yearMonth, target_amount: targetAmount }),
+    });
+    return res.json();
+  },
+  createWhatsAppQuotation: async (data: any) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/analytics/whatsapp/quotations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  listWhatsAppQuotations: async (storeId = 1, limit = 50) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/analytics/whatsapp/quotations?store_id=${storeId}&limit=${limit}`);
+    return res.json();
+  },
+  updateQuotationStatus: async (id: number, status: string) => {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/analytics/whatsapp/quotations/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    return res.json();
+  },
+};
+
 export const api = {
   setBaseUrl,
   getBaseUrl,
@@ -6767,6 +6807,8 @@ export const api = {
   mdfeApi,
   assistance: assistanceApi,
   assistanceApi,
+  analytics: analyticsApi,
+  analyticsApi,
 };
 
 export default api;
