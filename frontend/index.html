@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FarmaCore ERP - Terminal de Balcão</title>
+    <script>
+      try {
+        const p = new URLSearchParams(window.location.search);
+        const m = p.get('mode');
+        if (m) localStorage.setItem('farmacore_station_mode', m);
+        const sp = p.get('splash');
+        if (sp === 'true') {
+          sessionStorage.removeItem('splash_shown');
+        } else if (sp === 'false') {
+          sessionStorage.setItem('splash_shown', 'true');
+        }
+      } catch(e) {}
+    </script>
   </head>
   <body class="bg-gray-100 text-gray-900 antialiased h-screen overflow-hidden">
     <div id="root" class="h-full"></div>

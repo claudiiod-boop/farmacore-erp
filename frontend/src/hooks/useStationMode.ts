@@ -49,7 +49,9 @@ function getStoredMode(initialDefault: StationMode): StationMode {
         stored === 'SAT_FISCAL_MODULE' ||
         stored === 'PRECISION_SCALE_MODULE' ||
         stored === 'FARMACIA_POPULAR_AUDIT' ||
-        stored === 'MDFE_FISCAL_MODULE'
+        stored === 'MDFE_FISCAL_MODULE' ||
+        stored === 'PHARMACEUTICAL_ASSISTANCE' ||
+        stored === 'MAGNOS_FARMA_ANALYTICS'
       ) {
         return stored;
       }
