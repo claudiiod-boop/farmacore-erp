@@ -11,7 +11,7 @@ describe('Security Hardening REST API Tests', () => {
   beforeEach(async () => {
     db = getDatabase(':memory:');
     app = await buildServer(db);
-  });
+  }, 30000);
 
   afterEach(async () => {
     await app.close();

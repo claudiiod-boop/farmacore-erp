@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { MagnosFarmaLogo } from '../components/brand/MagnosFarmaLogo';
 import {
   Send,
   RotateCcw,
@@ -394,9 +395,7 @@ export default function CounterPage() {
       {/* Header Corporativo FarmaCore & Barra de Atalhos */}
       <header className="bg-emerald-700 text-white px-6 py-3 flex flex-col md:flex-row md:items-center justify-between shadow-md gap-3">
         <div className="flex items-center space-x-3">
-          <div className="bg-white text-emerald-700 font-extrabold px-2.5 py-1 rounded text-xl shadow-sm tracking-tight">
-            FC
-          </div>
+          <MagnosFarmaLogo size="sm" variant="white" showSubtitle={false} />
           <div>
             <h1 className="text-xl font-bold tracking-wide">FarmaCore ERP</h1>
             <p className="text-xs text-emerald-100 font-medium">

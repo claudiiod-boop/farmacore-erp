@@ -15,11 +15,16 @@
     "dev:web": "vite --config frontend/vite.config.ts",
     "dev:all": "concurrently \"tsx watch src/index.ts\" \"vite --config frontend/vite.config.ts\"",
     "build:web": "vite build --config frontend/vite.config.ts",
+    "build:desktop": "tsc -p desktop/tsconfig.json",
+    "pack:desktop": "npm run build:web && npm run build:desktop && electron-builder --win --dir",
+    "dist:desktop": "npm run build:web && npm run build:desktop && electron-builder --win portable",
     "dev:desktop": "concurrently \"tsx src/index.ts\" \"electron -r tsx desktop/main.ts\""
   },
   "dependencies": {
     "@fastify/rate-limit": "^11.3.0",
+    "@hyperframes/player": "^0.9.102",
     "fastify": "^5.2.1",
+    "hyperframes": "^0.9.102",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -35,6 +40,7 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.2",
     "electron": "^33.2.0",
+    "electron-builder": "^26.18.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
@@ -42,5 +48,23 @@
     "typescript": "^5.7.3",
     "vite": "^6.0.0",
     "vitest": "^3.0.6"
+  },
+  "build": {
+    "appId": "com.magnosfarma.farmacore",
+    "productName": "FarmaCore ERP",
+    "extraMetadata": {
+      "main": "dist-electron/main.js"
+    },
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "frontend/dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable"
+    }
   }
 }

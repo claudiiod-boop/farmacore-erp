@@ -46,6 +46,8 @@ import { FarmaciaPopularAuditPage } from './pages/FarmaciaPopularAuditPage';
 import { MdfePage } from './pages/MdfePage';
 import { PharmaceuticalAssistancePage } from './pages/PharmaceuticalAssistancePage';
 import { MagnosFarmaAnalyticsPage } from './pages/MagnosFarmaAnalyticsPage';
+import { MagnosFarmaLogo } from './components/brand/MagnosFarmaLogo';
+import { AppSplashScreen } from './components/animations/AppSplashScreen';
 import PbmModal from './components/pbm/PbmModal';
 import StoreSelector from './components/StoreSelector';
 import StoreProvider from './contexts/StoreContext';
@@ -87,6 +89,22 @@ import {
 function AppContent() {
   const { mode, setMode, isCounter, isPos, isPurchases, isSngpc, isFinancial, isStores, isInventory, isCredit, isCrm, isDelivery, isSanitary, isCardReconciliation, isBankReconciliation, isSpedFiscal, isClinicalConsulting, isB2bQuotations, isCmedPricing, isOmnichannelPickPack, isCompounding, isSubscriptionClub, isFractionation, isCommissions, isDre, isPgrss, isKiosk, isBmpo, isSncm, isReplenishment, isCustomerReturns, isQuarantine, isTemperatureMonitoring, isSanitizationCompliance, isInjectablesVaccination, isPharmacovigilance, isMarketplaceHub, isBackupDisasterRecovery, isSelfCheckoutTouch, isDdaReconciliation, isSanitaryAuditDossier, isCorporateAgreementsBilling, isBlindInventoryAudit, isSatFiscalModule, isPrecisionScaleModule, isFarmaciaPopularAudit, isMdfeFiscalModule, isPharmaceuticalAssistance, isMagnosFarmaAnalytics } = useStationMode();
   const [isPbmModalOpen, setIsPbmModalOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+      return false;
+    }
+    if (typeof window !== 'undefined' && window.sessionStorage?.getItem('splash_shown') === 'true') {
+      return false;
+    }
+    return true;
+  });
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      window.sessionStorage.setItem('splash_shown', 'true');
+    }
+  };
 
   // Listen to keyboard shortcuts (F1-F7, and Ctrl+Shift+S)
   useEffect(() => {
@@ -190,9 +208,21 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100">
+      {/* HyperFrames Animated Boot Splash Screen */}
+      {showSplash && <AppSplashScreen onComplete={handleSplashComplete} />}
+
       {/* Station Mode Switcher Topbar */}
       <div className="bg-slate-950 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs select-none">
         <div className="flex items-center space-x-4">
+          {/* Logo Magnos Farma Topbar */}
+          <div className="flex items-center space-x-2 mr-1">
+            <MagnosFarmaLogo size="sm" variant="white" showSubtitle={false} />
+            <div className="hidden sm:flex flex-col leading-tight">
+              <span className="font-bold text-white text-xs tracking-wide">FarmaCore ERP</span>
+              <span className="text-[10px] text-cyan-400 font-mono">Magnos Farma V1.82</span>
+            </div>
+          </div>
+
           {/* Quick toggle pill for backwards compatibility & current mode badge */}
           <div className="flex items-center space-x-2">
             <span className="font-semibold text-slate-400">Posto de Trabalho:</span>

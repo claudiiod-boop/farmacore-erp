@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { MagnosFarmaLogo } from '../components/brand/MagnosFarmaLogo';
 import {
   Lock,
   Unlock,
@@ -659,9 +660,7 @@ export default function PosPage() {
       {/* Header Corporativo FarmaCore & Barra de Status do PDV */}
       <header className="bg-slate-900 text-white px-6 py-3 flex flex-col md:flex-row md:items-center justify-between shadow-md gap-3 border-b border-slate-800">
         <div className="flex items-center space-x-3">
-          <div className="bg-emerald-600 text-white font-extrabold px-2.5 py-1 rounded text-xl shadow-sm tracking-tight">
-            FC
-          </div>
+          <MagnosFarmaLogo size="sm" variant="white" showSubtitle={false} />
           <div>
             <h1 className="text-xl font-bold tracking-wide">FarmaCore ERP</h1>
             <p className="text-xs text-slate-400 font-medium">

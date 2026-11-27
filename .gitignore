@@ -13,6 +13,8 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 backups/
+release/
+*.xml
 *.sqlite.enc
 *.sqlite.bak
 temp_test_backups/
